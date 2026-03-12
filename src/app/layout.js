@@ -1,6 +1,7 @@
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Providers from "@/components/Providers";
+import { Analytics } from "@vercel/analytics/react";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -13,6 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata = {
+  metadataBase: new URL("https://gabrielgreco.com"),
   icons: {
     icon: "/icon.svg",
     shortcut: "/icon.svg",
@@ -20,12 +22,31 @@ export const metadata = {
   title: "Gabriel Greco — Software Engineer & AI Automation Specialist",
   description:
     "Software engineer specialized in intelligent automation, AI pipelines, data extraction, and LLM integrations — turning raw data into operational intelligence.",
+  keywords: [
+    "Gabriel Greco",
+    "Software Engineer",
+    "AI Automation",
+    "RAG",
+    "GraphRAG",
+    "LLM",
+    "Python",
+    "data extraction",
+    "automation specialist",
+    "portfolio",
+  ],
+  authors: [{ name: "Gabriel Greco", url: "https://gabrielgreco.com" }],
+  alternates: {
+    canonical: "/",
+  },
   openGraph: {
     title: "Gabriel Greco — Software Engineer & AI Automation Specialist",
     description:
       "Software engineer specialized in intelligent automation, AI pipelines, data extraction, and LLM integrations — turning raw data into operational intelligence.",
+    url: "https://gabrielgreco.com",
+    siteName: "Gabriel Greco",
     images: [{ url: "/og-image.jpg", width: 1200, height: 630 }],
     type: "website",
+    locale: "pt_BR",
   },
   twitter: {
     card: "summary_large_image",
@@ -36,11 +57,50 @@ export const metadata = {
   },
 };
 
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@type": "Person",
+  name: "Gabriel Greco",
+  url: "https://gabrielgreco.com",
+  jobTitle: "Software Engineer",
+  description:
+    "Software engineer specialized in intelligent automation, AI pipelines, data extraction, and LLM integrations — turning raw data into operational intelligence.",
+  email: "gabrielargreco@gmail.com",
+  sameAs: [
+    "https://www.linkedin.com/in/gabriel-greco-365b541a3",
+    "https://github.com/gabrielgreco1",
+    "https://gabrielgreco.com",
+  ],
+  knowsAbout: [
+    "Software Engineering",
+    "AI Automation",
+    "RAG",
+    "GraphRAG",
+    "LLM Integrations",
+    "Data Extraction",
+    "Python",
+    "Web Scraping",
+    "RPA",
+    "FastAPI",
+    "Django",
+    "Next.js",
+  ],
+  worksFor: {
+    "@type": "Organization",
+    name: "Labrynth AI",
+  },
+};
+
 export default function RootLayout({ children }) {
   return (
     <html lang="pt-BR">
       <body className={`${geistSans.variable} ${geistMono.variable}`}>
         <Providers>{children}</Providers>
+        <Analytics />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
       </body>
     </html>
   );
