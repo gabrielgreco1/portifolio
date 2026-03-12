@@ -13,14 +13,22 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata = {
-  title: "Gabriel Greco — Software Engineer",
-  description: "Software engineer focused on automation, data extraction and AI. Personal portfolio.",
+  title: "Gabriel Greco — Software Engineer & AI Automation Specialist",
+  description:
+    "Software engineer specialized in intelligent automation, AI pipelines, data extraction, and LLM integrations — turning raw data into operational intelligence.",
   openGraph: {
-    images: ["/og-image.png"],
+    title: "Gabriel Greco — Software Engineer & AI Automation Specialist",
+    description:
+      "Software engineer specialized in intelligent automation, AI pipelines, data extraction, and LLM integrations — turning raw data into operational intelligence.",
+    images: [{ url: "/og-image.jpg", width: 1200, height: 630 }],
+    type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    images: ["/og-image.png"],
+    title: "Gabriel Greco — Software Engineer & AI Automation Specialist",
+    description:
+      "Software engineer specialized in intelligent automation, AI pipelines, data extraction, and LLM integrations — turning raw data into operational intelligence.",
+    images: ["/og-image.jpg"],
   },
 };
 
