@@ -15,6 +15,13 @@ const geistMono = Geist_Mono({
 export const metadata = {
   title: "Gabriel Greco — Software Engineer",
   description: "Software engineer focused on automation, data extraction and AI. Personal portfolio.",
+  openGraph: {
+    images: ["/og-image.png"],
+  },
+  twitter: {
+    card: "summary_large_image",
+    images: ["/og-image.png"],
+  },
 };
 
 export default function RootLayout({ children }) {
