@@ -59,36 +59,60 @@ export const metadata = {
 
 const jsonLd = {
   "@context": "https://schema.org",
-  "@type": "Person",
-  name: "Gabriel Greco",
-  url: "https://gabrielgreco.com",
-  jobTitle: "Software Engineer",
-  description:
-    "Software engineer specialized in intelligent automation, AI pipelines, data extraction, and LLM integrations — turning raw data into operational intelligence.",
-  email: "gabrielargreco@gmail.com",
-  sameAs: [
-    "https://www.linkedin.com/in/gabriel-greco-365b541a3",
-    "https://github.com/gabrielgreco1",
-    "https://gabrielgreco.com",
+  "@graph": [
+    {
+      "@type": "WebSite",
+      "@id": "https://gabrielgreco.com/#website",
+      name: "Gabriel Greco",
+      url: "https://gabrielgreco.com",
+      description:
+        "Portfolio of Gabriel Greco, Software Engineer specialized in AI automation, RAG pipelines, and LLM integrations.",
+    },
+    {
+      "@type": "ProfilePage",
+      "@id": "https://gabrielgreco.com/#webpage",
+      url: "https://gabrielgreco.com",
+      name: "Gabriel Greco — Software Engineer & AI Automation Specialist",
+      description:
+        "Software engineer specialized in intelligent automation, AI pipelines, data extraction, and LLM integrations — turning raw data into operational intelligence.",
+      isPartOf: { "@id": "https://gabrielgreco.com/#website" },
+      about: { "@id": "https://gabrielgreco.com/#person" },
+      mainEntity: { "@id": "https://gabrielgreco.com/#person" },
+    },
+    {
+      "@type": "Person",
+      "@id": "https://gabrielgreco.com/#person",
+      name: "Gabriel Greco",
+      url: "https://gabrielgreco.com",
+      jobTitle: "Software Engineer",
+      description:
+        "Software engineer specialized in intelligent automation, AI pipelines, data extraction, and LLM integrations — turning raw data into operational intelligence.",
+      email: "gabrielargreco@gmail.com",
+      sameAs: [
+        "https://www.linkedin.com/in/gabriel-greco-365b541a3",
+        "https://github.com/gabrielgreco1",
+        "https://gabrielgreco.com",
+      ],
+      knowsAbout: [
+        "Software Engineering",
+        "AI Automation",
+        "RAG",
+        "GraphRAG",
+        "LLM Integrations",
+        "Data Extraction",
+        "Python",
+        "Web Scraping",
+        "RPA",
+        "FastAPI",
+        "Django",
+        "Next.js",
+      ],
+      worksFor: {
+        "@type": "Organization",
+        name: "Labrynth AI",
+      },
+    },
   ],
-  knowsAbout: [
-    "Software Engineering",
-    "AI Automation",
-    "RAG",
-    "GraphRAG",
-    "LLM Integrations",
-    "Data Extraction",
-    "Python",
-    "Web Scraping",
-    "RPA",
-    "FastAPI",
-    "Django",
-    "Next.js",
-  ],
-  worksFor: {
-    "@type": "Organization",
-    name: "Labrynth AI",
-  },
 };
 
 export default function RootLayout({ children }) {

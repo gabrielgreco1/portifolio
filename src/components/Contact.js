@@ -44,7 +44,7 @@ export default function Contact() {
             <motion.a
               href="https://linkedin.com/in/gabriel-greco-365b541a3"
               target="_blank"
-              rel="noopener"
+              rel="noopener noreferrer"
               className="btn-ghost"
               whileHover={{ scale: 1.05, y: -3 }}
               whileTap={{ scale: 0.97 }}

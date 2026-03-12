@@ -30,7 +30,7 @@ export default function Navbar() {
     >
       <div className="wrap navbar-inner">
         <motion.a
-          href="#"
+          href="/"
           className="nav-logo"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}

@@ -38,7 +38,7 @@ export default function Projects() {
           <motion.a
             href="https://github.com/gabrielgreco1"
             target="_blank"
-            rel="noopener"
+            rel="noopener noreferrer"
             className="btn-ghost"
             whileHover={{ scale: 1.05, y: -2 }}
             whileTap={{ scale: 0.97 }}
@@ -92,7 +92,7 @@ function ProjectCard({ project, index, viewDetails, viewProject }) {
       >
         <Image
           src={project.img}
-          alt={project.title}
+          alt={`Screenshot of ${project.title} — ${project.desc.slice(0, 80)}`}
           width={600}
           height={450}
           style={{ objectFit: "cover", width: "100%", height: "100%" }}
@@ -129,7 +129,7 @@ function ProjectCard({ project, index, viewDetails, viewProject }) {
         <motion.a
           href={project.link}
           target={project.link.startsWith("http") ? "_blank" : undefined}
-          rel={project.link.startsWith("http") ? "noopener" : undefined}
+          rel={project.link.startsWith("http") ? "noopener noreferrer" : undefined}
           className="project-link"
           whileHover={{ x: 5 }}
         >
