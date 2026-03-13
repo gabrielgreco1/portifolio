@@ -94,6 +94,8 @@ function ProjectCard({ project, index, viewDetails, viewProject }) {
           src={project.img}
           alt={`Screenshot of ${project.title} — ${project.desc.slice(0, 80)}`}
           width={600}
+          sizes="(max-width: 768px) 100vw, 50vw"
+          priority={index === 0}
           height={450}
           style={{ objectFit: "cover", width: "100%", height: "100%" }}
         />

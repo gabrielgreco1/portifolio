@@ -1,20 +1,29 @@
-import { Geist, Geist_Mono } from "next/font/google";
+import { Space_Grotesk, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import Providers from "@/components/Providers";
 import { Analytics } from "@vercel/analytics/react";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const spaceGrotesk = Space_Grotesk({
+  variable: "--font-space-grotesk",
   subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700"],
+  display: "swap",
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const jetbrainsMono = JetBrains_Mono({
+  variable: "--font-jetbrains-mono",
   subsets: ["latin"],
+  weight: ["400", "500"],
+  display: "swap",
 });
+
+export const viewport = {
+  themeColor: "#6c63ff",
+};
 
 export const metadata = {
   metadataBase: new URL("https://gabrielgreco.com"),
+  applicationName: "Gabriel Greco",
   icons: {
     icon: "/icon.svg",
     shortcut: "/icon.svg",
@@ -118,7 +127,7 @@ const jsonLd = {
 export default function RootLayout({ children }) {
   return (
     <html lang="pt-BR">
-      <body className={`${geistSans.variable} ${geistMono.variable}`}>
+      <body className={`${spaceGrotesk.variable} ${jetbrainsMono.variable}`}>
         <Providers>{children}</Providers>
         <Analytics />
         <script
