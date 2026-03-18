@@ -43,6 +43,9 @@ body::after {
 /* ---- Links ---- */
 a { color: inherit; text-decoration: none; }
 
+/* ---- Main stacking context (keeps cursor orb at z-index 0 behind content) ---- */
+main { position: relative; z-index: 1; isolation: isolate; }
+
 /* ---- Layout ---- */
 .wrap {
   max-width: 1200px;
@@ -299,58 +302,89 @@ h1, h2, h3 {
 .exp-header h2 {
   font-size: clamp(2rem, 5vw, 3rem);
 }
-.exp-grid {
+
+.exp-cards-grid {
   display: grid;
-  gap: 1px;
-  background: var(--border);
-  border-radius: var(--radius);
-  overflow: hidden;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.2rem;
 }
-.exp-card {
+
+.exp-card-glass {
   background: var(--bg-elevated);
-  padding: 2rem 2.5rem;
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 1rem;
-  align-items: start;
-  transition: background 0.3s ease;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  cursor: default;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+  transform-style: preserve-3d;
 }
-.exp-card:hover {
-  background: var(--surface);
+
+.exp-card-glass:hover {
+  border-color: rgba(108, 99, 255, 0.25);
+  box-shadow:
+    0 8px 40px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
-.exp-role {
-  font-size: 1.1rem;
-  font-weight: 600;
-  margin-bottom: 0.3rem;
+
+.exp-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
 }
-.exp-company {
-  color: var(--accent);
-  font-weight: 500;
-  margin-bottom: 0.8rem;
+
+.exp-card-num {
+  font-size: 0.7rem;
+  opacity: 0.45;
+  letter-spacing: 0.1em;
 }
-.exp-tasks {
-  list-style: none;
-  display: grid;
-  gap: 0.4rem;
-}
-.exp-tasks li {
+
+.exp-card-period {
+  font-family: var(--font-jetbrains-mono), monospace;
+  font-size: 0.72rem;
   color: var(--text-dim);
-  font-size: 0.9rem;
-  padding-left: 1.2rem;
-  position: relative;
+  white-space: nowrap;
 }
-.exp-tasks li::before {
+
+.exp-card-role {
+  font-size: 1.05rem;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+}
+
+.exp-card-company {
+  color: var(--accent);
+  font-size: 0.88rem;
+  font-weight: 500;
+  margin-bottom: 0.75rem;
+}
+
+.exp-card-tasks {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin-top: 0.5rem;
+}
+
+.exp-card-tasks li {
+  color: var(--text-dim);
+  font-size: 0.83rem;
+  padding-left: 1.1rem;
+  position: relative;
+  line-height: 1.5;
+}
+
+.exp-card-tasks li::before {
   content: '→';
   position: absolute;
   left: 0;
   color: var(--accent);
-  font-size: 0.75rem;
-}
-.exp-period {
-  color: var(--text-dim);
-  font-size: 0.8rem;
-  white-space: nowrap;
-  font-family: var(--font-jetbrains-mono), monospace;
+  font-size: 0.72rem;
+  top: 0.1em;
 }
 
 /* ---- Projects ---- */
@@ -373,47 +407,76 @@ h1, h2, h3 {
 .project-item:nth-child(even) > * {
   direction: ltr;
 }
+/* ---- Browser window mockup ---- */
 .project-img-wrap {
   position: relative;
   border-radius: var(--radius);
   overflow: hidden;
-  aspect-ratio: 4/3;
-  cursor: pointer;
-  background: var(--surface);
-  padding: 2.5rem;
+  display: flex;
+  flex-direction: column;
+  background: #0d0d14;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.browser-chrome {
   display: flex;
   align-items: center;
-  justify-content: center;
-  border: 1px solid var(--border);
+  gap: 0.65rem;
+  padding: 0.6rem 0.85rem;
+  background: #161621;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  flex-shrink: 0;
 }
-.project-img-wrap img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  border-radius: 8px;
-  filter: drop-shadow(0 15px 35px rgba(0, 0, 0, 0.4));
-  transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
-}
-.project-img-wrap:hover img {
-  transform: scale(1.05);
-}
-.project-img-overlay {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(180deg, transparent 50%, rgba(10, 10, 15, 0.8) 100%);
-  opacity: 0;
-  transition: opacity 0.4s ease;
+
+.browser-dots {
   display: flex;
-  align-items: flex-end;
-  padding: 1.5rem;
+  gap: 5px;
+  align-items: center;
 }
-.project-img-wrap:hover .project-img-overlay {
-  opacity: 1;
+
+.browser-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
 }
-.project-img-overlay span {
-  color: #fff;
-  font-weight: 500;
-  font-size: 0.9rem;
+.browser-dot--red    { background: #ff5f57; }
+.browser-dot--yellow { background: #febc2e; }
+.browser-dot--green  { background: #28c840; }
+
+.browser-url-bar {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 5px;
+  padding: 0.2rem 0.65rem;
+  max-width: 260px;
+}
+
+.browser-url-text {
+  font-family: var(--font-jetbrains-mono), monospace;
+  font-size: 0.68rem;
+  color: var(--text-dim);
+  opacity: 0.55;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;
+}
+
+.browser-screen {
+  position: relative;
+  aspect-ratio: 16 / 10;
+  overflow: hidden;
+}
+
+.project-img {
+  transition: transform 0.7s cubic-bezier(0.16, 1, 0.3, 1), filter 0.5s ease !important;
+  filter: brightness(0.85) saturate(0.65) !important;
+}
+
+.project-img-wrap:hover .project-img {
+  transform: scale(1.04) !important;
+  filter: brightness(0.95) saturate(0.8) !important;
 }
 .project-info h3 {
   font-size: 1.8rem;
@@ -550,10 +613,348 @@ h1, h2, h3 {
   .project-item:nth-child(even) {
     direction: ltr;
   }
-  .exp-card {
-    grid-template-columns: 1fr;
-  }
-  .exp-period {
-    order: -1;
-  }
+  .exp-cards-grid { grid-template-columns: 1fr; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════ */
+/* PREMIUM MOTION LAYER                                                        */
+/* ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ---- Hero: position context for aurora ---- */
+.hero { position: relative; }
+.hero-content { position: relative; z-index: 2; }
+
+/* ---- Hero aurora mesh (CSS-only breathing) ---- */
+.hero-aurora {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+
+.aurora-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(90px);
+  will-change: transform, opacity;
+}
+
+.aurora-orb-1 {
+  top: -25%;
+  right: -8%;
+  width: 640px;
+  height: 640px;
+  background: radial-gradient(circle, rgba(108, 99, 255, 0.13) 0%, transparent 68%);
+  animation: aurora1 13s ease-in-out infinite;
+}
+
+.aurora-orb-2 {
+  top: 5%;
+  left: -8%;
+  width: 480px;
+  height: 480px;
+  background: radial-gradient(circle, rgba(0, 212, 170, 0.07) 0%, transparent 65%);
+  animation: aurora2 19s ease-in-out infinite;
+}
+
+.aurora-orb-3 {
+  bottom: -15%;
+  right: 15%;
+  width: 520px;
+  height: 520px;
+  background: radial-gradient(circle, rgba(168, 85, 247, 0.09) 0%, transparent 65%);
+  animation: aurora3 8s ease-in-out infinite;
+}
+
+@keyframes aurora1 {
+  0%,  100% { transform: translate(0, 0)    scale(1);    opacity: 0.8; }
+  33%       { transform: translate(-28px, 18px) scale(1.1); opacity: 1;   }
+  66%       { transform: translate(18px, -14px) scale(0.94); opacity: 0.6; }
+}
+@keyframes aurora2 {
+  0%,  100% { transform: translate(0, 0)   scale(1);    }
+  50%       { transform: translate(38px, 28px) scale(1.14); }
+}
+@keyframes aurora3 {
+  0%,  100% { transform: translate(0, 0)     scale(1);    opacity: 0.7; }
+  40%       { transform: translate(-18px, -22px) scale(1.1); opacity: 1;   }
+  70%       { transform: translate(14px,  9px) scale(0.9); opacity: 0.5; }
+}
+
+/* ---- Cursor orb ---- */
+.cursor-orb {
+  position: fixed;
+  width: 340px;
+  height: 340px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(108, 99, 255, 0.18) 0%, transparent 68%);
+  pointer-events: none;
+  z-index: 0;
+  top: -170px;   /* offset so Framer Motion x/y = centre on cursor */
+  left: -170px;
+  mix-blend-mode: screen;
+  will-change: transform;
+}
+
+/* ---- @property for conic border animation ---- */
+@property --border-angle {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════ */
+/* DESIGN SHOWCASE SECTION                                                     */
+/* ═══════════════════════════════════════════════════════════════════════════ */
+
+.showcase-section {
+  padding: clamp(3rem, 6vw, 5rem) 0;
+}
+
+.showcase-header {
+  margin-bottom: 3.5rem;
+}
+
+.showcase-header h2 {
+  font-size: clamp(2rem, 5vw, 3rem);
+  margin-top: 0.5rem;
+}
+
+.showcase-sub {
+  margin-top: 0.9rem;
+  color: var(--text-dim);
+  font-size: 1rem;
+  max-width: 520px;
+  line-height: 1.65;
+}
+
+.showcase-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 1.4rem;
+}
+
+/* ---- PostCard ---- */
+.post-card {
+  position: relative;
+  border-radius: var(--radius);
+  padding: 1px; /* holds the conic-gradient "border" */
+  background: var(--border);
+  cursor: pointer;
+  transition: background 0.4s ease;
+  transform-style: preserve-3d;
+}
+
+/* Conic-gradient spinning border — activates on hover */
+.post-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius);
+  background: conic-gradient(
+    from var(--border-angle),
+    transparent 0%,
+    transparent 55%,
+    rgba(108, 99, 255, 0.55) 72%,
+    rgba(168, 85, 247, 0.35) 80%,
+    transparent 94%
+  );
+  animation: border-spin 5s linear infinite;
+  animation-play-state: paused;
+  opacity: 0;
+  transition: opacity 0.35s ease;
+  z-index: 0;
+}
+
+/* Solid fill that sits on top of the conic bg, creating the border-only effect */
+.post-card::after {
+  content: "";
+  position: absolute;
+  inset: 1px;
+  border-radius: calc(var(--radius) - 1px);
+  background: var(--bg-elevated);
+  z-index: 1;
+  transition: background 0.3s ease;
+}
+
+.post-card:hover::before {
+  animation-play-state: running;
+  opacity: 1;
+}
+
+.post-card:hover::after {
+  background: var(--surface);
+}
+
+@keyframes border-spin {
+  to { --border-angle: 360deg; }
+}
+
+/* Firefox fallback (no @property support) */
+@supports not (background: conic-gradient(from 1turn, red, red)) {
+  .post-card { border: 1px solid var(--border); background: var(--bg-elevated); padding: 0; }
+  .post-card::before, .post-card::after { display: none; }
+  .post-card:hover { border-color: rgba(108, 99, 255, 0.3); background: var(--surface); }
+}
+
+/* Background glow — animated via Framer Motion x/y */
+.post-card-glow {
+  position: absolute;
+  top: -25%;
+  right: -15%;
+  width: 220px;
+  height: 220px;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    rgba(var(--card-accent-rgb, 108, 99, 255), 0.18) 0%,
+    transparent 70%
+  );
+  filter: blur(45px);
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* Card inner — sits above ::after fill */
+.post-card-inner {
+  position: relative;
+  z-index: 3;
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  min-height: 260px;
+}
+
+.post-card-category {
+  opacity: 0.65;
+  letter-spacing: 0.07em;
+}
+
+.post-card-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  line-height: 1.3;
+  color: var(--text);
+}
+
+.post-card-desc {
+  color: var(--text-dim);
+  font-size: 0.875rem;
+  line-height: 1.7;
+}
+
+/* Insight panel — clip-path wipe driven by Framer Motion */
+.post-card-insight {
+  background: rgba(108, 99, 255, 0.07);
+  border-left: 2px solid rgba(108, 99, 255, 0.5);
+  padding: 0.8rem 1rem;
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+}
+
+.post-card-insight-label {
+  font-family: var(--font-jetbrains-mono), monospace;
+  font-size: 0.68rem;
+  letter-spacing: 0.07em;
+  color: var(--accent);
+  text-transform: uppercase;
+  display: block;
+  margin-bottom: 0.45rem;
+}
+
+.post-card-insight p {
+  font-size: 0.82rem;
+  color: var(--text-dim);
+  line-height: 1.65;
+  font-style: italic;
+}
+
+.post-card-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--accent);
+  font-size: 0.83rem;
+  font-weight: 500;
+  margin-top: auto;
+  transition: gap 0.3s ease;
+}
+
+.post-card-link:hover { gap: 0.65rem; }
+
+.post-card-arrow {
+  display: inline-block;
+  transition: transform 0.3s ease;
+}
+
+.post-card-link:hover .post-card-arrow {
+  transform: translate(2px, -2px);
+}
+
+/* ---- Micro-accent shapes (absolutely positioned in card) ---- */
+.micro-accent {
+  position: absolute;
+  top: 1.6rem;
+  right: 1.6rem;
+  pointer-events: none;
+  z-index: 4;
+}
+
+/* calm — soft breathing orb */
+.micro-accent--calm {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(108, 99, 255, 0.45) 0%, transparent 70%);
+}
+
+/* pulse — expanding ring + solid dot */
+.micro-accent--pulse-ring {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(168, 85, 247, 0.65);
+  transform-origin: center;
+}
+
+.micro-accent--pulse-dot {
+  position: absolute;
+  top: calc(1.6rem + 5px);
+  right: calc(1.6rem + 5px);
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #a855f7;
+  z-index: 4;
+}
+
+/* float — rotating square drift */
+.micro-accent--float {
+  width: 22px;
+  height: 22px;
+  border-radius: 5px;
+  background: rgba(0, 212, 170, 0.18);
+  border: 1px solid rgba(0, 212, 170, 0.35);
+  transform-origin: center;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════ */
+/* ACCESSIBILITY & REDUCED MOTION                                              */
+/* ═══════════════════════════════════════════════════════════════════════════ */
+
+@media (prefers-reduced-motion: reduce) {
+  .aurora-orb             { animation: none !important; }
+  .micro-accent           { animation: none !important; }
+  .post-card::before      { animation: none !important; }
+  .cursor-orb             { display: none; }
+}
+
+/* ---- Showcase responsive ---- */
+@media (max-width: 768px) {
+  .showcase-grid          { grid-template-columns: 1fr; }
+  .cursor-orb             { display: none; }
+  .aurora-orb-1           { width: 350px; height: 350px; }
+  .aurora-orb-2, .aurora-orb-3 { display: none; }
 }
