@@ -8,6 +8,13 @@ const fadeUp = {
   visible: { opacity: 1, y: 0, transition: { duration: 0.7, ease: [0.16, 1, 0.3, 1] } }
 };
 
+function displayUrl(link) {
+  return link
+    .replace(/^https?:\/\/(www\.)?/, "")
+    .replace(/\/$/, "")
+    .split("/").slice(0, 2).join("/");
+}
+
 export default function Projects() {
   const { t } = useLanguage();
   const proj = t.projects;
@@ -26,7 +33,7 @@ export default function Projects() {
           <h2>{proj.title}</h2>
         </motion.div>
         {proj.items.map((p, i) => (
-          <ProjectCard key={i} project={p} index={i} viewDetails={proj.viewDetails} viewProject={proj.viewProject} />
+          <ProjectCard key={i} project={p} index={i} viewProject={proj.viewProject} />
         ))}
         <motion.div
           style={{ textAlign: "center", marginTop: "2rem" }}
@@ -51,13 +58,13 @@ export default function Projects() {
   );
 }
 
-function ProjectCard({ project, index, viewDetails, viewProject }) {
+function ProjectCard({ project, index, viewProject }) {
   const x = useMotionValue(0);
   const y = useMotionValue(0);
-  const rotateX = useTransform(y, [-100, 100], [5, -5]);
-  const rotateY = useTransform(x, [-100, 100], [-5, 5]);
-  const springX = useSpring(rotateX, { stiffness: 200, damping: 30 });
-  const springY = useSpring(rotateY, { stiffness: 200, damping: 30 });
+  const rotateX = useTransform(y, [-100, 100], [4, -4]);
+  const rotateY = useTransform(x, [-100, 100], [-4, 4]);
+  const springX = useSpring(rotateX, { stiffness: 180, damping: 28 });
+  const springY = useSpring(rotateY, { stiffness: 180, damping: 28 });
 
   function handleMouse(e) {
     const rect = e.currentTarget.getBoundingClientRect();
@@ -65,10 +72,9 @@ function ProjectCard({ project, index, viewDetails, viewProject }) {
     y.set(e.clientY - rect.top - rect.height / 2);
   }
 
-  function resetMouse() {
-    x.set(0);
-    y.set(0);
-  }
+  function resetMouse() { x.set(0); y.set(0); }
+
+  const url = displayUrl(project.link);
 
   return (
     <motion.div
@@ -78,31 +84,42 @@ function ProjectCard({ project, index, viewDetails, viewProject }) {
       viewport={{ once: true, amount: 0.15 }}
       transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1], delay: index * 0.1 }}
     >
+      {/* Browser window mockup */}
       <motion.div
         className="project-img-wrap"
         onMouseMove={handleMouse}
         onMouseLeave={resetMouse}
-        style={{
-          rotateX: springX,
-          rotateY: springY,
-          transformPerspective: 800,
-        }}
+        style={{ rotateX: springX, rotateY: springY, transformPerspective: 900 }}
         whileHover={{ scale: 1.02 }}
-        transition={{ type: "spring", stiffness: 300, damping: 20 }}
+        transition={{ type: "spring", stiffness: 280, damping: 22 }}
       >
-        <Image
-          src={project.img}
-          alt={`Screenshot of ${project.title} — ${project.desc.slice(0, 80)}`}
-          width={600}
-          sizes="(max-width: 768px) 100vw, 50vw"
-          priority={index === 0}
-          height={450}
-          style={{ objectFit: "cover", width: "100%", height: "100%" }}
-        />
-        <div className="project-img-overlay">
-          <span>{viewDetails}</span>
+        {/* Chrome bar */}
+        <div className="browser-chrome">
+          <div className="browser-dots">
+            <span className="browser-dot browser-dot--red" />
+            <span className="browser-dot browser-dot--yellow" />
+            <span className="browser-dot browser-dot--green" />
+          </div>
+          <div className="browser-url-bar">
+            <span className="browser-url-text">{url}</span>
+          </div>
+        </div>
+
+        {/* Screenshot */}
+        <div className="browser-screen">
+          <Image
+            src={project.img}
+            alt={project.title}
+            fill
+            sizes="(max-width: 768px) 100vw, 50vw"
+            priority={index === 0}
+            className="project-img"
+            style={{ objectFit: "cover", objectPosition: "top center" }}
+          />
         </div>
       </motion.div>
+
+      {/* Info */}
       <div className="project-info">
         <motion.h3
           initial={{ opacity: 0, x: -20 }}
@@ -114,7 +131,7 @@ function ProjectCard({ project, index, viewDetails, viewProject }) {
         </motion.h3>
         <p>{project.desc}</p>
         <div className="project-tags">
-          {project.tags.map((t, i) => (
+          {project.tags.map((tag, i) => (
             <motion.span
               className="project-tag"
               key={i}
@@ -124,7 +141,7 @@ function ProjectCard({ project, index, viewDetails, viewProject }) {
               transition={{ delay: 0.3 + i * 0.05 }}
               whileHover={{ scale: 1.1, borderColor: "var(--accent)" }}
             >
-              {t}
+              {tag}
             </motion.span>
           ))}
         </div>

@@ -1,24 +1,56 @@
 "use client";
-import { motion } from "framer-motion";
+import { motion, useMotionValue, useSpring, useTransform } from "framer-motion";
+import { useRef } from "react";
 import { useLanguage } from "@/i18n/LanguageContext";
-
-const sectionAnim = {
-  hidden: {},
-  visible: { transition: { staggerChildren: 0.1 } }
-};
-
-const cardAnim = {
-  hidden: { opacity: 0, x: -30 },
-  visible: {
-    opacity: 1, x: 0,
-    transition: { duration: 0.6, ease: [0.16, 1, 0.3, 1] }
-  }
-};
 
 const fadeUp = {
   hidden: { opacity: 0, y: 30 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.6 } }
+  visible: { opacity: 1, y: 0, transition: { duration: 0.6 } },
 };
+
+function ExpCard({ job, index }) {
+  const ref = useRef(null);
+  const nx = useMotionValue(0);
+  const ny = useMotionValue(0);
+  const springCfg = { stiffness: 150, damping: 25 };
+  const rotX = useSpring(useTransform(ny, [-0.5, 0.5], [3, -3]), springCfg);
+  const rotY = useSpring(useTransform(nx, [-0.5, 0.5], [-3, 3]), springCfg);
+
+  function onMouseMove(e) {
+    const r = ref.current.getBoundingClientRect();
+    nx.set((e.clientX - r.left) / r.width - 0.5);
+    ny.set((e.clientY - r.top) / r.height - 0.5);
+  }
+  function onMouseLeave() { nx.set(0); ny.set(0); }
+
+  return (
+    <motion.div
+      ref={ref}
+      className="exp-card-glass"
+      style={{ rotateX: rotX, rotateY: rotY, transformPerspective: 900 }}
+      onMouseMove={onMouseMove}
+      onMouseLeave={onMouseLeave}
+      initial={{ opacity: 0, y: 45, scale: 0.97 }}
+      whileInView={{ opacity: 1, y: 0, scale: 1 }}
+      viewport={{ once: true, amount: 0.15 }}
+      transition={{ duration: 0.75, ease: [0.16, 1, 0.3, 1], delay: index * 0.1 }}
+    >
+      <div className="exp-card-top">
+        <span className="mono exp-card-num">0{index + 1}</span>
+        <span className="exp-card-period">{job.period}</span>
+      </div>
+
+      <div className="exp-card-role">{job.role}</div>
+      <div className="exp-card-company">{job.company}</div>
+
+      <ul className="exp-card-tasks">
+        {job.tasks.map((task, j) => (
+          <li key={j}>{task}</li>
+        ))}
+      </ul>
+    </motion.div>
+  );
+}
 
 export default function Experience() {
   const { t } = useLanguage();
@@ -38,31 +70,11 @@ export default function Experience() {
           <h2>{exp.title}</h2>
         </motion.div>
 
-        <motion.div
-          className="exp-grid"
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, amount: 0.1 }}
-          variants={sectionAnim}
-        >
+        <div className="exp-cards-grid">
           {exp.jobs.map((job, i) => (
-            <motion.div
-              className="exp-card"
-              key={i}
-              variants={cardAnim}
-              whileHover={{ backgroundColor: "rgba(108, 99, 255, 0.05)" }}
-            >
-              <div>
-                <div className="exp-role">{job.role}</div>
-                <div className="exp-company">{job.company}</div>
-                <ul className="exp-tasks">
-                  {job.tasks.map((t, j) => <li key={j}>{t}</li>)}
-                </ul>
-              </div>
-              <span className="exp-period">{job.period}</span>
-            </motion.div>
+            <ExpCard key={i} job={job} index={i} />
           ))}
-        </motion.div>
+        </div>
       </div>
     </section>
   );

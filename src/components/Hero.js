@@ -62,6 +62,12 @@ export default function Hero() {
 
   return (
     <section className="hero" id="hero">
+      {/* CSS-animated aurora mesh — zero JS, breathing gradients */}
+      <div className="hero-aurora" aria-hidden="true">
+        <div className="aurora-orb aurora-orb-1" />
+        <div className="aurora-orb aurora-orb-2" />
+        <div className="aurora-orb aurora-orb-3" />
+      </div>
       <div className="wrap">
         <motion.div
           key={lang}
