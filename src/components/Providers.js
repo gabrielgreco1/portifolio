@@ -1,12 +1,14 @@
 "use client";
 import { LanguageProvider } from "@/i18n/LanguageContext";
-import CursorOrb from "@/components/CursorOrb";
+import CrawlerPet from "@/components/CrawlerPet";
+import LanguageToggle from "@/components/LanguageToggle";
 
 export default function Providers({ children }) {
   return (
     <LanguageProvider>
       {children}
-      <CursorOrb />
+      <LanguageToggle />
+      <CrawlerPet />
     </LanguageProvider>
   );
 }

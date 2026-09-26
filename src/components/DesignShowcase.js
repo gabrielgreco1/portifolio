@@ -139,7 +139,7 @@ function PostCard({ post, index }) {
             ease: [0.16, 1, 0.3, 1],
           }}
         >
-          <span className="post-card-insight-label">// insight</span>
+          <span className="post-card-insight-label">{"// insight"}</span>
           <p>{post.insight}</p>
         </motion.div>
 
