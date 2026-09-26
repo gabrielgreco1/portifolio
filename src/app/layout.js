@@ -10,8 +10,13 @@ export const metadata = {
   metadataBase: new URL("https://gabrielgreco.com"),
   applicationName: "Gabriel Greco",
   icons: {
-    icon: "/icon.svg",
-    shortcut: "/icon.svg",
+    icon: [
+      { url: "/favicon.ico?v=3", sizes: "64x64" },
+      { url: "/favicon-32x32.png?v=3", type: "image/png", sizes: "32x32" },
+      { url: "/icon.svg?v=3", type: "image/svg+xml", sizes: "any" },
+    ],
+    shortcut: "/favicon.ico?v=3",
+    apple: "/apple-touch-icon.png?v=3",
   },
   title: "Gabriel Greco — Data Engineer",
   description:
@@ -51,7 +56,12 @@ export const metadata = {
       "Large-scale crawling, data platforms, regulatory indices, and automation systems.",
     url: "https://gabrielgreco.com",
     siteName: "Gabriel Greco",
-    images: [{ url: "/og-image.jpg", width: 1200, height: 630 }],
+    images: [{
+      url: "/og-gabriel-card-v3.jpg",
+      width: 1200,
+      height: 630,
+      alt: "Gabriel Greco — Data Engineer portfolio",
+    }],
     type: "website",
     locale: "en_US",
   },
@@ -60,7 +70,7 @@ export const metadata = {
     title: "Gabriel Greco — Data Engineer",
     description:
       "Large-scale crawling, data platforms, regulatory indices, and automation systems.",
-    images: ["/og-image.jpg"],
+    images: ["/og-gabriel-card-v3.jpg"],
   },
 };
 
