@@ -1,24 +1,9 @@
-import { Space_Grotesk, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import Providers from "@/components/Providers";
 import { Analytics } from "@vercel/analytics/react";
 
-const spaceGrotesk = Space_Grotesk({
-  variable: "--font-space-grotesk",
-  subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700"],
-  display: "swap",
-});
-
-const jetbrainsMono = JetBrains_Mono({
-  variable: "--font-jetbrains-mono",
-  subsets: ["latin"],
-  weight: ["400", "500"],
-  display: "swap",
-});
-
 export const viewport = {
-  themeColor: "#6c63ff",
+  themeColor: "#f7f6f2",
 };
 
 export const metadata = {
@@ -28,18 +13,31 @@ export const metadata = {
     icon: "/icon.svg",
     shortcut: "/icon.svg",
   },
-  title: "Gabriel Greco — Software Engineer & AI Automation Specialist",
+  title: "Gabriel Greco — Data Engineer",
   description:
-    "Software engineer specialized in intelligent automation, AI pipelines, data extraction, and LLM integrations — turning raw data into operational intelligence.",
+    "Data engineer building large-scale crawlers, data platforms, regulatory indices, and automation systems.",
   keywords: [
     "Gabriel Greco",
+    "Data Engineer",
     "Software Engineer",
-    "AI Automation",
+    "Web Crawling",
+    "Scrapy Cloud",
+    "Zyte API",
+    "Prefect",
+    "Data Pipelines",
+    "AWS",
+    "ECS Fargate",
+    "Terraform",
+    "Amazon S3",
+    "PostgreSQL",
+    "Neo4j",
     "RAG",
     "GraphRAG",
     "LLM",
     "Python",
     "data extraction",
+    "data visualization",
+    "statistical normalization",
     "automation specialist",
     "portfolio",
   ],
@@ -48,20 +46,20 @@ export const metadata = {
     canonical: "/",
   },
   openGraph: {
-    title: "Gabriel Greco — Software Engineer & AI Automation Specialist",
+    title: "Gabriel Greco — Data Engineer",
     description:
-      "Software engineer specialized in intelligent automation, AI pipelines, data extraction, and LLM integrations — turning raw data into operational intelligence.",
+      "Large-scale crawling, data platforms, regulatory indices, and automation systems.",
     url: "https://gabrielgreco.com",
     siteName: "Gabriel Greco",
     images: [{ url: "/og-image.jpg", width: 1200, height: 630 }],
     type: "website",
-    locale: "pt_BR",
+    locale: "en_US",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Gabriel Greco — Software Engineer & AI Automation Specialist",
+    title: "Gabriel Greco — Data Engineer",
     description:
-      "Software engineer specialized in intelligent automation, AI pipelines, data extraction, and LLM integrations — turning raw data into operational intelligence.",
+      "Large-scale crawling, data platforms, regulatory indices, and automation systems.",
     images: ["/og-image.jpg"],
   },
 };
@@ -75,15 +73,15 @@ const jsonLd = {
       name: "Gabriel Greco",
       url: "https://gabrielgreco.com",
       description:
-        "Portfolio of Gabriel Greco, Software Engineer specialized in AI automation, RAG pipelines, and LLM integrations.",
+        "Portfolio of Gabriel Greco, a data engineer building large-scale crawlers, regulatory indices, and automation systems.",
     },
     {
       "@type": "ProfilePage",
       "@id": "https://gabrielgreco.com/#webpage",
       url: "https://gabrielgreco.com",
-      name: "Gabriel Greco — Software Engineer & AI Automation Specialist",
+      name: "Gabriel Greco — Data Engineer",
       description:
-        "Software engineer specialized in intelligent automation, AI pipelines, data extraction, and LLM integrations — turning raw data into operational intelligence.",
+        "Data engineer building large-scale crawlers, data platforms, regulatory indices, and automation systems.",
       isPartOf: { "@id": "https://gabrielgreco.com/#website" },
       about: { "@id": "https://gabrielgreco.com/#person" },
       mainEntity: { "@id": "https://gabrielgreco.com/#person" },
@@ -93,9 +91,9 @@ const jsonLd = {
       "@id": "https://gabrielgreco.com/#person",
       name: "Gabriel Greco",
       url: "https://gabrielgreco.com",
-      jobTitle: "Software Engineer",
+      jobTitle: "Data Engineer",
       description:
-        "Software engineer specialized in intelligent automation, AI pipelines, data extraction, and LLM integrations — turning raw data into operational intelligence.",
+        "Data engineer building large-scale crawlers, data platforms, regulatory indices, and automation systems.",
       email: "gabrielargreco@gmail.com",
       sameAs: [
         "https://www.linkedin.com/in/gabriel-greco-365b541a3",
@@ -104,11 +102,23 @@ const jsonLd = {
       ],
       knowsAbout: [
         "Software Engineering",
-        "AI Automation",
+        "Data Engineering",
+        "Web Crawling",
+        "Scrapy Cloud",
+        "Zyte API",
+        "Prefect",
+        "AWS ECS Fargate",
+        "Terraform",
+        "Amazon S3",
+        "PostgreSQL",
+        "Neo4j",
         "RAG",
         "GraphRAG",
         "LLM Integrations",
         "Data Extraction",
+        "Anti-bot Systems",
+        "Data Visualization",
+        "Statistical Normalization",
         "Python",
         "Web Scraping",
         "RPA",
@@ -126,8 +136,8 @@ const jsonLd = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="pt-BR">
-      <body className={`${spaceGrotesk.variable} ${jetbrainsMono.variable}`}>
+    <html lang="en">
+      <body>
         <Providers>{children}</Providers>
         <Analytics />
         <script

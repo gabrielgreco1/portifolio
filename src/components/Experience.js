@@ -1,54 +1,20 @@
 "use client";
-import { motion, useMotionValue, useSpring, useTransform } from "framer-motion";
-import { useRef } from "react";
+import Image from "next/image";
 import { useLanguage } from "@/i18n/LanguageContext";
 
-const fadeUp = {
-  hidden: { opacity: 0, y: 30 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.6 } },
-};
-
-function ExpCard({ job, index }) {
-  const ref = useRef(null);
-  const nx = useMotionValue(0);
-  const ny = useMotionValue(0);
-  const springCfg = { stiffness: 150, damping: 25 };
-  const rotX = useSpring(useTransform(ny, [-0.5, 0.5], [3, -3]), springCfg);
-  const rotY = useSpring(useTransform(nx, [-0.5, 0.5], [-3, 3]), springCfg);
-
-  function onMouseMove(e) {
-    const r = ref.current.getBoundingClientRect();
-    nx.set((e.clientX - r.left) / r.width - 0.5);
-    ny.set((e.clientY - r.top) / r.height - 0.5);
-  }
-  function onMouseLeave() { nx.set(0); ny.set(0); }
-
+function LinkedInIcon() {
   return (
-    <motion.div
-      ref={ref}
-      className="exp-card-glass"
-      style={{ rotateX: rotX, rotateY: rotY, transformPerspective: 900 }}
-      onMouseMove={onMouseMove}
-      onMouseLeave={onMouseLeave}
-      initial={{ opacity: 0, y: 45, scale: 0.97 }}
-      whileInView={{ opacity: 1, y: 0, scale: 1 }}
-      viewport={{ once: true, amount: 0.15 }}
-      transition={{ duration: 0.75, ease: [0.16, 1, 0.3, 1], delay: index * 0.1 }}
-    >
-      <div className="exp-card-top">
-        <span className="mono exp-card-num">0{index + 1}</span>
-        <span className="exp-card-period">{job.period}</span>
-      </div>
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path fill="currentColor" d="M5.27 3.1A2.18 2.18 0 1 1 .9 3.1a2.18 2.18 0 0 1 4.37 0ZM1.28 7.1h3.98V23H1.28V7.1Zm6.55 0h3.82v2.17h.05c.53-1.01 1.83-2.08 3.77-2.08 4.03 0 4.78 2.65 4.78 6.1V23h-3.98v-8.61c0-2.05-.04-4.7-2.86-4.7-2.87 0-3.31 2.24-3.31 4.55V23H7.83V7.1Z" />
+    </svg>
+  );
+}
 
-      <div className="exp-card-role">{job.role}</div>
-      <div className="exp-card-company">{job.company}</div>
-
-      <ul className="exp-card-tasks">
-        {job.tasks.map((task, j) => (
-          <li key={j}>{task}</li>
-        ))}
-      </ul>
-    </motion.div>
+function CompanyLogo({ company }) {
+  return (
+    <a className={`company-logo company-logo--${company.logoClass}`} href={company.link} target="_blank" rel="noopener noreferrer" aria-label={`${company.company} on LinkedIn`}>
+      <Image src={company.logo} alt={`${company.company} logo`} width={160} height={72} />
+    </a>
   );
 }
 
@@ -57,22 +23,66 @@ export default function Experience() {
   const exp = t.experience;
 
   return (
-    <section id="experience">
+    <section id="experience" className="document-section">
       <div className="wrap">
-        <motion.div
-          className="exp-header"
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, amount: 0.3 }}
-          variants={fadeUp}
-        >
+        <header className="section-header">
           <p className="mono">{exp.tag}</p>
           <h2>{exp.title}</h2>
-        </motion.div>
+          <p>{exp.intro}</p>
+        </header>
 
-        <div className="exp-cards-grid">
-          {exp.jobs.map((job, i) => (
-            <ExpCard key={i} job={job} index={i} />
+        <div className="experience-list">
+          {exp.companies.map((company, index) => (
+            <article className="experience-entry" key={company.company}>
+              <header className="company-header">
+                <CompanyLogo company={company} />
+                <div className="company-heading">
+                  <span className="entry-index mono">{String(index + 1).padStart(2, "0")}</span>
+                  <h3>{company.company}</h3>
+                  <p>{company.role}</p>
+                </div>
+                <div className="company-meta">
+                  <p>{company.period}</p>
+                  <span>{company.location}</span>
+                  <a href={company.link} target="_blank" rel="noopener noreferrer" aria-label={`${company.company} on LinkedIn`}>
+                    <LinkedInIcon />
+                  </a>
+                </div>
+              </header>
+
+              <div className="experience-body">
+                <p className="entry-summary">{company.summary}</p>
+                <div className="entry-metrics">
+                  {company.metrics.map((metric) => <span key={metric}>{metric}</span>)}
+                </div>
+
+                <div className="experience-chapters">
+                  {company.chapters.map((chapter, chapterIndex) => (
+                    <section className={`experience-chapter ${chapter.logo ? "experience-chapter--branded" : ""}`} key={`${company.company}-${chapter.label}`}>
+                      <div className="chapter-label-row">
+                        <span className="chapter-number mono">{index + 1}.{chapterIndex + 1}</span>
+                        <p className="mono">{chapter.label}</p>
+                        {chapter.period && <span className="chapter-period">{chapter.period}</span>}
+                      </div>
+                      <div className="chapter-title-row">
+                        <h4>{chapter.title}</h4>
+                        {chapter.logo && (
+                          <span className="chapter-logo-frame">
+                            <Image src={chapter.logo} alt="Red Tape Index" width={170} height={45} className="chapter-logo" />
+                          </span>
+                        )}
+                      </div>
+                      {chapter.text && <p className="chapter-text">{chapter.text}</p>}
+                      <ul className="entry-tasks">
+                        {chapter.tasks.map((task) => <li key={task}>{task}</li>)}
+                      </ul>
+                    </section>
+                  ))}
+                </div>
+
+                <p className="entry-footnote">{company.footnote}</p>
+              </div>
+            </article>
           ))}
         </div>
       </div>

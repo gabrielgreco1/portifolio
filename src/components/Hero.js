@@ -1,123 +1,31 @@
 "use client";
-import { motion } from "framer-motion";
 import { useLanguage } from "@/i18n/LanguageContext";
 
-const container = {
-  hidden: {},
-  visible: {
-    transition: { staggerChildren: 0.15, delayChildren: 0.3 }
-  }
-};
-
-const fadeUp = {
-  hidden: { opacity: 0, y: 50 },
-  visible: {
-    opacity: 1, y: 0,
-    transition: { duration: 0.8, ease: [0.16, 1, 0.3, 1] }
-  }
-};
-
-const letterPull = {
-  hidden: { opacity: 0, y: 80 },
-  visible: {
-    opacity: 1, y: 0,
-    transition: { duration: 0.6, ease: [0.16, 1, 0.3, 1] }
-  }
-};
-
-function AnimatedHeading({ text, accentWords }) {
-  const words = text.split(" ");
-  return (
-    <motion.h1
-      className="hero-h1"
-      style={{ overflow: "hidden" }}
-      variants={container}
-      initial="hidden"
-      animate="visible"
-    >
-      {words.map((word, i) => {
-        const isAccent = accentWords.includes(word);
-        return (
-          <span key={i} style={{ display: "inline-block", marginRight: "0.2em", overflow: "hidden" }}>
-            <motion.span
-              variants={letterPull}
-              style={{
-                display: "inline-block",
-                color: isAccent ? "var(--accent)" : "inherit",
-                fontStyle: "normal"
-              }}
-            >
-              {word}
-            </motion.span>
-          </span>
-        );
-      })}
-    </motion.h1>
-  );
-}
-
 export default function Hero() {
-  const { lang, t } = useLanguage();
+  const { t } = useLanguage();
   const h = t.hero;
 
   return (
     <section className="hero" id="hero">
-      {/* CSS-animated aurora mesh — zero JS, breathing gradients */}
-      <div className="hero-aurora" aria-hidden="true">
-        <div className="aurora-orb aurora-orb-1" />
-        <div className="aurora-orb aurora-orb-2" />
-        <div className="aurora-orb aurora-orb-3" />
-      </div>
       <div className="wrap">
-        <motion.div
-          key={lang}
-          className="hero-content"
-          variants={container}
-          initial="hidden"
-          animate="visible"
-        >
-          <motion.p className="mono hero-greeting" variants={fadeUp}>
-            {h.greeting}
-          </motion.p>
+        <div className="hero-kicker mono">{h.greeting}</div>
+        <h1>{h.heading}</h1>
+        <p className="hero-aside">{h.aside}</p>
+        <p className="hero-desc">{h.desc}</p>
+        <div className="hero-ctas">
+          <a href="#experience" className="text-link">{h.cta} ↓</a>
+          <a href="https://github.com/gabrielgreco1" target="_blank" rel="noopener noreferrer" className="text-link secondary">{h.secondaryCta} ↗</a>
+        </div>
 
-          <AnimatedHeading text={h.heading} accentWords={h.accentWords} />
-
-          <motion.p className="hero-desc" variants={fadeUp}>
-            {h.desc}
-          </motion.p>
-
-          <motion.div className="hero-ctas" variants={fadeUp}>
-            <motion.a
-              href="#projects"
-              className="btn-fill"
-              whileHover={{ scale: 1.05, y: -2 }}
-              whileTap={{ scale: 0.97 }}
-            >
-              {h.cta}
-            </motion.a>
-            <motion.a
-              href="https://github.com/gabrielgreco1"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="btn-ghost"
-              whileHover={{ scale: 1.05, y: -2 }}
-              whileTap={{ scale: 0.97 }}
-            >
-              GitHub →
-            </motion.a>
-          </motion.div>
-
-          <motion.div className="hero-stats" variants={fadeUp}>
-            {h.stats.map((s, i) => (
-              <div className="hero-stat" key={i}>
-                <h3 className="float" style={{ animationDelay: `${i * 0.8}s` }}>
-                  {s.n}
-                </h3>
-                <p>{s.label}</p>
-              </div>
-            ))}
-          </motion.div>
-        </motion.div>
+        <div className="hero-stats" aria-label="Números em contexto">
+          {h.stats.map((stat) => (
+            <div className="hero-stat" key={stat.label}>
+              <strong>{stat.n}</strong>
+              <span>{stat.label}</span>
+            </div>
+          ))}
+        </div>
+        <p className="hero-note">↳ {h.note}</p>
       </div>
     </section>
   );
