@@ -1544,3 +1544,17 @@ main {
     display: none;
   }
 }
+
+/* Service descriptions remain readable in the initial HTML in both languages. */
+.services-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 2rem;
+  margin-bottom: 2rem;
+}
+.service-entry { border-top: 1px solid var(--line-dark); padding-top: 1.5rem; }
+.service-entry h3 { font: 400 1.5rem Georgia, "Times New Roman", serif; margin-bottom: 0.8rem; }
+.service-entry p { color: var(--muted); line-height: 1.8; }
+@media (max-width: 640px) {
+  .services-list { grid-template-columns: 1fr; }
+}

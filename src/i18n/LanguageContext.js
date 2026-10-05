@@ -1,20 +1,12 @@
 "use client";
-import { createContext, useContext, useState, useCallback } from "react";
+import { createContext, useContext } from "react";
 import { translations } from "./translations";
 
 const LanguageContext = createContext();
 
-export function LanguageProvider({ children }) {
-  const [lang, setLang] = useState("en");
-
-  const toggle = useCallback(() => {
-    setLang((prev) => (prev === "pt" ? "en" : "pt"));
-  }, []);
-
-  const t = translations[lang];
-
+export function LanguageProvider({ children, lang = "en" }) {
   return (
-    <LanguageContext.Provider value={{ lang, toggle, t }}>
+    <LanguageContext.Provider value={{ lang, t: translations[lang] }}>
       {children}
     </LanguageContext.Provider>
   );

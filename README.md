@@ -24,7 +24,7 @@ This is my personal portfolio repository. It showcases my trajectory, skills, an
 - **Core**: Next.js & React
 - **Animations**: Framer Motion
 - **Styling**: Vanilla CSS (Custom Glassmorphism & Modern UI)
-- **i18n**: Custom context-based translation system (PT/EN)
+- **i18n**: Static English (`/`) and Portuguese (`/pt`) pages with localized metadata
 
 ## 📌 Featured Projects
 
@@ -36,10 +36,14 @@ This is my personal portfolio repository. It showcases my trajectory, skills, an
 
 ## 📫 Let's Connect
 
-- **LinkedIn**: [linkedin.com/in/gabrielgreco](https://linkedin.com/in/gabrielgreco)
+- **LinkedIn**: [linkedin.com/in/gabrielgreco](https://linkedin.com/in/gabriel-greco-365b541a3)
 - **GitHub**: [github.com/gabrielgreco1](https://github.com/gabrielgreco1)
 - **Email**: [gabrielargreco@gmail.com](mailto:gabrielargreco@gmail.com)
 
 <p align="center">
   <em>Made with obsessão por detalhe.</em>
 </p>
+
+## SEO
+
+See [the SEO implementation notes](docs/seo.md) for article scope, localization, validation commands and post-deployment steps.

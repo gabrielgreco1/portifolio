@@ -1,10 +1,8 @@
+import { languages } from "@/lib/seo";
+
 export default function sitemap() {
-  return [
-    {
-      url: "https://gabrielgreco.com",
-      lastModified: new Date(),
-      changeFrequency: "monthly",
-      priority: 1,
-    },
-  ];
+  return [languages.en, languages["pt-BR"]].map((url) => ({
+    url,
+    alternates: { languages },
+  }));
 }
