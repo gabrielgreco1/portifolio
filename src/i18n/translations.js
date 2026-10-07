@@ -6,6 +6,7 @@ export const translations = {
         { label: "Experience", note: "what survived production", href: "experience" },
         { label: "Projects", note: "things built after hours", href: "projects" },
         { label: "Toolbox", note: "the useful nouns", href: "skills" },
+        { label: "Services", note: "from source to product", href: "services" },
         { label: "Contact", note: "send the weird problem", href: "contact" },
       ],
     },
@@ -17,10 +18,10 @@ export const translations = {
       cta: "skip to the work",
       secondaryCta: "see the code",
       stats: [
-        { n: "30B+", label: "production requests operated in one year" },
-        { n: "2B+", label: "requests run across RTI production pipelines" },
-        { n: "300M+", label: "regulatory data points structured" },
-        { n: "4,500h", label: "manual work automated every month at Lumma" },
+        { n: "30B+", label: "production requests operated in one year", href: "#experience-zyte", context: "Zyte · production context" },
+        { n: "2B+", label: "requests run across RTI production pipelines", href: "#experience-labrynth-2", context: "RTI · acquisition and pipelines" },
+        { n: "300M+", label: "regulatory data points structured", href: "#experience-labrynth-2", context: "RTI · structured datasets" },
+        { n: "4,500h", label: "manual work automated every month at Lumma", href: "#experience-lumma-2", context: "Lumma · process automation" },
       ],
       note: "Numbers without context are decoration. The context is right below.",
     },
@@ -30,7 +31,7 @@ export const translations = {
       intro: "Not a list of responsibilities. The systems, scale, decisions, and failure modes I actually owned.",
       companies: [
         {
-          company: "Labrynth AI",
+          id: "labrynth", company: "Labrynth AI",
           role: "Data Engineer · Data Acquisition & Ingestion",
           period: "Feb 2026 — present",
           location: "California, USA · remote",
@@ -68,7 +69,7 @@ export const translations = {
           footnote: "The crawler sleeps. That is when the source changes schema.",
         },
         {
-          company: "Zyte",
+          id: "zyte", company: "Zyte",
           role: "Software Engineer",
           period: "Feb 2025 — Feb 2026",
           location: "Ireland · remote",
@@ -103,7 +104,7 @@ export const translations = {
           footnote: "Valid HTML with empty data is still broken.",
         },
         {
-          company: "Lumma Despachante",
+          id: "lumma", company: "Lumma Despachante",
           role: "Development Coordinator → Software Engineer",
           period: "Sep 2023 — Feb 2025",
           location: "Brazil · remote",
@@ -139,7 +140,7 @@ export const translations = {
           footnote: "Good automation is the one nobody has to remember to run.",
         },
         {
-          company: "Grupo MOVE3",
+          id: "move3", company: "Grupo MOVE3",
           role: "System Analyst",
           period: "Sep 2021 — Sep 2023",
           location: "Brazil · on site",
@@ -187,7 +188,7 @@ export const translations = {
       ],
     },
     contact: {
-      tag: "04 / contact",
+      tag: "05 / contact",
       title: "Got a weird data problem?",
       desc: "Even better if it involves an unstable public source, a hostile PDF, or enough scale for the obvious solution to stop working.",
       email: "send an email",
@@ -213,6 +214,7 @@ export const translations = {
         { label: "Experiência", note: "o que sobreviveu à produção", href: "experience" },
         { label: "Projetos", note: "coisas feitas fora do expediente", href: "projects" },
         { label: "Ferramentas", note: "os substantivos úteis", href: "skills" },
+        { label: "Serviços", note: "da fonte ao produto", href: "services" },
         { label: "Contato", note: "mande o problema estranho", href: "contact" },
       ],
     },
@@ -224,10 +226,10 @@ export const translations = {
       cta: "ir direto ao trabalho",
       secondaryCta: "ver o código",
       stats: [
-        { n: "30B+", label: "requisições de produção operadas em um ano" },
-        { n: "2B+", label: "requisições executadas nos pipelines de produção do RTI" },
-        { n: "300M+", label: "pontos de dados regulatórios estruturados" },
-        { n: "4.500h", label: "trabalho manual automatizado todo mês na Lumma" },
+        { n: "30B+", label: "requisições de produção operadas em um ano", href: "#experience-zyte", context: "Zyte · contexto de produção" },
+        { n: "2B+", label: "requisições executadas nos pipelines de produção do RTI", href: "#experience-labrynth-2", context: "RTI · aquisição e pipelines" },
+        { n: "300M+", label: "pontos de dados regulatórios estruturados", href: "#experience-labrynth-2", context: "RTI · dados estruturados" },
+        { n: "4.500h", label: "trabalho manual automatizado todo mês na Lumma", href: "#experience-lumma-2", context: "Lumma · automação de processos" },
       ],
       note: "Números sem contexto são decoração. O contexto está logo abaixo.",
     },
@@ -237,7 +239,7 @@ export const translations = {
       intro: "Não é lista de responsabilidades. São os sistemas, a escala, as decisões e os modos de falha que realmente passaram por mim.",
       companies: [
         {
-          company: "Labrynth AI", role: "Data Engineer · Data Acquisition & Ingestion", period: "fev 2026 — atual", location: "Califórnia, EUA · remoto", logo: "/companies/labrynth.jpg", logoClass: "labrynth", link: "https://www.linkedin.com/company/labrynth",
+          id: "labrynth", company: "Labrynth AI", role: "Data Engineer · Data Acquisition & Ingestion", period: "fev 2026 — atual", location: "Califórnia, EUA · remoto", logo: "/companies/labrynth.jpg", logoClass: "labrynth", link: "https://www.linkedin.com/company/labrynth",
           summary: "Construo os dois lados da inteligência regulatória: a ingestão que transforma documentos em conhecimento estruturado e os produtos de dados do RTI que convertem evidência pública em índices defensáveis.",
           metrics: ["2B+ requests no RTI", "300M+ pontos estruturados", "dados · cloud · produto"],
           chapters: [
@@ -246,7 +248,7 @@ export const translations = {
           ], footnote: "O crawler dorme. É quando a fonte muda de schema.",
         },
         {
-          company: "Zyte", role: "Software Engineer", period: "fev 2025 — fev 2026", location: "Irlanda · remoto", logo: "/companies/zyte.jpg", logoClass: "zyte", link: "https://www.linkedin.com/company/zytedata/",
+          id: "zyte", company: "Zyte", role: "Software Engineer", period: "fev 2025 — fev 2026", location: "Irlanda · remoto", logo: "/companies/zyte.jpg", logoClass: "zyte", link: "https://www.linkedin.com/company/zytedata/",
           summary: "Engenharia de web data em contato direto com clientes: diagnosticar, corrigir e operar crawlers de produção que entregavam bilhões de registros a partir de sites construídos para bloqueá-los.",
           metrics: ["30B+ requests/ano", "até 2B requests/mês", "Scrapy Cloud · entrega S3"],
           chapters: [
@@ -255,7 +257,7 @@ export const translations = {
           ], footnote: "HTML válido com dado vazio continua quebrado.",
         },
         {
-          company: "Lumma Despachante", role: "Development Coordinator → Software Engineer", period: "set 2023 — fev 2025", location: "Brasil · remoto", logo: "/companies/lumma.jpg", logoClass: "lumma", link: "https://www.linkedin.com/company/lumma-despachante",
+          id: "lumma", company: "Lumma Despachante", role: "Development Coordinator → Software Engineer", period: "set 2023 — fev 2025", location: "Brasil · remoto", logo: "/companies/lumma.jpg", logoClass: "lumma", link: "https://www.linkedin.com/company/lumma-despachante",
           summary: "Entrei como engenheiro construindo a plataforma de automação e depois assumi coordenação sem me afastar da arquitetura ou do código.",
           metrics: ["4.500 h/mês removidas", "500K requests/dia", "−50% custo de automação"],
           chapters: [
@@ -264,7 +266,7 @@ export const translations = {
           ], footnote: "Automação boa é a que ninguém precisa lembrar de rodar.",
         },
         {
-          company: "Grupo MOVE3", role: "System Analyst", period: "set 2021 — set 2023", location: "Brasil · presencial", logo: "/companies/move3.jpg", logoClass: "move3", link: "https://www.linkedin.com/company/grupomove3sequoia",
+          id: "move3", company: "Grupo MOVE3", role: "System Analyst", period: "set 2021 — set 2023", location: "Brasil · presencial", logo: "/companies/move3.jpg", logoClass: "move3", link: "https://www.linkedin.com/company/grupomove3sequoia",
           summary: "Onde automação deixou de ser script e virou produto interno com operadores, dashboards e impacto mensurável no tempo de ciclo.",
           metrics: ["−70% tempo de processo", "500+ horas/ano poupadas", "Selenium · Puppeteer"],
           chapters: [{ label: "Automação & inteligência operacional", title: "Deixando os robôs visíveis para quem dependia deles", tasks: ["Automação de rotinas repetitivas com Selenium e Puppeteer, poupando mais de 500 horas de trabalho por ano.", "Dashboards em Power BI e GoodData, além de sistemas de reporting em NestJS e React.", "Redução de 70% no tempo de processamento e feedback operacional mais rápido e orientado a dados."] }],
@@ -283,7 +285,7 @@ export const translations = {
       { title: "Modelar", items: ["PostgreSQL", "Supabase", "Neo4j", "Polars", "Pandas", "bronze/silver/gold", "GraphRAG", "normalização estatística"] },
       { title: "Entregar", items: ["Django", "FastAPI", "Node.js", "NestJS", "Next.js", "React", "AWS Cognito", "Logfire", "CI/CD"] },
     ] },
-    contact: { tag: "04 / contato", title: "Tem um problema de dados estranho?", desc: "Melhor ainda se envolver uma fonte pública instável, um PDF hostil ou escala suficiente para a solução óbvia parar de funcionar.", email: "mandar e-mail", linkedin: "ver LinkedIn" },
+    contact: { tag: "05 / contato", title: "Tem um problema de dados estranho?", desc: "Melhor ainda se envolver uma fonte pública instável, um PDF hostil ou escala suficiente para a solução óbvia parar de funcionar.", email: "mandar e-mail", linkedin: "ver LinkedIn" },
     pet: { label: "Crawler de bolso. Ele muda quando você rola.", messages: ["iniciando. a web parece bagunçada.", "2B de requests depois: ainda crawling.", "achei os projetos paralelos.", "indexando os substantivos úteis.", "pipeline concluído. sua vez."] },
     footer: "Este site foi gerado por IA. A experiência não.",
   },

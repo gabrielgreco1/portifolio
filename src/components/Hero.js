@@ -2,7 +2,7 @@
 import { useLanguage } from "@/i18n/LanguageContext";
 
 export default function Hero() {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const h = t.hero;
 
   return (
@@ -17,11 +17,12 @@ export default function Hero() {
           <a href="https://github.com/gabrielgreco1" target="_blank" rel="noopener noreferrer" className="text-link secondary">{h.secondaryCta} ↗</a>
         </div>
 
-        <div className="hero-stats" aria-label="Números em contexto">
+        <div className="hero-stats" aria-label={lang === "pt" ? "Números em contexto" : "Numbers in context"}>
           {h.stats.map((stat) => (
             <div className="hero-stat" key={stat.label}>
               <strong>{stat.n}</strong>
               <span>{stat.label}</span>
+              <a className="stat-context" href={stat.href}>{stat.context} ↗</a>
             </div>
           ))}
         </div>
