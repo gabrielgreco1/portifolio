@@ -2,11 +2,13 @@
 import Image from "next/image";
 import { useEffect, useState } from "react";
 import { useLanguage } from "@/i18n/LanguageContext";
+import { useCrawler } from "@/components/crawler/CrawlerExperience";
 
 const SECTIONS = ["hero", "experience", "projects", "skills", "contact"];
 
 export default function CrawlerPet() {
   const { t } = useLanguage();
+  const { active } = useCrawler();
   const [stage, setStage] = useState(0);
   const [clicked, setClicked] = useState(0);
 
@@ -41,6 +43,7 @@ export default function CrawlerPet() {
 
   const messageIndex = (stage + clicked) % t.pet.messages.length;
 
+  if (active) return null;
   return (
     <button className={`crawler-pet crawler-pet--${stage}`} onClick={diagnose} aria-label={t.pet.label}>
       <Image src="/crawler-pet.png" width={148} height={155} alt="" priority />

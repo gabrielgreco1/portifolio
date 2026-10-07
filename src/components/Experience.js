@@ -13,7 +13,7 @@ function LinkedInIcon() {
 function CompanyLogo({ company }) {
   return (
     <a className={`company-logo company-logo--${company.logoClass}`} href={company.link} target="_blank" rel="noopener noreferrer" aria-label={`${company.company} on LinkedIn`}>
-      <Image src={company.logo} alt={`${company.company} logo`} width={160} height={72} />
+      <Image src={company.logo} alt={`${company.company} logo`} width={160} height={72} id={`crawl-${company.id}-logo`} data-crawl-id={`${company.id}-logo`} data-crawl-kind="image" data-crawl-source={company.logo} />
     </a>
   );
 }
@@ -33,7 +33,7 @@ export default function Experience() {
 
         <div className="experience-list">
           {exp.companies.map((company, index) => (
-            <article id={`experience-${company.id}`} className="experience-entry" key={company.company}>
+            <article id={`experience-${company.id}`} className="experience-entry" data-crawl-record={`experience:${company.id}`} key={company.company}>
               <header className="company-header">
                 <CompanyLogo company={company} />
                 <div className="company-heading">
@@ -51,7 +51,7 @@ export default function Experience() {
               </header>
 
               <div className="experience-body">
-                <p className="entry-summary">{company.summary}</p>
+                <p className="entry-summary" id={`crawl-${company.id}-summary`} data-crawl-id={`${company.id}-summary`} data-crawl-kind="text" data-crawl-field="description">{company.summary}</p>
                 <div className="entry-metrics">
                   {company.metrics.map((metric) => <span key={metric}>{metric}</span>)}
                 </div>
@@ -80,7 +80,7 @@ export default function Experience() {
                   ))}
                 </div>
 
-                <p className="entry-footnote">{company.footnote}</p>
+                <p className="entry-footnote" id={`crawl-${company.id}-quote`} data-crawl-id={`${company.id}-quote`} data-crawl-kind="quote">{company.footnote}</p>
               </div>
             </article>
           ))}

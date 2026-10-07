@@ -1,5 +1,6 @@
 "use client";
 import { useLanguage } from "@/i18n/LanguageContext";
+import { ExtractionInvite } from "@/components/crawler/CrawlerExperience";
 
 export default function Hero() {
   const { t, lang } = useLanguage();
@@ -12,6 +13,7 @@ export default function Hero() {
         <h1>{h.heading}</h1>
         <p className="hero-aside">{h.aside}</p>
         <p className="hero-desc">{h.desc}</p>
+        <ExtractionInvite />
         <div className="hero-ctas">
           <a href="#experience" className="text-link">{h.cta} ↓</a>
           <a href="https://github.com/gabrielgreco1" target="_blank" rel="noopener noreferrer" className="text-link secondary">{h.secondaryCta} ↗</a>

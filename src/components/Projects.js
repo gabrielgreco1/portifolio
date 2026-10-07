@@ -16,9 +16,9 @@ export default function Projects() {
 
         <div className="project-table">
           {projects.items.map((project, index) => (
-            <a className="project-row" href={project.link} target="_blank" rel="noopener noreferrer" key={project.title}>
+            <a className="project-row" href={project.link} target="_blank" rel="noopener noreferrer" data-crawl-record={`project:${index}`} key={project.title}>
               <span className="project-number mono">0{index + 1}</span>
-              <div className="project-copy">
+              <div className="project-copy" id={`crawl-project-${index}`} data-crawl-id={`project-${index}`} data-crawl-kind="project">
                 <div className="project-title-line">
                   <h3>{project.title}</h3>
                   <span className="project-type mono">{project.type}</span>
