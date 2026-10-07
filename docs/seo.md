@@ -52,3 +52,39 @@ Fontes oficiais:
 - https://support.google.com/business/answer/13763036
 - https://developers.google.com/search/docs/fundamentals/seo-starter-guide
 - https://developers.google.com/search/docs/specialty/international/localized-versions
+
+## Revisão das orientações de IA — 6 de outubro de 2026
+
+### Atualizações oficiais consultadas
+
+- Em **1º de outubro de 2026**, o Google atualizou a orientação sobre conteúdo com IA, reforçando revisão factual humana antes da publicação, inclusive de títulos, descrições, dados estruturados e texto alternativo. O changelog apresenta isso como alinhamento da documentação, não como anúncio de uma penalidade automática para sites feitos com IA: https://developers.google.com/search/updates e https://developers.google.com/search/docs/fundamentals/using-gen-ai-content
+- O guia para recursos generativos, publicado em **15 de maio de 2026** e atualizado em **10 de julho**, mantém SEO tradicional como fundamento e destaca conteúdo de experiência própria: https://developers.google.com/search/docs/fundamentals/ai-optimization-guide
+- Conteúdo útil deve ter autoria clara, sem credenciais ou perfis fictícios: https://developers.google.com/search/docs/fundamentals/creating-helpful-content
+- As políticas de spam incluem produção em escala sem valor e tentativas de manipular respostas generativas: https://developers.google.com/search/docs/essentials/spam-policies
+
+### Auditoria e ações
+
+| Ponto | Constatação / ação |
+| --- | --- |
+| Originalidade e experiência | Há relatos de trabalho em empresas e projetos concretos. Cada serviço agora leva à experiência específica correspondente, em ambos os idiomas. Esses links dão contexto; não são comprovação independente. |
+| Números sem contexto | Os quatro destaques agora identificam a empresa/projeto e levam ao relato relacionado. Valores existentes foram preservados, sem acrescentar resultados ou atribuir verificação externa. |
+| Autoria e transparência | Nome, contato e perfis profissionais permanecem visíveis; `ProfilePage.author` aponta para a mesma pessoa apresentada na página. Mantida a indicação de uso de IA. |
+| Conteúdo e markup divergentes | Descrições de serviços continuam saindo da mesma fonte de dados para HTML e JSON-LD, com teste de igualdade. Não foram adicionadas avaliações ou credenciais. |
+| Páginas em massa, doorway e keywords | Não encontrados nas rotas publicadas examinadas. EN/PT são traduções úteis, não páginas por cidade ou variações artificiais de busca. |
+| Elegibilidade técnica | Conteúdo entregue no HTML, rotas canônicas, sitemap, robots, 404 e redirecionamento cobertos pelos testes. Verificações também impedem restrições de snippets nas páginas de perfil. |
+| Supostos atalhos de IA | Não adicionar `llms.txt`, schema especial, menções artificiais, texto escondido ou FAQ apenas para ranking. O guia diz que Google Search não usa arquivos especiais desse tipo. |
+| Experiência da página | Links de contexto preservam a estrutura existente. Core Web Vitals de usuários reais e eventual impacto do mascote flutuante precisam ser avaliados como UX, sem inferir penalidade por IA. |
+
+### Limites da checagem factual
+
+As descrições novas foram comparadas com os relatos já existentes no repositório. Isso verifica consistência interna, não a veracidade independente do histórico profissional. Antes de publicar, o proprietário deve validar nos seus registros as afirmações de **30B+ requisições/ano (Zyte), 2B+ requisições (RTI), 300M+ pontos estruturados (RTI), aproximadamente 4.500 horas/mês (Lumma)**, bem como os demais percentuais, cargos e datas do histórico. Não foi acrescentado selo de revisão humana ou de verificação externa.
+
+Não há dados de Search Console nesta auditoria: não foi diagnosticada perda de alcance, ação manual nem penalidade. Após publicar, comparar períodos equivalentes por página, consulta e país; conferir indexação, ações manuais e inclusão nos recursos generativos. O relatório de desempenho generativo mede presença nesses recursos: https://developers.google.com/search/blog/2026/06/gen-ai-performance-reports
+
+As alterações melhoram contexto e consistência; não garantem recuperação de tráfego ou participação em AI Overviews/AI Mode.
+
+## Google Analytics
+
+Tag solicitada: `G-DJ7RMKV2HR`. O componente compartilhado `GoogleAnalytics` usa `next/script` com `afterInteractive`, estratégia indicada para analytics, carregando a biblioteca assincronamente sem bloquear a renderização. É montado uma única vez por documento, nas versões `/` e `/pt`. A troca de idioma carrega outro documento; não foi acrescentado um segundo envio manual de `page_view`. Vercel Analytics existente foi preservado.
+
+O recebimento no painel Tempo real do GA4 deve ser confirmado após publicação. Não foi instalado Google Tag Manager nem configurada personalização de anúncios/CMP; o aviso de consentimento colado pelo usuário não fornece uma preferência de consentimento ou uma integração de CMP existente.

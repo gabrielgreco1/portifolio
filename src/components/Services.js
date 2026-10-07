@@ -18,6 +18,7 @@ export default function Services() {
             <article className="service-entry" id={service.id} key={service.id}>
               <h3>{service.title}</h3>
               <p>{service.description}</p>
+              <a className="service-evidence text-link" href={service.evidenceHref}>{service.evidenceLabel} ↗</a>
             </article>
           ))}
         </div>

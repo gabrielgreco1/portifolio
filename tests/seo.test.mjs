@@ -24,13 +24,18 @@ for (const [path, lang, phrase] of [["/", "en", "Data engineering, from source t
       assert.ok(links.some(x => x.rel === "alternate" && x.hrefLang === language && new URL(x.href).href === url));
     }
     const meta = tags(html, "meta");
-    assert.ok(!meta.some(x => x.name === "robots" && /noindex/.test(x.content)));
+    assert.ok(!meta.some(x => ["robots", "googlebot"].includes(x.name) && /noindex|nosnippet|max-snippet:\s*0(?:\D|$)/.test(x.content)));
+    assert.ok(!/noindex|nosnippet|max-snippet:\s*0(?:\D|$)/.test(res.headers.get("x-robots-tag") || ""));
+    assert.ok(!visible.includes("data-nosnippet"));
     assert.equal(new URL(meta.find(x => x.property === "og:url")?.content).href, `${site}${path}`);
     assert.ok(meta.find(x => x.name === "description")?.content.length > 80);
     const ld = JSON.parse(html.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/)[1]);
     const profile = ld["@graph"].find(x => x["@type"] === "ProfilePage");
     assert.equal(profile.url, `${site}${path}`);
     assert.equal(profile.inLanguage, lang);
+    assert.equal(profile.author["@id"], profile.mainEntity["@id"]);
+    assert.equal(tags(visible, "a").filter(x => x.class?.includes("stat-context")).length, 4);
+    assert.equal(tags(visible, "a").filter(x => x.class?.includes("service-evidence")).length, 4);
     const services = ld["@graph"].filter(x => x["@type"] === "Service");
     assert.equal(services.length, 4);
     for (const service of services) {

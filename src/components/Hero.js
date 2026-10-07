@@ -22,6 +22,7 @@ export default function Hero() {
             <div className="hero-stat" key={stat.label}>
               <strong>{stat.n}</strong>
               <span>{stat.label}</span>
+              <a className="stat-context" href={stat.href}>{stat.context} ↗</a>
             </div>
           ))}
         </div>

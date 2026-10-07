@@ -33,7 +33,7 @@ export default function Experience() {
 
         <div className="experience-list">
           {exp.companies.map((company, index) => (
-            <article className="experience-entry" key={company.company}>
+            <article id={`experience-${company.id}`} className="experience-entry" key={company.company}>
               <header className="company-header">
                 <CompanyLogo company={company} />
                 <div className="company-heading">
@@ -58,7 +58,7 @@ export default function Experience() {
 
                 <div className="experience-chapters">
                   {company.chapters.map((chapter, chapterIndex) => (
-                    <section className={`experience-chapter ${chapter.logo ? "experience-chapter--branded" : ""}`} key={`${company.company}-${chapter.label}`}>
+                    <section id={`experience-${company.id}-${chapterIndex + 1}`} className={`experience-chapter ${chapter.logo ? "experience-chapter--branded" : ""}`} key={`${company.company}-${chapter.label}`}>
                       <div className="chapter-label-row">
                         <span className="chapter-number mono">{index + 1}.{chapterIndex + 1}</span>
                         <p className="mono">{chapter.label}</p>

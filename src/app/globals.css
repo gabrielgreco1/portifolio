@@ -1558,3 +1558,7 @@ main {
 @media (max-width: 640px) {
   .services-list { grid-template-columns: 1fr; }
 }
+
+/* Direct links connect claims to the relevant first-person work history. */
+.stat-context { display: inline-block; margin-top: 0.7rem; font-size: 0.72rem; text-decoration: underline; text-underline-offset: 0.2em; }
+.service-evidence { display: inline-block; margin-top: 1rem; line-height: 1.6; }

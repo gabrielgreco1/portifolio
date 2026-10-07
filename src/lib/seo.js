@@ -112,6 +112,7 @@ export function portfolioJsonLd(lang) {
   const graph = structuredClone(baseJsonLd["@graph"]);
   graph[0].inLanguage = ["en", "pt-BR"];
   Object.assign(graph[1], { "@id": `${url}#webpage`, url, name: title, description, inLanguage: language });
+  graph[1].author = { "@id": `${siteUrl}/#person` };
   graph[2].homeLocation = { "@type": "City", name: "São Paulo" };
   const services = serviceContent[lang].items.map((service) => ({
     "@type": "Service",
