@@ -1,19 +1,25 @@
 "use client";
 
-import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, animate, motion, useMotionValue, useReducedMotion } from "framer-motion";
 import { useLanguage } from "@/i18n/LanguageContext";
-import { TOUR, commitEvidence, createCollection, downloadFile, exportName, readTarget } from "@/lib/crawler/collection.mjs";
+import { commitEvidence, createCollection, finalizeCollection, scopeTargets, downloadFile, exportName, readTarget } from "@/lib/crawler/collection.mjs";
 import { animateElement, cameraTo, cancelled, sleep, visualCopy } from "@/lib/crawler/motion.mjs";
 import { jsonLines } from "@/lib/crawler/json.mjs";
+import { captureTiming } from "@/lib/crawler/pace.mjs";
+import ScopePicker from "./ScopePicker";
+import { useGlassDialog } from "./useGlassDialog";
 import "./crawler.css";
 
 const Context = createContext(null);
 export const useCrawler = () => useContext(Context);
 const TEXT = {
-  pt: { invite: "Veja este site virar dados", hint: "4 fragmentos reais. Cerca de 35 segundos.", choose: "Ou escolha o primeiro trecho", begin: "Começando pela Zyte.", scan: "Encontrei este trecho.", lift: "O original fica. A cópia vem comigo.", saved: "Mais um pedaço guardado.", returning: "Pronto. Vamos abrir a coleta lá em cima.", open: "Ver a coleta", pause: "Pausar", resume: "Continuar", select: "Escolher trecho", selecting: "Escolha um trecho destacado. Esc para sair.", paused: "Parei aqui. Você conduz.", end: "Encerrar", title: "A página, em dados.", summary: "Resumo", json: "JSON", source: "Origem do fragmento", viewSource: "Ver na página", back: "Voltar à coleta", copy: "Copiar JSON", copied: "JSON copiado", download: "Baixar JSON", pdf: "Baixar PDF", pdfBusy: "Gerando PDF…", close: "Fechar", collected: "fragmentos guardados", records: "registros", partial: "coleta parcial", new: "Nova coleta", original: "Como está publicado", stored: "O conteúdo continua na página. A coleta pertence a esta aba.", empty: "Nenhum fragmento confirmado ainda.", image: "Imagem", text: "Texto", quote: "Frase", project: "Projeto", technology: "Tecnologia", failure: "Não foi possível concluir este trecho.", copyFailure: "Copiar não está disponível. Você pode baixar o JSON.", pdfFailure: "Não foi possível gerar o PDF. O JSON continua disponível." },
-  en: { invite: "Watch this page turn into data", hint: "4 real fragments. About 35 seconds.", choose: "Or choose the first fragment", begin: "Starting with Zyte.", scan: "Found this fragment.", lift: "The original stays. The copy comes with me.", saved: "Another piece saved.", returning: "Ready. Let's open the collection at the top.", open: "View collection", pause: "Pause", resume: "Continue", select: "Choose a fragment", selecting: "Choose a highlighted fragment. Esc to leave.", paused: "Paused here. You are in control.", end: "End tour", title: "The page, as data.", summary: "Summary", json: "JSON", source: "Fragment source", viewSource: "View on page", back: "Back to collection", copy: "Copy JSON", copied: "JSON copied", download: "Download JSON", pdf: "Download PDF", pdfBusy: "Creating PDF…", close: "Close", collected: "saved fragments", records: "records", partial: "partial collection", new: "New collection", original: "As published", stored: "The content stays on the page. This collection lives in this tab.", empty: "No confirmed fragments yet.", image: "Image", text: "Text", quote: "Quote", project: "Project", technology: "Technology", failure: "Could not complete this fragment.", copyFailure: "Copy is unavailable. You can download the JSON.", pdfFailure: "Could not create the PDF. JSON is still available." },
+  pt: { invite: "Veja este site virar dados", hint: "Você escolhe o conteúdo. Ele faz a coleta.", choose: "Ou escolha o primeiro trecho", begin: "Indo buscar sua seleção.", scan: "Encontrei este trecho.", lift: "O original fica. A cópia vem comigo.", saved: "Mais um pedaço guardado.", returning: "Pronto. Vamos abrir a coleta lá em cima.", open: "Ver a coleta", pause: "Pausar", resume: "Continuar", select: "Escolher trecho", selecting: "Escolha um trecho destacado. Esc para sair.", paused: "Parei aqui. Você conduz.", end: "Encerrar", title: "A página, em dados.", summary: "Resumo", json: "JSON", source: "Origem do fragmento", viewSource: "Ver na página", back: "Voltar à coleta", copy: "Copiar JSON", copied: "JSON copiado", download: "Baixar JSON", pdf: "Baixar PDF", pdfBusy: "Gerando PDF…", close: "Fechar", collected: "fragmentos guardados", records: "registros", partial: "coleta parcial", new: "Nova coleta", original: "Como está publicado", stored: "O conteúdo continua na página. A coleta pertence a esta aba.", empty: "Nenhum fragmento confirmado ainda.", image: "Imagem", text: "Texto", quote: "Frase", project: "Projeto", technology: "Tecnologia", failure: "Não foi possível concluir este trecho.", copyFailure: "Copiar não está disponível. Você pode baixar o JSON.", pdfFailure: "Não foi possível gerar o PDF. O JSON continua disponível." },
+  en: { invite: "Watch this page turn into data", hint: "You choose the content. It does the collecting.", choose: "Or choose the first fragment", begin: "Going to collect your selection.", scan: "Found this fragment.", lift: "The original stays. The copy comes with me.", saved: "Another piece saved.", returning: "Ready. Let's open the collection at the top.", open: "View collection", pause: "Pause", resume: "Continue", select: "Choose a fragment", selecting: "Choose a highlighted fragment. Esc to leave.", paused: "Paused here. You are in control.", end: "End tour", title: "The page, as data.", summary: "Summary", json: "JSON", source: "Fragment source", viewSource: "View on page", back: "Back to collection", copy: "Copy JSON", copied: "JSON copied", download: "Download JSON", pdf: "Download PDF", pdfBusy: "Creating PDF…", close: "Close", collected: "saved fragments", records: "records", partial: "partial collection", new: "New collection", original: "As published", stored: "The content stays on the page. This collection lives in this tab.", empty: "No confirmed fragments yet.", image: "Image", text: "Text", quote: "Quote", project: "Project", technology: "Technology", failure: "Could not complete this fragment.", copyFailure: "Copy is unavailable. You can download the JSON.", pdfFailure: "Could not create the PDF. JSON is still available." },
 };
+
+Object.assign(TEXT.pt, {record:"registro",collectedOne:"fragmento guardado",extractLabel:"EXTRAÇÃO",scopeTitle:"O que vamos extrair?",scopeHint:"Escolha. O tamagotchi cuida do resto.",resumeScope:"Currículo inteiro",experiencesScope:"Experiências",projectsScope:"Projetos",skillsScope:"Ferramentas",resumeDetail:"Tudo que está publicado: apresentação, experiências completas, projetos, tecnologias, serviços e contato.",experiencesDetail:"Todas as empresas, cargos, períodos, métricas e atividades. Os detalhes também vêm.",projectsDetail:"Todos os projetos, com descrição, tecnologias e links.",skillsDetail:"Todas as tecnologias, organizadas pelos grupos do site.",companyChoice:"Só uma empresa?",fragments:"fragmentos",autoPace:"ritmo automático",scopeStartHint:"Clique na opção para começar.",pointFragment:"Apontar um trecho na página",complete:"currículo completo",selectedComplete:"seleção completa",employment:"Cargo e período",chapter:"Experiência em detalhe",list:"Métricas",statistics:"Números em contexto",technology_group:"Tecnologias",service:"Serviço",links:"Links",contact:"Contato"});
+Object.assign(TEXT.en, {record:"record",collectedOne:"saved fragment",extractLabel:"EXTRACTION",scopeTitle:"What shall we extract?",scopeHint:"You choose. The tamagotchi takes it from here.",resumeScope:"Full résumé",experiencesScope:"Experience",projectsScope:"Projects",skillsScope:"Tools",resumeDetail:"Everything published: introduction, complete experience, projects, technologies, services and contact.",experiencesDetail:"Every company, role, period, metric and activity. The details come along too.",projectsDetail:"Every project, with descriptions, technologies and links.",skillsDetail:"Every technology, organized by the site's groups.",companyChoice:"Just one company?",fragments:"fragments",autoPace:"automatic pace",scopeStartHint:"Click an option to start.",pointFragment:"Point to a fragment on the page",complete:"complete résumé",selectedComplete:"complete selection",employment:"Role and period",chapter:"Experience in detail",list:"Metrics",statistics:"Numbers in context",technology_group:"Technologies",service:"Service",links:"Links",contact:"Contact"});
 
 function geometry() {
   const mobile = window.innerWidth < 800;
@@ -34,6 +40,7 @@ export default function CrawlerExperienceProvider({ children }) {
   const [highlight, setHighlight] = useState(null), [fragment, setFragment] = useState(null), [selecting, setSelecting] = useState(false);
   const [isOpen, setIsOpen] = useState(false), [tab, setTab] = useState("json"), [selectedId, setSelectedId] = useState(null), [layout, setLayout] = useState(null);
   const [notice, setNotice] = useState("");
+  const [pickerOpen, setPickerOpen] = useState(false), [scopeOptions, setScopeOptions] = useState([]), [companyOptions, setCompanyOptions] = useState([]);
   const x = useMotionValue(0), y = useMotionValue(0);
   const copyRef = useRef(null), control = useRef(null), store = useRef(null), phaseRef = useRef("idle"), actions = useRef({});
   const trigger = useRef(null), mounted = useRef(true), sourceControl = useRef(null);
@@ -71,61 +78,81 @@ export default function CrawlerExperienceProvider({ children }) {
       while (runState.index < runState.ids.length) {
         if (signal.aborted || control.current !== runState) throw cancelled();
         const id = runState.ids[runState.index]; const node = targetNode(id);
+        const timing = captureTiming(runState.ids.length, runState.index);
         if (!node) {
           publish({ ...store.current, warnings: [...store.current.warnings, { target_id: id, message: "Target unavailable" }], coverage: { ...store.current.coverage, failed_ids: [...store.current.coverage.failed_ids, id] } });
           runState.index++; continue;
         }
         stage("approaching"); setMessage(`${runState.index + 1}/${runState.ids.length} · ${node.closest("[data-crawl-record]")?.querySelector("h3")?.textContent || node.textContent.slice(0, 40)}`);
-        const destination = window.scrollY + node.getBoundingClientRect().top - window.innerHeight * (window.innerWidth < 800 ? .23 : .32);
-        await cameraTo(destination, reduced ? 0 : Math.min(1000, 300 + Math.abs(destination - window.scrollY) * .08), signal);
+        const before = node.getBoundingClientRect();
+        const safeTop = window.innerHeight * (window.innerWidth < 800 ? .23 : .28);
+        const needsCamera = before.top < safeTop - 40 || before.top + Math.min(before.height, window.innerHeight * .35) > window.innerHeight * (window.innerWidth < 800 ? .5 : .8);
+        if (needsCamera) await cameraTo(window.scrollY + before.top - safeTop, reduced ? 0 : timing.camera, signal);
         if (node.tagName === "IMG" && !node.complete) await Promise.race([node.decode().catch(() => {}), sleep(1400, signal)]);
         const rect = node.getBoundingClientRect(); const g = geometry(); setLayout(g);
         const actorY = Math.max(g.mobile ? 94 : 86, Math.min(rect.top + rect.height / 2 - g.pet * .4, window.innerHeight - g.pet - 205 - 82));
-        await move(window.innerWidth - g.pet - (g.mobile ? 20 : 42), g.mobile ? window.innerHeight - g.pet - 315 : actorY, .7, signal);
+        await move(window.innerWidth - g.pet - (g.mobile ? 20 : 42), g.mobile ? window.innerHeight - g.pet - 315 : actorY, timing.move, signal);
         const snapshot = readTarget(node);
         stage("inspecting"); setMessage(words.scan); setHighlight({ left: rect.left - 7, top: rect.top - 6, width: rect.width + 14, height: rect.height + 12 });
-        await sleep(reduced ? 140 : 650, signal);
+        await sleep(reduced ? 18 : timing.scan, signal);
         if (snapshot.quality.status === "empty") throw new Error("Empty source");
         const html = visualCopy(node);
         setFragment({ html, rect: { left: rect.left, top: rect.top, width: rect.width, height: rect.height } });
-        stage("lifting"); setMessage(words.lift); await sleep(70, signal);
+        stage("lifting"); setMessage(words.lift); await sleep(reduced ? 18 : timing.frame, signal);
         if (!reduced) {
-          await animateElement(copyRef.current, [{ transform: "translate(0, 0) rotate(0deg)", opacity: .25 }, { transform: "translate(-7px, -18px) rotate(-1deg)", opacity: 1 }], { duration: 700, easing: "cubic-bezier(.2,.8,.2,1)" }, signal);
-          await sleep(500, signal);
+          await animateElement(copyRef.current, [{ transform: "translate(0, 0) rotate(0deg)", opacity: .25 }, { transform: "translate(-7px, -18px) rotate(-1deg)", opacity: 1 }], { duration: timing.lift, easing: "cubic-bezier(.2,.8,.2,1)" }, signal);
+          await sleep(timing.hold, signal);
           stage("encoding");
           const screenX = x.get() + g.pet * .46, screenY = y.get() + g.pet * .49;
           const dx = screenX - rect.left - rect.width * .03, dy = screenY - rect.top - rect.height * .03;
-          await animateElement(copyRef.current, [{ transform: "translate(-7px, -18px) rotate(-1deg)", opacity: 1 }, { offset: .55, transform: `translate(${dx * .65}px, ${dy * .65}px) scale(.45) rotate(-3deg)`, opacity: 1 }, { transform: `translate(${dx}px, ${dy}px) scale(.06) rotate(0deg)`, opacity: 0 }], { duration: 1000, easing: "cubic-bezier(.5,0,.8,.3)" }, signal);
-        } else await sleep(150, signal);
+          await animateElement(copyRef.current, [{ transform: "translate(-7px, -18px) rotate(-1deg)", opacity: 1 }, { offset: .55, transform: `translate(${dx * .65}px, ${dy * .65}px) scale(.45) rotate(-3deg)`, opacity: 1 }, { transform: `translate(${dx}px, ${dy}px) scale(.06) rotate(0deg)`, opacity: 0 }], { duration: timing.encode, easing: "cubic-bezier(.5,0,.8,.3)" }, signal);
+        } else await sleep(18, signal);
         if (readTarget(node).source.snapshot_revision !== snapshot.source.snapshot_revision) throw new Error("Source changed during capture");
         publish(commitEvidence(store.current, snapshot));
         runState.index++;
         setFragment(null); stage("confirming"); setMessage(words.saved);
-        await sleep(reduced ? 180 : 1100, signal); setHighlight(null);
-        await sleep(reduced ? 70 : 350, signal);
+        await sleep(reduced ? 18 : timing.confirm, signal); setHighlight(null);
+        await sleep(reduced ? 18 : timing.gap, signal);
       }
-      const final = { ...store.current, session: { ...store.current.session, status: "completed", completed_at: new Date().toISOString() }, coverage: { ...store.current.coverage, requested_complete: store.current.coverage.target_ids.every((id) => store.current.coverage.captured_ids.includes(id)) } };
+      const final = finalizeCollection(store.current);
       publish(final);
-      if (runState.scope === "tour") await reveal(signal);
-      else { stage("ready"); setMessage(words.saved); }
+      await reveal(signal);
     } catch (error) {
+      if (control.current !== runState) return;
       setFragment(null); setHighlight(null);
       if (error.name !== "AbortError" && mounted.current) { stage("paused"); setMessage(words.failure); setNotice(error.message === "Empty source" ? (lang === "pt" ? "Este campo veio vazio. Escolha outro trecho." : "This field is empty. Choose another fragment.") : words.failure); }
     }
   }
 
-  function start(ids = TOUR, scope = "tour") {
+  function start(ids = scopeTargets(document, "resume"), scope = "resume") {
     if (!["idle", "ready"].includes(phaseRef.current)) return;
     trigger.current = document.activeElement;
     control.current?.abort.abort();
     const original = document.querySelector(".crawler-pet")?.getBoundingClientRect();
     x.set(original?.left || window.innerWidth - 150); y.set(original?.top || window.innerHeight - 150);
     const g = geometry(); setLayout(g);
-    const next = createCollection({ url: `${window.location.origin}${window.location.pathname}`, title: document.title, language: lang }, ids, scope);
-    publish(next); setSelectedId(null); setNotice(""); setSelecting(false); setFragment(null); setTab("json");
+    const next = createCollection({ url: `${window.location.origin}${window.location.pathname}`, title: document.title, language: lang }, ids, scope, scopeTargets(document, "resume"));
+    publish(next); setPickerOpen(false); setSelectedId(null); setNotice(""); setSelecting(false); setFragment(null); setTab("json");
     const state = { ids: [...ids], index: 0, abort: new AbortController(), scope };
     control.current = state; stage("starting"); setMessage(words.begin); void run(state);
   }
+
+  function chooseScope() {
+    control.current?.abort.abort(); sourceControl.current?.abort();
+    if (control.current) control.current.ended = true;
+    setIsOpen(false); setSelecting(false); setFragment(null); setHighlight(null);
+    stage(phaseRef.current === "idle" ? "idle" : "ready");
+    trigger.current = document.activeElement;
+    setScopeOptions(["resume", "experiences", "projects", "skills"].map(id => ({id,title:words[`${id}Scope`],description:words[`${id}Detail`],count:scopeTargets(document,id).length})));
+    setCompanyOptions([...document.querySelectorAll("main .experience-entry")].map(node => {
+      const id = `company:${node.dataset.crawlRecord.split(":")[1]}`;
+      return {id,title:node.querySelector("h3").textContent,count:scopeTargets(document,id).length};
+    }));
+    setPickerOpen(true);
+  }
+  const closePicker = useCallback(() => { setPickerOpen(false); trigger.current?.focus?.({preventScroll:true}); }, []);
+  function pickScope(scope) { start(scopeTargets(document, scope), scope); }
+  function pickManual() { setPickerOpen(false); setSelecting(true); setMessage(words.selecting); }
 
   function pause() {
     if (!["idle", "ready", "result", "source", "paused"].includes(phaseRef.current)) {
@@ -240,13 +267,13 @@ export default function CrawlerExperienceProvider({ children }) {
   const memory = collection?.evidence.slice(-4) || [];
   const showMemory = !["idle", "ready", "source"].includes(phase);
   return (
-    <Context.Provider value={{ start, open, select, phase, active, collection, words }}>
+    <Context.Provider value={{ start, open, select, chooseScope, phase, active, collection, words }}>
       {children}
       <div className="crawl-live sr-only" aria-live="polite">{message}</div>
       <AnimatePresence>
         {active && layout && (
           <motion.div key="actor" className={`crawl-actor crawl-actor--${phase}`} style={{ x, y, width: layout.pet, "--pet-width": `${layout.pet}px` }} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-            <button className="crawl-body" disabled={isOpen} aria-hidden={isOpen || undefined} tabIndex={isOpen ? -1 : 0} onClick={busy ? pause : open} aria-label={busy ? words.pause : words.open}>
+            <button className="crawl-body" disabled={isOpen || pickerOpen} aria-hidden={isOpen || pickerOpen || undefined} tabIndex={isOpen || pickerOpen ? -1 : 0} onClick={busy ? pause : open} aria-label={busy ? words.pause : words.open}>
               {/* The production mascot is used unchanged; all poses move this same sprite. */}
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img className="crawl-sprite" src="/crawler-pet.png" alt="" width="244" height="256" />
@@ -255,18 +282,18 @@ export default function CrawlerExperienceProvider({ children }) {
             {!isOpen && <span className="crawl-speech" aria-hidden="true">{message}</span>}
             {showMemory && <div className="crawl-memory" aria-hidden="true">
               <AnimatePresence initial={false}>
-                {memory.map((item, index) => <motion.div className={`crawl-memory-fragment crawl-memory-fragment--${item.kind}`} key={`${item.id}-${item.source.snapshot_revision}`} style={{ zIndex: index + 1 }} initial={{ opacity: 0, x: 24, y: -45, scale: .5, rotate: -7 }} animate={{ opacity: 1, x: 0, y: index * 40, scale: 1, rotate: index % 2 ? -1.6 : 1 }} transition={{ duration: reduced ? .1 : .5, ease: [.2, .9, .25, 1] }}>
+                {memory.map((item, index) => <motion.div className={`crawl-memory-fragment crawl-memory-fragment--${item.kind}`} key={`${item.id}-${item.source.snapshot_revision}`} style={{ zIndex: index + 1 }} initial={{ opacity: 0, x: 24, y: -45, scale: .5, rotate: -7 }} animate={{ opacity: 1, x: 0, y: index * 40, scale: 1, rotate: index % 2 ? -1.6 : 1 }} transition={{ duration: reduced ? .05 : captureTiming(control.current?.ids.length || 1).card, ease: [.2, .9, .25, 1] }}>
                   <ContentFragment item={item} />
                 </motion.div>)}
               </AnimatePresence>
-              {memory.length > 0 && <span className="crawl-memory-count" style={{ top: (memory.length - 1) * 40 + 96 }}>{collection.evidence.length} {words.collected}</span>}
+              {memory.length > 0 && <span className="crawl-memory-count" style={{ top: (memory.length - 1) * 40 + 96 }}>{collection.evidence.length} {collection.evidence.length === 1 ? words.collectedOne : words.collected}</span>}
             </div>}
           </motion.div>
         )}
         {highlight && <motion.div key="highlight" className={`crawl-highlight ${phase === "source" ? "crawl-highlight--source" : ""}`} style={highlight} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} aria-hidden="true"><span className="crawl-scan" /></motion.div>}
       </AnimatePresence>
       {fragment && <div ref={copyRef} className="crawl-copy" style={fragment.rect} aria-hidden="true" inert dangerouslySetInnerHTML={{ __html: fragment.html }} />}
-      {active && !isOpen && <div className="crawl-controls">
+      {active && !isOpen && !pickerOpen && <div className="crawl-controls">
         <span className="crawl-control-status"><i />{phase === "source" ? words.source : selecting ? words.selecting : `${collection?.evidence.length || 0} / ${collection?.coverage.target_ids.length || 4} · ${phase === "paused" ? words.paused : words.collected}`}</span>
         <div className="crawl-control-actions">
           {phase === "source" ? <button onClick={open}>{words.back} ↑</button> : <>
@@ -278,19 +305,20 @@ export default function CrawlerExperienceProvider({ children }) {
           </>}
         </div>
       </div>}
-      <Inspector isOpen={isOpen} collection={collection} words={words} tab={tab} setTab={setTab} selectedId={selectedId} onSelect={setSelectedId} onSource={source} onClose={close} onNew={() => { close(); setTimeout(() => start(), 250); }} layout={layout} origin={{ x: x.get() + (layout?.pet || 122) * .46, y: y.get() + (layout?.pet || 122) * .49 }} notice={notice} setNotice={setNotice} reduced={reduced} />
+      <ScopePicker isOpen={pickerOpen} options={scopeOptions} companies={companyOptions} words={words} onPick={pickScope} onManual={pickManual} onClose={closePicker} reduced={reduced} />
+      <Inspector isOpen={isOpen} collection={collection} words={words} tab={tab} setTab={setTab} selectedId={selectedId} onSelect={setSelectedId} onSource={source} onClose={close} onNew={chooseScope} layout={layout} origin={{ x: x.get() + (layout?.pet || 122) * .46, y: y.get() + (layout?.pet || 122) * .49 }} notice={notice} setNotice={setNotice} reduced={reduced} />
     </Context.Provider>
   );
 }
 
 export function ExtractionInvite() {
-  const { start, open, select, phase, collection, words } = useCrawler();
+  const { chooseScope, open, phase, collection, words } = useCrawler();
   const hasData = !!collection?.evidence.length;
   return <div className="extraction-invite">
-    <button className="extraction-start" onClick={() => hasData && ["ready", "result"].includes(phase) ? open() : start()} disabled={!["idle", "ready"].includes(phase)}>
-      <span className="extraction-start-dot" aria-hidden="true" /><span>{hasData && phase === "ready" ? words.open : words.invite}</span><span className="extraction-start-arrow" aria-hidden="true">↗</span>
+    <button className="extraction-start" onClick={chooseScope} disabled={!["idle", "ready"].includes(phase)}>
+      <span className="extraction-start-dot" aria-hidden="true" /><span>{words.invite}</span><span className="extraction-start-arrow" aria-hidden="true">↗</span>
     </button>
-    <div className="extraction-invite-details"><span>{words.hint}</span><button onClick={select}>{words.choose}</button></div>
+    <div className="extraction-invite-details"><span>{words.hint}</span>{hasData && <button onClick={open}>{words.open}</button>}</div>
   </div>;
 }
 
@@ -300,38 +328,30 @@ function ContentFragment({ item }) {
     <img src={item.raw.source_url} alt="" /><span>{item.label}</span>
   </div>;
   if (item.kind === "project") return <><strong className="fragment-project-name">{item.raw.name}</strong><p>{item.raw.description}</p></>;
+  if (item.kind === "employment") return <><strong className="fragment-project-name">{item.raw.role}</strong><p>{item.raw.period} · {item.raw.location}</p></>;
+  if (item.kind === "chapter") return <><strong className="fragment-project-name">{item.raw.title}</strong>{item.raw.description && <p>{item.raw.description}</p>}<ul className="fragment-tasks">{item.raw.tasks.map((task,index)=><li key={index}>{task}</li>)}</ul></>;
+  if (item.kind === "links") return <>{item.raw.map((link,index)=><p key={index}>{link.label} · {link.url}</p>)}</>;
+  if (item.kind === "list") return <p>{item.raw.join(" · ")}</p>;
+  if (item.kind === "statistics") return <>{item.raw.map((stat,index)=><p key={index}><strong>{stat.value}</strong> {stat.description}</p>)}</>;
+  if (item.kind === "technology_group") return <><strong className="fragment-project-name">{item.raw.category}</strong><p>{item.raw.items.join(" · ")}</p></>;
+  if (item.kind === "service") return <><strong className="fragment-project-name">{item.raw.name}</strong><p>{item.raw.description}</p></>;
+  if (item.kind === "contact") return <><strong className="fragment-project-name">{item.raw.email}</strong><p>{item.raw.description}</p></>;
   return <p>{item.raw}</p>;
 }
 
 function Inspector({ isOpen, collection, words, tab, setTab, selectedId, onSelect, onSource, onClose, onNew, layout, origin, notice, setNotice, reduced }) {
-  const panel = useRef(null), previousFocus = useRef(null);
+  const panel = useRef(null);
   const [copying, setCopying] = useState(false), [pdfBusy, setPdfBusy] = useState(false);
-  useEffect(() => {
-    if (!isOpen) return;
-    previousFocus.current = document.activeElement;
-    const main = document.querySelector("main"), language = document.querySelector(".language-switcher");
-    if (main) main.inert = true; if (language) language.inert = true;
-    const overflow = document.body.style.overflow; document.body.style.overflow = "hidden";
-    const focus = setTimeout(() => panel.current?.querySelector("[data-modal-close]")?.focus({ preventScroll: true }), reduced ? 80 : 650);
-    function key(event) {
-      if (event.key === "Escape") { event.preventDefault(); onClose(); }
-      if (event.key === "Tab") {
-        const items = [...panel.current.querySelectorAll("button:not([disabled]), a[href], [tabindex='0']")];
-        if (!items.length) return;
-        const first = items[0], last = items.at(-1);
-        if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
-        else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
-      }
-    }
-    document.addEventListener("keydown", key);
-    return () => { document.body.style.overflow = overflow; clearTimeout(focus); if (main) main.inert = false; if (language) language.inert = false; document.removeEventListener("keydown", key); previousFocus.current?.focus?.({ preventScroll: true }); };
-  }, [isOpen, onClose, reduced]);
+  useGlassDialog(isOpen, panel, onClose, reduced);
+  const formatted = useMemo(() => {
+    if (!collection) return null;
+    const doc = { records: collection.records, ...collection };
+    return {doc,json:JSON.stringify(doc,null,2),lines:jsonLines(doc,doc.field_origins)};
+  }, [collection]);
 
   if (!collection || !layout) return null;
   const selected = collection.evidence.find((item) => item.id === selectedId) || collection.evidence[0];
-  const doc = { records: collection.records, ...collection };
-  const json = JSON.stringify(doc, null, 2);
-  const lines = jsonLines(doc, doc.field_origins);
+  const {doc,json,lines} = formatted;
   async function copy() {
     try { await navigator.clipboard.writeText(json); setCopying(true); setNotice(""); setTimeout(() => setCopying(false), 1800); }
     catch { setNotice(words.copyFailure); }
@@ -347,7 +367,7 @@ function Inspector({ isOpen, collection, words, tab, setTab, selectedId, onSelec
       <motion.div key="backdrop" className="glass-backdrop" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: .5 }} onClick={onClose} />
       <motion.section key="inspector" ref={panel} className="glass-inspector" role="dialog" aria-modal="true" aria-labelledby="collection-title" style={{ left: layout.left, top: layout.top, width: layout.width, height: layout.height, transformOrigin: `${origin.x - layout.left}px ${origin.y - layout.top}px` }} initial={{ opacity: 0, scale: reduced ? 1 : .045, y: 15, filter: reduced ? "none" : "blur(9px)" }} animate={{ opacity: 1, scale: 1, y: 0, filter: "blur(0px)" }} exit={{ opacity: 0, scale: reduced ? 1 : .9, y: 10 }} transition={{ duration: reduced ? .15 : .95, ease: [.22, 1, .36, 1] }}>
         <header className="glass-header">
-          <div><span className="glass-eyebrow">GABRIEL GRECO / COLLECTION.JSON</span><h2 id="collection-title">{words.title}</h2><p>{collection.evidence.length} {words.collected} <span>·</span> {collection.records.length} {words.records} <span>·</span> {words.partial}</p></div>
+          <div><span className="glass-eyebrow">GABRIEL GRECO / COLLECTION.JSON</span><h2 id="collection-title">{words.title}</h2><p>{collection.evidence.length} {collection.evidence.length === 1 ? words.collectedOne : words.collected} <span>·</span> {collection.records.length} {collection.records.length === 1 ? words.record : words.records} <span>·</span> {collection.coverage.complete ? words.complete : collection.coverage.requested_complete ? words.selectedComplete : words.partial}</p></div>
           <button className="glass-close" data-modal-close onClick={onClose} aria-label={words.close}>×</button>
         </header>
         <div className="glass-tabs" role="tablist" aria-label={words.open}>
@@ -363,7 +383,7 @@ function Inspector({ isOpen, collection, words, tab, setTab, selectedId, onSelec
           </div>
           <aside className="glass-origin">
             <h3>{words.source}</h3>
-            <div className="origin-choices">{collection.evidence.map((item, index) => <button className={selected?.id === item.id ? "active" : ""} key={item.id} onClick={() => onSelect(item.id)}><span>0{index + 1}</span>{item.label}<small>{words[item.kind]}</small></button>)}</div>
+            <div className="origin-choices">{collection.evidence.map((item, index) => <button className={selected?.id === item.id ? "active" : ""} aria-pressed={selected?.id === item.id} key={item.id} onClick={() => onSelect(item.id)}><span>{String(index + 1).padStart(2, "0")}</span>{item.label}<small>{words[item.kind]}</small></button>)}</div>
             {selected && <div className="origin-detail"><span className="origin-label">{words.original}</span><div className="origin-preview"><ContentFragment item={selected} /></div><code>{selected.source.anchor}</code><button className="origin-link" onClick={() => onSource(selected)}>{words.viewSource} ↗</button></div>}
           </aside>
         </div>

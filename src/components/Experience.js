@@ -25,7 +25,7 @@ export default function Experience() {
   return (
     <section id="experience" className="document-section">
       <div className="wrap">
-        <header className="section-header">
+        <header className="section-header" id="crawl-experience-context" data-crawl-id="experience-context" data-crawl-kind="text" data-crawl-record="context:experiences" data-crawl-name={exp.title} data-crawl-field="introduction">
           <p className="mono">{exp.tag}</p>
           <h2>{exp.title}</h2>
           <p>{exp.intro}</p>
@@ -34,17 +34,17 @@ export default function Experience() {
         <div className="experience-list">
           {exp.companies.map((company, index) => (
             <article id={`experience-${company.id}`} className="experience-entry" data-crawl-record={`experience:${company.id}`} key={company.company}>
-              <header className="company-header">
+              <header className="company-header" id={`crawl-${company.id}-employment`} data-crawl-id={`${company.id}-employment`} data-crawl-kind="employment">
                 <CompanyLogo company={company} />
                 <div className="company-heading">
                   <span className="entry-index mono">{String(index + 1).padStart(2, "0")}</span>
-                  <h3>{company.company}</h3>
-                  <p>{company.role}</p>
+                  <h3 data-crawl-value="name">{company.company}</h3>
+                  <p data-crawl-value="role">{company.role}</p>
                 </div>
                 <div className="company-meta">
-                  <p>{company.period}</p>
-                  <span>{company.location}</span>
-                  <a href={company.link} target="_blank" rel="noopener noreferrer" aria-label={`${company.company} on LinkedIn`}>
+                  <p data-crawl-value="period">{company.period}</p>
+                  <span data-crawl-value="location">{company.location}</span>
+                  <a data-crawl-value="company_url" href={company.link} target="_blank" rel="noopener noreferrer" aria-label={`${company.company} on LinkedIn`}>
                     <LinkedInIcon />
                   </a>
                 </div>
@@ -52,13 +52,13 @@ export default function Experience() {
 
               <div className="experience-body">
                 <p className="entry-summary" id={`crawl-${company.id}-summary`} data-crawl-id={`${company.id}-summary`} data-crawl-kind="text" data-crawl-field="description">{company.summary}</p>
-                <div className="entry-metrics">
+                <div className="entry-metrics" id={`crawl-${company.id}-metrics`} data-crawl-id={`${company.id}-metrics`} data-crawl-kind="list" data-crawl-field="metrics">
                   {company.metrics.map((metric) => <span key={metric}>{metric}</span>)}
                 </div>
 
                 <div className="experience-chapters">
                   {company.chapters.map((chapter, chapterIndex) => (
-                    <section id={`experience-${company.id}-${chapterIndex + 1}`} className={`experience-chapter ${chapter.logo ? "experience-chapter--branded" : ""}`} key={`${company.company}-${chapter.label}`}>
+                    <section id={`experience-${company.id}-${chapterIndex + 1}`} data-crawl-id={`${company.id}-chapter-${chapterIndex + 1}`} data-crawl-kind="chapter" className={`experience-chapter ${chapter.logo ? "experience-chapter--branded" : ""}`} key={`${company.company}-${chapter.label}`}>
                       <div className="chapter-label-row">
                         <span className="chapter-number mono">{index + 1}.{chapterIndex + 1}</span>
                         <p className="mono">{chapter.label}</p>
@@ -68,7 +68,7 @@ export default function Experience() {
                         <h4>{chapter.title}</h4>
                         {chapter.logo && (
                           <span className="chapter-logo-frame">
-                            <Image src={chapter.logo} alt="Red Tape Index" width={170} height={45} className="chapter-logo" />
+                            <Image src={chapter.logo} alt="Red Tape Index" width={170} height={45} className="chapter-logo" id={`crawl-${company.id}-chapter-${chapterIndex + 1}-logo`} data-crawl-id={`${company.id}-chapter-${chapterIndex + 1}-logo`} data-crawl-kind="image" data-crawl-source={chapter.logo} />
                           </span>
                         )}
                       </div>

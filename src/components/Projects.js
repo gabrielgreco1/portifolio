@@ -8,7 +8,7 @@ export default function Projects() {
   return (
     <section id="projects" className="document-section">
       <div className="wrap">
-        <header className="section-header">
+        <header className="section-header" id="crawl-projects-context" data-crawl-id="projects-context" data-crawl-kind="text" data-crawl-record="context:projects" data-crawl-name={projects.title} data-crawl-field="introduction">
           <p className="mono">{projects.tag}</p>
           <h2>{projects.title}</h2>
           <p>{projects.intro}</p>

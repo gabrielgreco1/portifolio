@@ -178,3 +178,57 @@ body[data-crawler-selecting="true"] main [data-crawl-id]:is(:hover,:focus-visibl
   .extraction-start { transition: none; }
 }
 @supports not (backdrop-filter: blur(2px)) { .glass-inspector { background: var(--paper); } .glass-backdrop { background: #e8e7dfd0; } }
+
+/* Scope selection uses the same warm glass as the delivered JSON. One choice starts. */
+.scope-picker { z-index: 150; left: 50%; top: 50%; translate: -50% -50%; width: min(680px, calc(100vw - 32px)); max-height: calc(100dvh - 40px); height: auto; overflow-y: auto; }
+.scope-picker + .glass-backdrop, .scope-backdrop { z-index: 140; }
+.scope-picker .glass-header { padding-bottom: 22px; }
+.scope-picker .glass-header h2 { font-size: 38px; }
+.scope-picker .glass-header p { font-size: .8rem; line-height: 1.5; }
+.scope-body { padding: 0 28px; }
+.scope-tabs { position: relative; display: grid; grid-template-columns: 1.35fr 1.15fr 1fr 1fr; gap: 4px; padding: 5px; border: 1px solid #ffffffae; border-radius: 13px; background: #d9d7cf40; box-shadow: inset 0 1px 5px #2424200b; }
+.scope-tabs button { position: relative; padding: 14px 7px; min-height: 50px; border: 0; border-radius: 9px; background: transparent; color: var(--muted); font: 500 .76rem/1.3 Inter, sans-serif; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 7px; }
+.scope-tabs button.featured { color: var(--green); }
+.scope-pill { position: absolute; inset: 0; border: 1px solid #fff; border-radius: 9px; background: linear-gradient(130deg,#fffdf7ee,#f7f6f2b8); box-shadow: 0 2px 8px #24242014,inset 0 1px 0 #fff; }
+.scope-option-label, .scope-option-count { position: relative; z-index: 1; }
+.scope-option-count { font: .6rem/1.2 Consolas, monospace; opacity: .6; }
+.scope-preview { padding: 19px 4px 22px; min-height: 112px; }
+.scope-preview p { font-size: .85rem; line-height: 1.6; max-width: 530px; }
+.scope-preview > span { display: block; color: var(--green); font: .62rem/1.4 Consolas, monospace; margin-top: 10px; }
+.scope-preview i { font-style: normal; margin: 0 8px; color: var(--faint); }
+.scope-specific { border-top: 1px solid var(--line); padding: 19px 0 20px; }
+.scope-specific h3 { font: .68rem/1.3 Inter,sans-serif; color: var(--muted); font-weight: 400; margin-bottom: 12px; }
+.scope-companies { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.scope-companies button { display: grid; grid-template-columns: 1fr auto; gap: 4px 10px; text-align: left; padding: 12px 14px; border: 1px solid #d9d7cf90; border-radius: 8px; background: #ffffff28; color: var(--ink); font: 400 17px/1.2 Georgia,serif; cursor: pointer; transition: background .2s, border-color .2s; }
+.scope-companies button:hover, .scope-companies button:focus-visible { background: #fffdf6c0; border-color: #2f6f4e65; }
+.scope-companies small { grid-column: 1; font: .58rem/1.3 Consolas,monospace; color: var(--muted); }
+.scope-companies button > span:last-child { grid-column: 2; grid-row: 1 / 3; align-self: center; font-size: 15px; color: var(--green); }
+.scope-footer { display: flex; justify-content: space-between; align-items: center; gap: 10px; border-top: 1px solid #ffffffa0; padding: 18px 28px 22px; }
+.scope-footer button { border: 0; border-bottom: 1px solid #2f6f4e55; background: none; color: var(--green); font: 500 .7rem/1.3 Inter,sans-serif; padding: 3px 0; cursor: pointer; }
+.scope-footer > span { font-size: .6rem; color: var(--muted); }
+.fragment-tasks { padding-left: 16px; margin: 8px 0; font: 12px/1.5 Inter,sans-serif; }
+.fragment-tasks li + li { margin-top: 5px; }
+.crawl-memory-fragment { overflow: hidden; }
+.crawl-memory-fragment .fragment-project-name { font-size: 15px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.crawl-memory-fragment .fragment-tasks { margin: 4px 0; padding: 0; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.origin-choices { max-height: 185px; overflow-y: auto; overscroll-behavior: contain; flex-shrink: 1; scrollbar-width: thin; }
+@media (max-width: 799px) {
+  .scope-picker { max-height: calc(100dvh - 24px); }
+  .scope-picker .glass-header { padding: 20px 18px 15px; }
+  .scope-picker .glass-header h2 { font-size: 30px; }
+  .scope-picker .glass-header p { font-size: .72rem; }
+  .scope-body { padding: 0 18px; }
+  .scope-tabs { grid-template-columns: 1fr 1fr; gap: 4px; }
+  .scope-tabs button { min-height: 44px; padding: 12px 6px; font-size: .73rem; }
+  .scope-preview { padding: 14px 2px 16px; min-height: 102px; }
+  .scope-preview p { font-size: .76rem; }
+  .scope-preview > span { font-size: .58rem; margin-top: 8px; }
+  .scope-specific { padding: 14px 0 16px; }
+  .scope-companies button { font-size: 16px; padding: 10px; min-height: 54px; }
+  .scope-companies small { font-size: .52rem; }
+  .scope-footer { padding: 14px 18px 18px; flex-wrap: wrap; }
+  .scope-footer button { min-height: 32px; font-size: .67rem; }
+  .scope-footer > span { font-size: .55rem; }
+  .origin-choices { max-height: none; overflow-y: hidden; }
+}
+@media (prefers-reduced-motion: reduce) { .scope-companies button { transition: none; } }

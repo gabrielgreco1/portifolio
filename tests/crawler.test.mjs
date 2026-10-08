@@ -60,3 +60,35 @@ test('PDF succeeds when an image is unavailable and embeds the identical JSON', 
   const stream=spec.lookup(PDFName.of('EF'),PDFDict).lookup(PDFName.of('F'),PDFRawStream);
   assert.equal(new TextDecoder().decode(decodePDFRawStream(stream).decode()),JSON.stringify(doc,null,2));
 });
+
+test('complete experience preserves employment, both chapters and every task', () => {
+  const job=evidence('job','employment',{name:'Empresa',role:'Software Engineer',period:'2025 — 2026',location:'Irlanda',company_url:'https://example.test/company'});
+  const chapters=[1,2].map(i=>evidence(`chapter-${i}`,'chapter',{label:`Área ${i}`,title:`Experiência ${i}`,period:null,description:`Descrição ${i}`,tasks:[`Atividade ${i}.1`,`Atividade ${i}.2`]},'experience:company','chapters'));
+  const doc=[job,...chapters].reduce(commitEvidence,createCollection(page,['job','chapter-1','chapter-2']));
+  assert.equal(doc.records[0].fields.role,'Software Engineer');
+  assert.equal(doc.records[0].fields.chapters.length,2);
+  assert.deepEqual(doc.records[0].fields.chapters.flatMap(chapter=>chapter.tasks),chapters.flatMap(chapter=>chapter.raw.tasks));
+  assert.deepEqual(doc.field_origins['/records/0/fields/chapters/1'].evidence_ids,['ev-chapter-2']);
+});
+
+test('full coverage is certified only when every available résumé fragment was captured', async () => {
+  const {finalizeCollection}=await import('../src/lib/crawler/collection.mjs');
+  const partial=finalizeCollection(commitEvidence(createCollection(page,['description'],'experiences',['description','quote']),description));
+  assert.equal(partial.coverage.requested_complete,true);assert.equal(partial.coverage.complete,false);
+  const all=finalizeCollection([description,quote].reduce(commitEvidence,createCollection(page,['description','quote'],'resume',['description','quote'])));
+  assert.equal(all.coverage.complete,true);assert.equal(all.session.status,'completed');
+  const failed=finalizeCollection(commitEvidence(createCollection(page,['description','quote'],'resume',['description','quote']),description));
+  assert.equal(failed.coverage.requested_complete,false);assert.equal(failed.coverage.complete,false);assert.equal(failed.session.status,'partial');
+});
+
+test('more content accelerates every capture without changing the source list', async () => {
+  const {captureTiming}=await import('../src/lib/crawler/pace.mjs');
+  for (const count of [4,7,29,51]) {
+    const timing=captureTiming(count,1);
+    assert.ok(timing.encode>=160);assert.ok(timing.frame>=34);
+    if(count>4)assert.ok(timing.unit<=captureTiming(count-1,1).unit);
+  }
+  assert.ok(captureTiming(51,1).unit<captureTiming(7,1).unit/3);
+  const total=Array.from({length:51},(_,i)=>captureTiming(51,i)).reduce((sum,t)=>sum+t.scan+t.lift+t.hold+t.encode+t.confirm+t.gap+t.frame+t.move*1000+t.camera,0);
+  assert.ok(total<48000);
+});

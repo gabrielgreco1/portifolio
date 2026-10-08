@@ -12,7 +12,7 @@ export async function buildCollectionPdf(collection, fetchImage = globalThis.fet
   let page, y; const width = 595.28, height = 841.89, margin = 48;
   // Typography substitutions are only for the PDF standard font. Raw values in
   // the attached JSON remain intact, including every Unicode character.
-  const printable = (text) => String(text).replace(/→/g, "->").replace(/↳/g, "-").replace(/[\u2010-\u2015]/g, "-").replace(/\u00a0/g, " ").split("").map((char) => {
+  const printable = (text) => String(text).replace(/→/g, "->").replace(/↳/g, "-").replace(/−/g, "-").replace(/↗/g, "->").replace(/↓/g, "v").replace(/↑/g, "^").replace(/[\u2010-\u2015]/g, "-").replace(/\u00a0/g, " ").split("").map((char) => {
     try { body.encodeText(char); return char; } catch { return "?"; }
   }).join("");
   function newPage() {
@@ -43,7 +43,8 @@ export async function buildCollectionPdf(collection, fetchImage = globalThis.fet
   }
   newPage();
   text(pt ? "A página, em dados." : "The page, as data.", { font: serif, size: 30, gap: 17 });
-  text(pt ? `${collection.evidence.length} fragmentos coletados / ${collection.records.length} registros / coleta parcial` : `${collection.evidence.length} collected fragments / ${collection.records.length} records / partial collection`, { size: 10, color: green });
+  const coverage = collection.coverage.complete ? (pt ? "currículo completo" : "complete résumé") : collection.coverage.requested_complete ? (pt ? "seleção completa" : "complete selection") : (pt ? "coleta parcial" : "partial collection");
+  text(pt ? `${collection.evidence.length} fragmentos coletados / ${collection.records.length} registros / ${coverage}` : `${collection.evidence.length} collected fragments / ${collection.records.length} records / ${coverage}`, { size: 10, color: green });
   text(collection.page.url, { size: 9, color: muted });
   text(new Date(collection.session.started_at).toLocaleString(pt ? "pt-BR" : "en-US"), { size: 9, color: muted, gap: 16 });
   for (const record of collection.records) {
@@ -64,6 +65,25 @@ export async function buildCollectionPdf(collection, fetchImage = globalThis.fet
         text(item.raw.source_url, { size: 8, color: muted });
       } else if (item.kind === "project") {
         text(item.raw.description); text(item.raw.technologies.join(" / "), { size: 9, color: muted }); text(item.raw.url || "", { size: 9, color: green });
+      } else if (item.kind === "employment") {
+        text(item.raw.role, {font:bold}); text(`${item.raw.period} / ${item.raw.location}`); text(item.raw.company_url || "", {size:9,color:green});
+      } else if (item.kind === "chapter") {
+        text(item.raw.title, {font:bold}); text([item.raw.label,item.raw.period].filter(Boolean).join(" / "), {size:9,color:green});
+        if (item.raw.description) text(item.raw.description);
+        for (const task of item.raw.tasks) text(`- ${task}`);
+      } else if (item.kind === "links") {
+        for (const link of item.raw) text(`${link.label} / ${link.url}`, {size:9,color:green});
+      } else if (item.kind === "list") {
+        for (const value of item.raw) text(value);
+      } else if (item.kind === "statistics") {
+        for (const stat of item.raw) { text(`${stat.value} / ${stat.description}`); text(`${stat.context} / ${stat.source_url}`, {size:8,color:muted}); }
+      } else if (item.kind === "technology_group") {
+        text(item.raw.category,{font:bold}); text(item.raw.items.join(" / "));
+      } else if (item.kind === "service") {
+        text(item.raw.description); text(`${item.raw.evidence_label} / ${item.raw.evidence_url}`,{size:9,color:green});
+      } else if (item.kind === "contact") {
+        text(item.raw.title,{font:bold}); text(item.raw.description); text(item.raw.email);
+        for (const link of item.raw.links) text(`${link.label} / ${link.url}`,{size:9,color:green});
       } else text(item.raw);
       text(`${pt ? "Origem" : "Source"}: ${item.source.page_url}${item.source.anchor}`, { size: 8, color: muted, gap: 10 });
     }
