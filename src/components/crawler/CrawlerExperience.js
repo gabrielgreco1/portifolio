@@ -60,13 +60,13 @@ export default function CrawlerExperienceProvider({ children }) {
 
   async function reveal(signal) {
     stage("returning"); setMessage(words.returning); setHighlight(null); setFragment(null);
-    await cameraTo(0, reduced ? 0 : Math.min(2300, 900 + window.scrollY * .09), signal);
+    await cameraTo(0, reduced ? 0 : Math.min(1400, 400 + window.scrollY * .055), signal);
     const g = geometry(); setLayout(g);
     const nextX = g.mobile ? window.innerWidth - g.pet - 24 : Math.min(window.innerWidth - g.pet - 18, g.left + g.width + 12);
     const nextY = g.mobile ? Math.max(150, g.top + g.height - 135) : Math.max(100, g.top + g.height - 315);
-    await move(nextX, nextY, .8, signal);
+    await move(nextX, nextY, .48, signal);
     stage("revealing"); setMessage(words.open);
-    await sleep(reduced ? 100 : 550, signal);
+    await sleep(reduced ? 100 : 300, signal);
     setSelectedId((old) => old || store.current?.evidence[0]?.id || null);
     setIsOpen(true); stage("result");
   }
@@ -312,13 +312,21 @@ export default function CrawlerExperienceProvider({ children }) {
 }
 
 export function ExtractionInvite() {
+  const { lang } = useLanguage();
   const { chooseScope, open, phase, collection, words } = useCrawler();
   const hasData = !!collection?.evidence.length;
+  const title = lang === 'pt' ? 'Solta o crawler.' : 'Unleash the crawler.';
   return <div className="extraction-invite">
-    <button className="extraction-start" onClick={chooseScope} disabled={!["idle", "ready"].includes(phase)}>
-      <span className="extraction-start-dot" aria-hidden="true" /><span>{words.invite}</span><span className="extraction-start-arrow" aria-hidden="true">↗</span>
+    <button className="extraction-start" aria-label={title} onClick={chooseScope} disabled={!["idle", "ready"].includes(phase)}>
+      <span className="extraction-mini-scene" aria-hidden="true">
+        <span className="extraction-mini-fragment">Python</span><span className="extraction-mini-fragment">30B+ requests</span><span className="extraction-mini-fragment">Zyte</span>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/crawler-pet.png" alt="" width="244" height="256" />
+      </span>
+      <span className="extraction-start-copy"><span className="extraction-start-kicker">{lang === 'pt' ? 'DÊ TRABALHO AO TAMAGOTCHI' : 'PUT THE TAMAGOTCHI TO WORK'}</span><strong>{title}</strong><span className="extraction-start-caption">{lang === 'pt' ? 'Seu próximo clique coloca ele em ação.' : 'Your next click puts it to work.'}</span></span>
+      <span className="extraction-start-arrow" aria-hidden="true">↗</span>
     </button>
-    <div className="extraction-invite-details"><span>{words.hint}</span>{hasData && <button onClick={open}>{words.open}</button>}</div>
+    <div className="extraction-invite-details"><span>{lang === 'pt' ? 'Ele percorre o site. Você leva JSON + PDF.' : 'It crawls the site. You take home JSON + PDF.'}</span>{hasData && <button onClick={open}>{words.open}</button>}</div>
   </div>;
 }
 

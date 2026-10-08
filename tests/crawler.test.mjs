@@ -83,12 +83,16 @@ test('full coverage is certified only when every available résumé fragment was
 
 test('more content accelerates every capture without changing the source list', async () => {
   const {captureTiming}=await import('../src/lib/crawler/pace.mjs');
-  for (const count of [4,7,29,51]) {
+  for (const count of [4,7,29,52]) {
     const timing=captureTiming(count,1);
-    assert.ok(timing.encode>=160);assert.ok(timing.frame>=34);
+    assert.ok(timing.encode>=85);assert.ok(timing.frame>=34);
     if(count>4)assert.ok(timing.unit<=captureTiming(count-1,1).unit);
   }
-  assert.ok(captureTiming(51,1).unit<captureTiming(7,1).unit/3);
-  const total=Array.from({length:51},(_,i)=>captureTiming(51,i)).reduce((sum,t)=>sum+t.scan+t.lift+t.hold+t.encode+t.confirm+t.gap+t.frame+t.move*1000+t.camera,0);
-  assert.ok(total<48000);
+  assert.ok(captureTiming(52,1).unit<captureTiming(29,1).unit);
+  assert.ok(captureTiming(29,1).unit<captureTiming(7,1).unit);
+  // A small selection must never expand to fill a long tour budget.
+  assert.ok(captureTiming(1).unit<=1000);
+  const captureBudget = count => Array.from({length:count},(_,i)=>captureTiming(count,i)).reduce((sum,t)=>sum+t.scan+t.lift+t.hold+t.encode+t.confirm+t.gap+t.frame+t.move*1000+t.camera,0);
+  assert.ok(captureBudget(7)<7500);
+  assert.ok(captureBudget(52)<30000);
 });
