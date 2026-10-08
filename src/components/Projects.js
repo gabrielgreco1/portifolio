@@ -8,7 +8,7 @@ export default function Projects() {
   return (
     <section id="projects" className="document-section">
       <div className="wrap">
-        <header className="section-header">
+        <header className="section-header" id="crawl-projects-context" data-crawl-id="projects-context" data-crawl-kind="text" data-crawl-record="context:projects" data-crawl-name={projects.title} data-crawl-field="introduction">
           <p className="mono">{projects.tag}</p>
           <h2>{projects.title}</h2>
           <p>{projects.intro}</p>
@@ -16,9 +16,9 @@ export default function Projects() {
 
         <div className="project-table">
           {projects.items.map((project, index) => (
-            <a className="project-row" href={project.link} target="_blank" rel="noopener noreferrer" key={project.title}>
+            <a className="project-row" href={project.link} target="_blank" rel="noopener noreferrer" data-crawl-record={`project:${index}`} key={project.title}>
               <span className="project-number mono">0{index + 1}</span>
-              <div className="project-copy">
+              <div className="project-copy" id={`crawl-project-${index}`} data-crawl-id={`project-${index}`} data-crawl-kind="project">
                 <div className="project-title-line">
                   <h3>{project.title}</h3>
                   <span className="project-type mono">{project.type}</span>

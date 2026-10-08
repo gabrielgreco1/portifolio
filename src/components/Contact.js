@@ -7,7 +7,7 @@ export default function Contact() {
 
   return (
     <section id="contact" className="contact document-section">
-      <div className="wrap">
+      <div className="wrap" id="crawl-contact" data-crawl-id="contact" data-crawl-kind="contact" data-crawl-record="contact:gabriel" data-crawl-name="Gabriel Greco">
         <p className="mono">{contact.tag}</p>
         <h2>{contact.title}</h2>
         <p className="contact-desc">{contact.desc}</p>
