@@ -96,3 +96,24 @@ test('more content accelerates every capture without changing the source list', 
   assert.ok(captureBudget(7)<7500);
   assert.ok(captureBudget(52)<30000);
 });
+
+test('phone layouts keep the dialog and the complete fragment stack on screen in both orientations', async () => {
+  const {crawlerGeometry}=await import('../src/lib/crawler/geometry.mjs');
+  for (const [width,height] of [[320,568],[360,640],[390,844],[430,932],[568,320],[667,375],[844,390]]) {
+    const g=crawlerGeometry(width,height);
+    assert.equal(g.mobile,true);
+    assert.ok(g.left>=0 && g.top>=0);
+    assert.ok(g.left+g.width<=width && g.top+g.height<=height);
+    const stackBottom=g.dockY+g.pet*1.049+3*g.pileStep+g.pileTail+20;
+    assert.ok(stackBottom<=height-84,`${width}×${height}: pile must clear the touch controls`);
+  }
+});
+
+test('fragment animation keeps its final pose when commitStyles is unavailable', async () => {
+  const {animateElement}=await import('../src/lib/crawler/motion.mjs');
+  let cancelled=false;
+  const element={style:{},animate:()=>({finished:Promise.resolve(),cancel:()=>{cancelled=true;}})};
+  await animateElement(element,[{transform:'translateY(0)',opacity:1},{transform:'translateY(20px) scale(.1)',opacity:0}],{duration:100},new AbortController().signal);
+  assert.equal(element.style.transform,'translateY(20px) scale(.1)');
+  assert.equal(element.style.opacity,'0');assert.equal(cancelled,true);
+});

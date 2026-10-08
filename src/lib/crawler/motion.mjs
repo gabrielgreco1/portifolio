@@ -14,7 +14,11 @@ export async function animateElement(element, frames, options, signal) {
   const animation = element.animate(frames, { fill: "forwards", ...options });
   const abort = () => animation.cancel();
   signal?.addEventListener("abort", abort, { once: true });
-  try { await animation.finished; if (signal?.aborted) throw cancelled(); animation.commitStyles(); }
+  try {
+    await animation.finished; if (signal?.aborted) throw cancelled();
+    if (typeof animation.commitStyles === 'function') animation.commitStyles();
+    else { const last = frames.at(-1); if (last.transform !== undefined) element.style.transform = last.transform; if (last.opacity !== undefined) element.style.opacity = String(last.opacity); }
+  }
   finally { signal?.removeEventListener("abort", abort); animation.cancel(); }
 }
 

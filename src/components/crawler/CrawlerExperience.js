@@ -7,6 +7,7 @@ import { commitEvidence, createCollection, finalizeCollection, scopeTargets, dow
 import { animateElement, cameraTo, cancelled, sleep, visualCopy } from "@/lib/crawler/motion.mjs";
 import { jsonLines } from "@/lib/crawler/json.mjs";
 import { captureTiming } from "@/lib/crawler/pace.mjs";
+import { crawlerGeometry } from "@/lib/crawler/geometry.mjs";
 import ScopePicker from "./ScopePicker";
 import { useGlassDialog } from "./useGlassDialog";
 import "./crawler.css";
@@ -22,13 +23,7 @@ Object.assign(TEXT.pt, {record:"registro",collectedOne:"fragmento guardado",extr
 Object.assign(TEXT.en, {record:"record",collectedOne:"saved fragment",extractLabel:"EXTRACTION",scopeTitle:"What shall we extract?",scopeHint:"You choose. The tamagotchi takes it from here.",resumeScope:"Full résumé",experiencesScope:"Experience",projectsScope:"Projects",skillsScope:"Tools",resumeDetail:"Everything published: introduction, complete experience, projects, technologies, services and contact.",experiencesDetail:"Every company, role, period, metric and activity. The details come along too.",projectsDetail:"Every project, with descriptions, technologies and links.",skillsDetail:"Every technology, organized by the site's groups.",companyChoice:"Just one company?",fragments:"fragments",autoPace:"automatic pace",scopeStartHint:"Click an option to start.",pointFragment:"Point to a fragment on the page",complete:"complete résumé",selectedComplete:"complete selection",employment:"Role and period",chapter:"Experience in detail",list:"Metrics",statistics:"Numbers in context",technology_group:"Technologies",service:"Service",links:"Links",contact:"Contact"});
 
 function geometry() {
-  const mobile = window.innerWidth < 800;
-  const sidebar = window.innerWidth > 980 ? 264 : 0;
-  const width = Math.min(900, window.innerWidth - sidebar - (mobile ? 32 : 180));
-  const height = Math.min(650, window.innerHeight - (mobile ? 100 : 110));
-  const left = mobile ? 16 : sidebar + Math.max(20, (window.innerWidth - sidebar - width - 150) / 2);
-  const top = Math.max(mobile ? 72 : 55, (window.innerHeight - height) / 2);
-  return { mobile, width, height, left, top, pet: mobile ? 82 : 122 };
+  return crawlerGeometry(window.innerWidth, window.visualViewport?.height || window.innerHeight);
 }
 
 function targetNode(id) { return document.querySelector(`main [data-crawl-id="${CSS.escape(id)}"]`); }
@@ -85,13 +80,14 @@ export default function CrawlerExperienceProvider({ children }) {
         }
         stage("approaching"); setMessage(`${runState.index + 1}/${runState.ids.length} · ${node.closest("[data-crawl-record]")?.querySelector("h3")?.textContent || node.textContent.slice(0, 40)}`);
         const before = node.getBoundingClientRect();
-        const safeTop = window.innerHeight * (window.innerWidth < 800 ? .23 : .28);
-        const needsCamera = before.top < safeTop - 40 || before.top + Math.min(before.height, window.innerHeight * .35) > window.innerHeight * (window.innerWidth < 800 ? .5 : .8);
+        const viewport = geometry();
+        const safeTop = viewport.compact ? 38 : window.innerHeight * (viewport.mobile ? .23 : .28);
+        const needsCamera = before.top < safeTop - 40 || before.top + Math.min(before.height, window.innerHeight * .35) > window.innerHeight * (viewport.mobile ? .5 : .8);
         if (needsCamera) await cameraTo(window.scrollY + before.top - safeTop, reduced ? 0 : timing.camera, signal);
         if (node.tagName === "IMG" && !node.complete) await Promise.race([node.decode().catch(() => {}), sleep(1400, signal)]);
         const rect = node.getBoundingClientRect(); const g = geometry(); setLayout(g);
         const actorY = Math.max(g.mobile ? 94 : 86, Math.min(rect.top + rect.height / 2 - g.pet * .4, window.innerHeight - g.pet - 205 - 82));
-        await move(window.innerWidth - g.pet - (g.mobile ? 20 : 42), g.mobile ? window.innerHeight - g.pet - 315 : actorY, timing.move, signal);
+        await move(window.innerWidth - g.pet - (g.mobile ? 20 : 42), g.mobile ? g.dockY : actorY, timing.move, signal);
         const snapshot = readTarget(node);
         stage("inspecting"); setMessage(words.scan); setHighlight({ left: rect.left - 7, top: rect.top - 6, width: rect.width + 14, height: rect.height + 12 });
         await sleep(reduced ? 18 : timing.scan, signal);
@@ -212,18 +208,28 @@ export default function CrawlerExperienceProvider({ children }) {
   }, [phase, selecting]);
 
   useEffect(() => {
+    let previousWidth = window.innerWidth;
     function intervene(event) {
       if (event.type === "keydown" && !["ArrowDown", "ArrowUp", "PageDown", "PageUp", "Home", "End", " "].includes(event.key)) return;
       if (isOpen) return;
       actions.current.pause();
       if (phaseRef.current === "source") { sourceControl.current?.abort(); setHighlight(null); }
     }
-    function resize() { actions.current.pause(); setLayout(geometry()); setHighlight(null); }
+    function resize() {
+      const widthChanged = window.innerWidth !== previousWidth;
+      previousWidth = window.innerWidth;
+      // Mobile browser bars change height during scrolling. Only a width change
+      // invalidates the measured source and needs an explicit pause.
+      if (widthChanged) { actions.current.pause(); setHighlight(null); }
+      const g = geometry(); setLayout(g);
+      if (widthChanged) { x.set(Math.max(12,Math.min(x.get(),window.innerWidth-g.pet-20))); y.set(g.mobile ? g.dockY : Math.max(12,Math.min(y.get(),window.innerHeight-g.pet-90))); }
+    }
     function hidden() { if (document.hidden) actions.current.pause(); }
     window.addEventListener("wheel", intervene, { passive: true }); window.addEventListener("touchmove", intervene, { passive: true }); window.addEventListener("keydown", intervene);
     window.addEventListener("resize", resize); document.addEventListener("visibilitychange", hidden);
-    return () => { window.removeEventListener("wheel", intervene); window.removeEventListener("touchmove", intervene); window.removeEventListener("keydown", intervene); window.removeEventListener("resize", resize); document.removeEventListener("visibilitychange", hidden); };
-  }, [isOpen]);
+    window.visualViewport?.addEventListener("resize", resize);
+    return () => { window.removeEventListener("wheel", intervene); window.removeEventListener("touchmove", intervene); window.removeEventListener("keydown", intervene); window.removeEventListener("resize", resize); window.visualViewport?.removeEventListener("resize", resize); document.removeEventListener("visibilitychange", hidden); };
+  }, [isOpen,x,y]);
 
   useEffect(() => {
     if (!selecting) return;
@@ -282,21 +288,21 @@ export default function CrawlerExperienceProvider({ children }) {
             {!isOpen && <span className="crawl-speech" aria-hidden="true">{message}</span>}
             {showMemory && <div className="crawl-memory" aria-hidden="true">
               <AnimatePresence initial={false}>
-                {memory.map((item, index) => <motion.div className={`crawl-memory-fragment crawl-memory-fragment--${item.kind}`} key={`${item.id}-${item.source.snapshot_revision}`} style={{ zIndex: index + 1 }} initial={{ opacity: 0, x: 24, y: -45, scale: .5, rotate: -7 }} animate={{ opacity: 1, x: 0, y: index * 40, scale: 1, rotate: index % 2 ? -1.6 : 1 }} transition={{ duration: reduced ? .05 : captureTiming(control.current?.ids.length || 1).card, ease: [.2, .9, .25, 1] }}>
+                {memory.map((item, index) => <motion.div className={`crawl-memory-fragment crawl-memory-fragment--${item.kind}`} key={`${item.id}-${item.source.snapshot_revision}`} style={{ zIndex: index + 1 }} initial={{ opacity: 0, x: 24, y: -45, scale: .5, rotate: -7 }} animate={{ opacity: 1, x: 0, y: index * layout.pileStep, scale: 1, rotate: index % 2 ? -1.6 : 1 }} transition={{ duration: reduced ? .05 : captureTiming(control.current?.ids.length || 1).card, ease: [.2, .9, .25, 1] }}>
                   <ContentFragment item={item} />
                 </motion.div>)}
               </AnimatePresence>
-              {memory.length > 0 && <span className="crawl-memory-count" style={{ top: (memory.length - 1) * 40 + 96 }}>{collection.evidence.length} {collection.evidence.length === 1 ? words.collectedOne : words.collected}</span>}
+              {memory.length > 0 && <span className="crawl-memory-count" style={{ top: (memory.length - 1) * layout.pileStep + layout.pileTail }}>{collection.evidence.length} {collection.evidence.length === 1 ? words.collectedOne : words.collected}</span>}
             </div>}
           </motion.div>
         )}
         {highlight && <motion.div key="highlight" className={`crawl-highlight ${phase === "source" ? "crawl-highlight--source" : ""}`} style={highlight} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} aria-hidden="true"><span className="crawl-scan" /></motion.div>}
       </AnimatePresence>
       {fragment && <div ref={copyRef} className="crawl-copy" style={fragment.rect} aria-hidden="true" inert dangerouslySetInnerHTML={{ __html: fragment.html }} />}
-      {active && !isOpen && !pickerOpen && <div className="crawl-controls">
-        <span className="crawl-control-status"><i />{phase === "source" ? words.source : selecting ? words.selecting : `${collection?.evidence.length || 0} / ${collection?.coverage.target_ids.length || 4} · ${phase === "paused" ? words.paused : words.collected}`}</span>
+      {(active || selecting) && !isOpen && !pickerOpen && <div className="crawl-controls">
+        <span className="crawl-control-status"><i />{phase === "source" ? words.source : selecting ? (lang === "pt" ? "Toque ou clique em um trecho destacado." : "Tap or click a highlighted fragment.") : `${collection?.evidence.length || 0} / ${collection?.coverage.target_ids.length || 0} · ${phase === "paused" ? words.paused : words.collected}`}</span>
         <div className="crawl-control-actions">
-          {phase === "source" ? <button onClick={open}>{words.back} ↑</button> : <>
+          {selecting ? <button onClick={()=>{setSelecting(false);setMessage(collection ? words.open : "");}}>{lang === "pt" ? "Cancelar seleção" : "Cancel selection"}</button> : phase === "source" ? <button onClick={open}>{words.back} ↑</button> : <>
             {busy && <button onClick={pause}>{words.pause}</button>}
             {phase === "paused" && <button onClick={resume}>{words.resume}</button>}
             {!selecting && <button onClick={select}>{words.select}</button>}
@@ -373,7 +379,7 @@ function Inspector({ isOpen, collection, words, tab, setTab, selectedId, onSelec
   return <AnimatePresence>
     {isOpen && <>
       <motion.div key="backdrop" className="glass-backdrop" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: .5 }} onClick={onClose} />
-      <motion.section key="inspector" ref={panel} className="glass-inspector" role="dialog" aria-modal="true" aria-labelledby="collection-title" style={{ left: layout.left, top: layout.top, width: layout.width, height: layout.height, transformOrigin: `${origin.x - layout.left}px ${origin.y - layout.top}px` }} initial={{ opacity: 0, scale: reduced ? 1 : .045, y: 15, filter: reduced ? "none" : "blur(9px)" }} animate={{ opacity: 1, scale: 1, y: 0, filter: "blur(0px)" }} exit={{ opacity: 0, scale: reduced ? 1 : .9, y: 10 }} transition={{ duration: reduced ? .15 : .95, ease: [.22, 1, .36, 1] }}>
+      <motion.section key="inspector" ref={panel} className="glass-inspector glass-inspector--result" role="dialog" aria-modal="true" aria-labelledby="collection-title" style={{ '--collection-left': `${layout.left}px`, '--collection-top': `${layout.top}px`, '--collection-width': `${layout.width}px`, '--collection-height': `${layout.height}px`, transformOrigin: `${origin.x - layout.left}px ${origin.y - layout.top}px` }} initial={{ opacity: 0, scale: reduced ? 1 : .045, y: 15, filter: reduced ? "none" : "blur(9px)" }} animate={{ opacity: 1, scale: 1, y: 0, filter: "blur(0px)" }} exit={{ opacity: 0, scale: reduced ? 1 : .9, y: 10 }} transition={{ duration: reduced ? .15 : .95, ease: [.22, 1, .36, 1] }}>
         <header className="glass-header">
           <div><span className="glass-eyebrow">GABRIEL GRECO / COLLECTION.JSON</span><h2 id="collection-title">{words.title}</h2><p>{collection.evidence.length} {collection.evidence.length === 1 ? words.collectedOne : words.collected} <span>·</span> {collection.records.length} {collection.records.length === 1 ? words.record : words.records} <span>·</span> {collection.coverage.complete ? words.complete : collection.coverage.requested_complete ? words.selectedComplete : words.partial}</p></div>
           <button className="glass-close" data-modal-close onClick={onClose} aria-label={words.close}>×</button>
