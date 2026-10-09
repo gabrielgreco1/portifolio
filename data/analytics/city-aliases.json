@@ -1,0 +1,18 @@
+[
+  {
+    "country": "BR",
+    "city": "Embu",
+    "region": "State of Sao Paulo",
+    "canonicalName": "Embu das Artes",
+    "source": "https://www.al.sp.gov.br/repositorio/legislacao/lei/2011/lei-14537-06.09.2011.html",
+    "reason": "The state law renamed the municipality of Embu to Embu das Artes."
+  },
+  {
+    "country": "PT",
+    "city": "Charneca da Caparica",
+    "region": "Setubal",
+    "canonicalName": "Charneca de Caparica",
+    "source": "https://www.cm-almada.pt/sites/default/files/2026-02/Ficha_Operacao_PU%20Charneca2026.pdf",
+    "reason": "The municipal project document uses both spellings for the same Charneca park, in Almada, Setubal."
+  }
+]

@@ -98,7 +98,15 @@ export function commitEvidence(collection, evidence) {
   return {...collection,records,evidence:all,field_origins:origins,coverage:{...collection.coverage,captured_ids:all.map(item => item.target_id)}};
 }
 
-export function exportName(collection,extension) { return `gabriel-greco-coleta-${collection.session.started_at.slice(0,10)}-${collection.page.language}.${extension}`; }
+export function exportName(collection,extension) {
+  const {language}=collection.page,scope=collection.coverage.scope;
+  if(extension==='pdf'){
+    const names=language==='pt'?{resume:'curriculo',experiences:'experiencias',projects:'projetos',skills:'tecnologias'}:{resume:'resume',experiences:'experience',projects:'projects',skills:'technologies'};
+    const name=names[scope]||(scope?.startsWith('company:')?scope.slice(8):language==='pt'?'selecao':'selection');
+    return `gabriel-greco-${name.replace(/[^a-z0-9-]/gi,'-')}-${language}.pdf`;
+  }
+  return `gabriel-greco-coleta-${collection.session.started_at.slice(0,10)}-${language}.${extension}`;
+}
 export function downloadFile(bytes,name,mime) {
   const url = URL.createObjectURL(new Blob([bytes],{type:mime}));
   const link = document.createElement('a'); link.href = url; link.download = name;

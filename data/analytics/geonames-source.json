@@ -1,0 +1,17 @@
+{
+  "retrievedOn": "2026-10-09",
+  "files": {
+    "cities500.zip": {
+      "url": "https://download.geonames.org/export/dump/cities500.zip",
+      "sha256": "4022ba76d34abbcd7c7b32597a6f968f51edfa4fb262bf04f15c109624ae3db2"
+    },
+    "countryInfo.txt": {
+      "url": "https://download.geonames.org/export/dump/countryInfo.txt",
+      "sha256": "f835fda64430210e0a6a4e1fba9f9e99ed3aa0694e61aeff43fb761ac2613a0f"
+    },
+    "admin1CodesASCII.txt": {
+      "url": "https://download.geonames.org/export/dump/admin1CodesASCII.txt",
+      "sha256": "1da92a6323a5fec3176f3f743bf4cf4040fd56a876da55e46fbca23c863aa60a"
+    }
+  }
+}

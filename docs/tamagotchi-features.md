@@ -1,0 +1,74 @@
+# Tamagotchi implementation log
+
+Work sequentially and inspect each feature in Chrome and mobile before continuing. Preserve `public/crawler-character-v2.png`, existing extraction coverage, stacked fragments, JSON and PDF.
+
+## Current quality pass
+
+Selection and delivery now use a single start action, exact PDF previews and formatted four-page full résumés / one-page Zyte PDFs. Data Run now supports held ducking and four crawling-themed hazards with occasional data caches. Data Invaders has escalating anti-bot enemies and guardian waves. Both games have event sounds, persistent mute and fullscreen with a mobile fallback. Validation and remaining requested improvements are tracked in [tamagotchi-next.md](tamagotchi-next.md).
+
+## Validated locally
+
+- Source-aware collection excursions: rail → center → left in short groups; distance-based travel; bounded cargo on mobile. Full résumé: 52 fragments / 22 records; scoped Zyte: 7 fragments / 1 record. Chrome desktop and phone, pause/resume.
+- Small liquid glass menu: context actions, keyboard navigation, outside click, focus restoration, measured viewport bounds. Mobile and desktop.
+- Three clicks: eight-view axial spin with anticipation, jump and landing; five clicks: overload, steam and real page text fragments. Rest uses the exact approved artwork. Reduced motion supported. Deterministic Playwright frame capture and real Chrome clicks validated.
+- Drag: pointer capture, four planted feet, bounded movement, increasing resistance, smooth release. Arrow keys work when the character has focus. Drag cannot accidentally open the menu. Mouse, touch and keyboard validated.
+
+- Data Run: parallax server district, approved character with moving legs, beveled HTTP obstacles, collectible packets, immediate keyboard and touch jump, pause, collision, retry and local best score. Chrome gameplay and deterministic desktop/mobile frame captures passed.
+
+- Data Invaders: approved character, three enemy classes, waves, shield and three lives; held keyboard fire, arrows, two-finger touch and swipe controls. Desktop, phone and 844×390 landscape capture passed. Both games preserve a playable world when the phone rotates.
+
+- Collection personality: real-fragment reactions (Zyte, work activities, images, quotations, Python), no extra collection delay.
+- Delivery receipt: exact exported byte size, real fragment/record counts, approved character nod, optional seal revealing the SHA-256 of the JSON. JSON downloads and the identical JSON embedded in PDFs verified. PT/EN and portrait/landscape.
+- WebKit: scoped extraction and downloads, overload color fallback, runner touch and pause, invaders held firing and points verified. This is browser-engine testing, not a claim of testing every physical iPhone.
+
+## Visitor map: implementation ready, production connection pending
+
+- Orthographic globe, pan, pinch/zoom, city/country search, city details and keyboard controls, current/history toggle, mobile glass dialog. Individual anonymous current-session signals and hourly arrivals are available with explicit coverage and source labels; see [visitor-observatory.md](visitor-observatory.md).
+- Real browser sessions recorded by `/api/visitors`. No hardcoded visitor data in application code.
+- Production: Upstash Redis REST, atomic history increments and expiring presence; local development: persistent `.local/visits.json`, always unknown location. Production never falls back to local storage.
+- New visit after 30 minutes of inactivity; presence window 90 seconds, heartbeat every 45 seconds while visible; map refresh every 15 seconds. DNT and recognized bots are excluded.
+- Only city-level location from Vercel headers is accepted. Rounded coordinates, no IP/GPS storage, no session IDs in public responses. New-session rate limiting uses a short-lived keyed hash.
+- Local browser records, persistence, concurrency, cookie validation, location validation and expiration tested. Marker layout and navigation tested in an isolated Playwright fixture explicitly labelled TEST; fixtures never enter the database or site.
+- Production Redis Lua scripts also passed against an isolated Redis 7.4.2 instance through an HTTP bridge using the Upstash command envelope: 20 concurrent heartbeats count once; session TTL, presence expiration, unlocated visits, rate limiting and preview/production namespace isolation. No test records entered any deployed database. This does not replace validation against the actual Upstash connection.
+- **Still required:** user confirmation for Vercel marketplace / Upstash terms, choose a free plan, connect only `portifolio`, validate real deployed Redis writes and real geolocation, confirm preview/production namespace separation. Do not claim the map is live before this.
+- Live records begin at activation. A separate Google Analytics history view now contains all 320 city/country records filtered to the verified stream and gabrielgreco.com, for 2020-01-01 through 2026-10-08. It preserves the reported 869 active users independently of row sums. 305 records have approximate GeoNames city centers; ambiguous/unknown cities remain in the searchable list. Source checksums, retrieval date and CC BY 4.0 attribution are retained. This dated snapshot does not automatically refresh or create individual historical visitor IDs.
+
+## Remaining
+
+- Final regression passed: PT/EN; full 52/22 and Zyte 7/1; pause → menu → spin → resume → complete collection in native Chrome; exact downloaded JSON and PDF attachment; portrait/landscape; reduced motion; production build, lint, 28 data/game/storage tests and 5 SEO tests.
+- Branch pushed; draft [PR #10](https://github.com/gabrielgreco1/portifolio/pull/10) attached to the chat. Vercel preview succeeded for 9391cb7; live Chrome confirmed Data Invaders hits/score/pause on the deployed preview.
+- Still required after database approval: activate and validate real Redis writes/city geolocation; mark PR ready, merge, and verify gabrielgreco.com. The production domain still serves PR #9.
+
+## Checks
+
+```sh
+npm run lint
+npm run build
+npm run test:crawler
+node --test tests/pet-motion.test.mjs tests/visitors.test.mjs
+REDIS_SERVER_BIN=/path/to/redis-server node --test tests/visitors-redis.test.mjs
+node scripts/capture-pet-motion.mjs
+node scripts/capture-pet-drag.mjs
+node scripts/capture-visitor-map.mjs
+node scripts/capture-runner.mjs
+node --test tests/runner.test.mjs tests/invaders.test.mjs
+node scripts/capture-invaders.mjs
+TEST_ORIGIN=http://127.0.0.1:4322 node scripts/capture-delivery.mjs
+TEST_BROWSER=webkit TEST_ORIGIN=http://127.0.0.1:4322 node scripts/capture-delivery.mjs
+node scripts/check-pet-webkit.mjs
+SEO_TEST_ORIGIN=http://127.0.0.1:4322 npm run test:seo
+```
+
+The capture scripts render the actual local application using installed Chrome. Default origin is port 4318; screenshots go to `/tmp/tamagotchi-*`.
+
+Implementation references: [Vercel request geolocation headers](https://vercel.com/docs/headers/request-headers), [Upstash REST commands](https://upstash.com/docs/redis/features/restapi), [D3 geographic projections](https://d3js.org/d3-geo/projection), [Natural Earth geometry via world-atlas](https://github.com/topojson/world-atlas).
+
+### Interruption protests (2026-10-09)
+
+Intentional page scrolling (wheel, touch, page-navigation keys) or the Pause control escalates the crawler's reaction once per running-to-paused transition. Resizing, switching tabs, opening menus and selecting a source pause safely without adding an interruption. A short grace period after resuming prevents scroll inertia from immediately triggering another protest.
+
+1. The approved character travels from its actual collection position to the foreground. The site progressively blurs behind it, with a larger dialogue asking to finish its work.
+2. A second interruption adds a warmer tint, angular brows, steam and a different warning. Both early dialogues let the visitor resume or remain paused; Escape remains paused.
+3. The third interruption marks the session partial, ends collection and sends the character to the lower-right corner after the dialogue. Every new-collection entry point stays locked until a page refresh. Existing JSON/PDF and provenance remain accessible. The refresh control explicitly reloads the page; no persistent strike flag is stored.
+
+The overlay traps focus, restores scrolling/inert state and respects reduced motion. Portrait, compact and landscape layouts keep dialogue controls visible. `scripts/check-crawler-protest.mjs` covers progression, automatic retreat, deduplication of repeated events, resize exclusions, keyboard focus/Escape, partial-data preservation, locked menu/delivery actions and refresh recovery. `TEST_COMPLETE=1` verifies all 52 distinct fragments after two interruptions; `TEST_TOUCH=1` uses Chrome touch input; `TEST_REDUCED=1` checks reduced motion. Build, lint and all 13 crawler tests pass.

@@ -117,3 +117,38 @@ test('fragment animation keeps its final pose when commitStyles is unavailable',
   assert.equal(element.style.transform,'translateY(20px) scale(.1)');
   assert.equal(element.style.opacity,'0');assert.equal(cancelled,true);
 });
+
+test('collection excursions remain in the viewport with both phone orientations', async () => {
+  const {collectionStation,travelDuration}=await import('../src/lib/crawler/route.mjs');
+  const {crawlerGeometry}=await import('../src/lib/crawler/geometry.mjs');
+  for(const [width,height] of [[320,568],[390,844],[844,390],[1280,800],[1720,950]]) {
+    const layout={...crawlerGeometry(width,height),width,height};
+    const positions=Array.from({length:18},(_,i)=>collectionStation({left:width>980?390:20,top:height*.57,width:width*.55,height:120},i,layout));
+    for(const p of positions){assert.ok(p.x>=12);assert.ok(p.x+layout.pet<=width-12);assert.ok(p.y>=12);assert.ok(p.y+layout.pet<=height);}
+    assert.ok(Math.max(...positions.map(p=>p.x))-Math.min(...positions.map(p=>p.x))>width*.18,'the pet actually leaves the right rail');
+    assert.ok(travelDuration(positions[0],positions[6])>=Math.min(.8,Math.abs(positions[0].x-positions[6].x)/780),'longer trips have enough travel time');
+  }
+});
+
+test('reading document keeps professional chapters and manual quotes without duplicating site chrome', async()=>{
+  const {collectionDocument}=await import('../src/lib/crawler/document.mjs');
+  const chapter=evidence('chapter','chapter',{label:'Operations',title:'Production work',description:'A complete description.',tasks:['First concrete activity.','Second concrete activity.']},'experience:company','chapters');
+  const raw=[description,quote,chapter].reduce(commitEvidence,createCollection(page,['description','quote','chapter'],'company:company'));
+  const before=JSON.stringify(raw),document=collectionDocument(raw);
+  assert.ok(document.blocks.some(b=>b.text==='A complete description.'));
+  assert.deepEqual(document.blocks.filter(b=>b.kind==='bullet').map(b=>b.text),chapter.raw.tasks);
+  assert.ok(!document.blocks.some(b=>b.text===quote.raw));
+  assert.equal(JSON.stringify(raw),before);
+  const picked=commitEvidence(createCollection(page,['quote'],'selection'),quote);
+  assert.ok(collectionDocument(picked).blocks.some(b=>b.text===quote.raw));
+});
+
+test('PDF preview uses the same layout and its text stays inside printable bounds',async()=>{
+  const {prepareCollectionPdf}=await import('../src/lib/crawler/pdf.mjs');
+  const result=await prepareCollectionPdf(collection(),async()=>({ok:false}));
+  const pdf=await PDFDocument.load(result.bytes);assert.equal(result.pages.length,pdf.getPageCount());
+  for(const page of result.pages)for(const op of page)if(op.kind==='text'){
+    assert.ok(op.x>=43&&op.x+op.width<=result.width-43,`Line overflows: ${op.text}`);
+    assert.ok(op.y>=25&&op.y+op.size<result.height-15,`Line outside page: ${op.text}`);
+  }
+});
