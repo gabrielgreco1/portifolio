@@ -25,12 +25,13 @@ Work sequentially and inspect each feature in Chrome and mobile before continuin
 - New visit after 30 minutes of inactivity; presence window 90 seconds, heartbeat every 45 seconds while visible; map refresh every 15 seconds. DNT and recognized bots are excluded.
 - Only city-level location from Vercel headers is accepted. Rounded coordinates, no IP/GPS storage, no session IDs in public responses. New-session rate limiting uses a short-lived keyed hash.
 - Local browser records, persistence, concurrency, cookie validation, location validation and expiration tested. Marker layout and navigation tested in an isolated Playwright fixture explicitly labelled TEST; fixtures never enter the database or site.
+- Production Redis Lua scripts also passed against an isolated Redis 7.4.2 instance through an HTTP bridge using the Upstash command envelope: 20 concurrent heartbeats count once; session TTL, presence expiration, unlocated visits, rate limiting and preview/production namespace isolation. No test records entered any deployed database. This does not replace validation against the actual Upstash connection.
 - **Still required:** user confirmation for Vercel marketplace / Upstash terms, choose a free plan, connect only `portifolio`, validate real deployed Redis writes and real geolocation, confirm preview/production namespace separation. Do not claim the map is live before this.
 - Historical records begin at activation. Older analytics have not been imported and must not be invented.
 
 ## Remaining
 
-- Final regression passed: PT/EN; full 52/22 and Zyte 7/1; pause → menu → spin → resume → complete collection in native Chrome; exact downloaded JSON and PDF attachment; portrait/landscape; reduced motion; production build, lint, 27 data/game tests and 5 SEO tests.
+- Final regression passed: PT/EN; full 52/22 and Zyte 7/1; pause → menu → spin → resume → complete collection in native Chrome; exact downloaded JSON and PDF attachment; portrait/landscape; reduced motion; production build, lint, 28 data/game/storage tests and 5 SEO tests.
 - Branch pushed; draft [PR #10](https://github.com/gabrielgreco1/portifolio/pull/10) attached to the chat. Vercel preview succeeded for 9391cb7; live Chrome confirmed Data Invaders hits/score/pause on the deployed preview.
 - Still required after database approval: activate and validate real Redis writes/city geolocation; mark PR ready, merge, and verify gabrielgreco.com. The production domain still serves PR #9.
 
@@ -41,6 +42,7 @@ npm run lint
 npm run build
 npm run test:crawler
 node --test tests/pet-motion.test.mjs tests/visitors.test.mjs
+REDIS_SERVER_BIN=/path/to/redis-server node --test tests/visitors-redis.test.mjs
 node scripts/capture-pet-motion.mjs
 node scripts/capture-pet-drag.mjs
 node scripts/capture-visitor-map.mjs
