@@ -30,8 +30,9 @@ Work sequentially and inspect each feature in Chrome and mobile before continuin
 
 ## Remaining
 
-- Final regression: PT/EN, complete and scoped extraction, pause/resume with menu/gestures, JSON/PDF, phone portrait/landscape, reduced motion, production build and SEO tests.
-- Push, PR, attach it to the chat, merge after validation, verify gabrielgreco.com. None of this branch has been published yet.
+- Final regression passed: PT/EN; full 52/22 and Zyte 7/1; pause → menu → spin → resume → complete collection in native Chrome; exact downloaded JSON and PDF attachment; portrait/landscape; reduced motion; production build, lint, 27 data/game tests and 5 SEO tests.
+- Branch pushed; draft [PR #10](https://github.com/gabrielgreco1/portifolio/pull/10) attached to the chat. Vercel preview succeeded for 9391cb7; live Chrome confirmed Data Invaders hits/score/pause on the deployed preview.
+- Still required after database approval: activate and validate real Redis writes/city geolocation; mark PR ready, merge, and verify gabrielgreco.com. The production domain still serves PR #9.
 
 ## Checks
 
