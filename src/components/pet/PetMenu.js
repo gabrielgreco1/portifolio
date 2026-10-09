@@ -7,7 +7,7 @@ import './pet.css';
 function PetMenuPanel({anchor,lang,phase,count,onClose,onExtract,onResume,onCollection,reduced,children}) {
   const panel=useRef(null),pt=lang==='pt',present=useIsPresent();
   const [height,setHeight]=useState(230);
-  useEffect(()=>{const observer=new ResizeObserver(entries=>setHeight(entries[0].borderBoxSize?.[0]?.blockSize||panel.current.offsetHeight));if(panel.current)observer.observe(panel.current);return()=>observer.disconnect();},[]);
+  useEffect(()=>{const observer=new ResizeObserver(entries=>{if(panel.current)setHeight(entries[0]?.borderBoxSize?.[0]?.blockSize||panel.current.offsetHeight);});if(panel.current)observer.observe(panel.current);return()=>observer.disconnect();},[]);
   useEffect(()=>{
     if(!anchor||!present)return;
     const focus=setTimeout(()=>panel.current?.querySelector('.pet-menu-options button')?.focus({preventScroll:true}),180);

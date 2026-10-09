@@ -1,0 +1,25 @@
+// Synthetic locations exist ONLY in this isolated rendering test, never in the site or its database.
+import {chromium} from 'playwright';
+import {mkdir} from 'node:fs/promises';
+import assert from 'node:assert/strict';
+const output='/tmp/tamagotchi-map';await mkdir(output,{recursive:true});
+const browser=await chromium.launch({channel:'chrome',headless:true});
+const page=await browser.newPage({viewport:{width:1280,height:900},deviceScaleFactor:1});
+const errors=[];page.on('pageerror',error=>errors.push(error.message));
+const fixture={available:true,mode:'local',startedAt:'2026-10-09T00:00:00Z',updatedAt:new Date().toISOString(),activeWindowSeconds:90,total:12,active:3,unlocated:1,unlocatedActive:0,points:[{id:'fixture-sp',city:'TEST · São Paulo',country:'BR',latitude:-23.6,longitude:-46.6,visits:6,active:2},{id:'fixture-ny',city:'TEST · New York',country:'US',latitude:40.7,longitude:-74,visits:3,active:1},{id:'fixture-ty',city:'TEST · Tokyo',country:'JP',latitude:35.7,longitude:139.7,visits:2,active:0}]};
+await page.route('**/api/visitors',route=>route.request().method()==='GET'?route.fulfill({json:fixture}):route.continue());
+await page.goto('http://127.0.0.1:4318/pt');await page.waitForTimeout(900);
+await page.locator('.crawler-pet').press('Enter');await page.getByRole('button',{name:/Quem está por aqui/}).click();await page.getByRole('dialog',{name:'Pequeno mundo. Conexões reais.'}).waitFor();
+await page.locator('.visitor-city-list button').first().waitFor();
+assert.equal(await page.locator('.visitor-city-list button').count(),2);
+await page.getByRole('button',{name:'Desde o início',exact:true}).click();assert.equal(await page.locator('.visitor-city-list button').count(),3);
+await page.locator('.visitor-city-list button').filter({hasText:'Tokyo'}).click();await page.waitForTimeout(950);
+assert.equal(await page.locator('.visitor-point--selected').count(),1);
+await page.screenshot({path:`${output}/desktop-fixture.png`});
+const coord=await page.locator('.visitor-globe-coordinate').textContent(),globe=page.locator('.visitor-globe > svg');
+await globe.press('ArrowRight');assert.notEqual(await page.locator('.visitor-globe-coordinate').textContent(),coord);
+await page.getByRole('button',{name:'Aproximar',exact:true}).click();assert.equal(await page.locator('.planet-halo').getAttribute('r'),'295.2');
+await page.setViewportSize({width:390,height:844});await page.waitForTimeout(250);await page.screenshot({path:`${output}/mobile-fixture.png`});
+const bounds=await page.locator('.visitor-map').boundingBox();assert.ok(bounds.x>=0&&bounds.x+bounds.width<=390);assert.ok(bounds.y>=0&&bounds.y+bounds.height<=844);
+await page.keyboard.press('Escape');await page.waitForTimeout(450);assert.equal(await page.getByRole('dialog').count(),0);assert.equal(await page.locator('main').getAttribute('inert'),null);
+assert.deepEqual(errors,[]);await browser.close();console.log(`Map period, location selection, rotation, zoom, mobile bounds and close passed: ${output}`);

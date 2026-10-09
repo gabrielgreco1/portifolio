@@ -3,7 +3,13 @@ import { useEffect } from 'react';
 
 export function useGlassDialog(isOpen, panel, onClose, reduced) {
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen) {
+      panel.current?.setAttribute('inert','');
+      panel.current?.setAttribute('aria-hidden','true');
+      return;
+    }
+    panel.current?.removeAttribute('inert');
+    panel.current?.removeAttribute('aria-hidden');
     const previousFocus = document.activeElement;
     const main = document.querySelector('main'), language = document.querySelector('.language-switcher');
     const mainInert = main?.inert, languageInert = language?.inert, overflow = document.body.style.overflow;

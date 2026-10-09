@@ -1,5 +1,7 @@
 "use client";
 
+import dynamic from "next/dynamic";
+import VisitorPresence from "../pet/VisitorPresence";
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, animate, motion, useMotionValue, useTransform, useReducedMotion } from "framer-motion";
 import { useLanguage } from "@/i18n/LanguageContext";
@@ -17,6 +19,7 @@ import {usePetInteraction} from "../pet/usePetInteraction";
 import { useGlassDialog } from "./useGlassDialog";
 import "./crawler.css";
 
+const VisitorMap = dynamic(()=>import("../pet/VisitorMap"),{ssr:false});
 const Context = createContext(null);
 export const useCrawler = () => useContext(Context);
 const TEXT = {
@@ -41,6 +44,8 @@ export default function CrawlerExperienceProvider({ children }) {
   const [isOpen, setIsOpen] = useState(false), [tab, setTab] = useState("json"), [selectedId, setSelectedId] = useState(null), [layout, setLayout] = useState(null);
   const [notice, setNotice] = useState("");
   const [petMenu, setPetMenu] = useState(null);
+  const [petPanel,setPetPanel]=useState(null),[mapLoaded,setMapLoaded]=useState(false);
+  const closePetPanel=useCallback(()=>{setPetPanel(null);menuTrigger.current?.focus({preventScroll:true});},[]);
   const menuTrigger = useRef(null);
   const closePetMenu = useCallback(()=>{setPetMenu(null);menuTrigger.current?.focus({preventScroll:true});},[]);
   const [station, setStation] = useState({lane:"rail",x:0});
@@ -303,6 +308,8 @@ export default function CrawlerExperienceProvider({ children }) {
   return (
     <Context.Provider value={{ start, open, select, chooseScope, togglePetMenu, petClick:petInteraction.click, petDrag:petInteraction.dragHandlers, menuOpen:!!petMenu, phase, active, collection, words }}>
       {children}
+      <VisitorPresence/>
+      {mapLoaded&&<VisitorMap open={petPanel==='map'} onClose={closePetPanel} lang={lang}/>}
       <div className="crawl-live sr-only" aria-live="polite">{message}</div>
       <AnimatePresence>
         {active && layout && (
@@ -339,6 +346,7 @@ export default function CrawlerExperienceProvider({ children }) {
       </div>}
       <PetMenu anchor={petMenu} lang={lang} phase={phase} count={collection?.evidence.length||0} onClose={closePetMenu} onExtract={chooseScope} onResume={()=>{setPetMenu(null);resume();}} onCollection={()=>{setPetMenu(null);void open();}} reduced={reduced} >
         <button onClick={()=>petInteraction.perform('spin',menuTrigger.current)}><span><strong>{lang==='pt'?'Dar uma voltinha':'Take a little spin'}</strong><small>{lang==='pt'?'Ele também precisa se divertir.':'A little fun between jobs.'}</small></span><b>↻</b></button>
+        <button onClick={()=>{setPetMenu(null);pause();setMapLoaded(true);setPetPanel('map');}}><span><strong>{lang==='pt'?'Quem está por aqui?':'Who is here?'}</strong><small>{lang==='pt'?'Visitas reais, pelo mundo.':'Real visits, around the world.'}</small></span><b>◎</b></button>
       </PetMenu>
       <PetPerformance action={petInteraction.performance} onFinish={petInteraction.finish} reduced={reduced} lang={lang}/>
       <ScopePicker isOpen={pickerOpen} options={scopeOptions} companies={companyOptions} words={words} onPick={pickScope} onManual={pickManual} onClose={closePicker} reduced={reduced} />

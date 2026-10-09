@@ -12,11 +12,14 @@
   },
   "dependencies": {
     "@vercel/analytics": "^2.0.1",
+    "d3-geo": "^3.1.1",
     "framer-motion": "^12.35.2",
     "next": "16.1.6",
     "pdf-lib": "^1.17.1",
     "react": "19.2.3",
-    "react-dom": "19.2.3"
+    "react-dom": "19.2.3",
+    "topojson-client": "^3.1.0",
+    "world-atlas": "^2.0.2"
   },
   "devDependencies": {
     "eslint": "^9",
