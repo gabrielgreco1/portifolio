@@ -1,13 +1,14 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
-import { AnimatePresence, animate, motion, useMotionValue, useReducedMotion } from "framer-motion";
+import { AnimatePresence, animate, motion, useMotionValue, useTransform, useReducedMotion } from "framer-motion";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { commitEvidence, createCollection, finalizeCollection, scopeTargets, downloadFile, exportName, readTarget } from "@/lib/crawler/collection.mjs";
 import { animateElement, cameraTo, cancelled, sleep, visualCopy } from "@/lib/crawler/motion.mjs";
 import { jsonLines } from "@/lib/crawler/json.mjs";
 import { captureTiming } from "@/lib/crawler/pace.mjs";
 import { crawlerGeometry } from "@/lib/crawler/geometry.mjs";
+import { collectionLane, collectionStation, travelDuration } from "@/lib/crawler/route.mjs";
 import ScopePicker from "./ScopePicker";
 import CrawlerArtwork from "../CrawlerArtwork";
 import { useGlassDialog } from "./useGlassDialog";
@@ -36,8 +37,15 @@ export default function CrawlerExperienceProvider({ children }) {
   const [highlight, setHighlight] = useState(null), [fragment, setFragment] = useState(null), [selecting, setSelecting] = useState(false);
   const [isOpen, setIsOpen] = useState(false), [tab, setTab] = useState("json"), [selectedId, setSelectedId] = useState(null), [layout, setLayout] = useState(null);
   const [notice, setNotice] = useState("");
+  const [station, setStation] = useState({lane:"rail",x:0});
   const [pickerOpen, setPickerOpen] = useState(false), [scopeOptions, setScopeOptions] = useState([]), [companyOptions, setCompanyOptions] = useState([]);
   const x = useMotionValue(0), y = useMotionValue(0);
+  const cargoLeft = useTransform(x, value => {
+    if(typeof window === "undefined") return 0;
+    const edge = !layout?.mobile && window.innerWidth>980 ? 276 : 12;
+    return `${Math.max(edge-value,Math.min((layout?.pet||122)/2-101,window.innerWidth-214-value))}px`;
+  });
+  const speechLeft = useTransform(x,value => typeof window === "undefined" ? "0px" : `${Math.max(12-value,Math.min((layout?.pet||122)/2-105,window.innerWidth-222-value))}px`);
   const copyRef = useRef(null), control = useRef(null), store = useRef(null), phaseRef = useRef("idle"), actions = useRef({});
   const trigger = useRef(null), mounted = useRef(true), sourceControl = useRef(null);
   const busy = !["idle", "paused", "ready", "source", "result"].includes(phase);
@@ -46,8 +54,11 @@ export default function CrawlerExperienceProvider({ children }) {
 
   const move = useCallback(async (nextX, nextY, duration, signal) => {
     if (signal?.aborted) throw cancelled();
-    const ax = animate(x, nextX, { duration: reduced ? 0 : duration, ease: [0.25, 0.8, 0.25, 1] });
-    const ay = animate(y, nextY, { duration: reduced ? 0 : duration, ease: [0.25, 0.8, 0.25, 1] });
+    const seconds = travelDuration({x:x.get(),y:y.get()},{x:nextX,y:nextY},duration);
+    const distance = Math.abs(nextX-x.get());
+    const bend = distance > 120 ? Math.min(22,distance*.035) : 0;
+    const ax = animate(x, nextX, { duration: reduced ? 0 : seconds, ease: [.4,0,.2,1] });
+    const ay = animate(y, bend ? [y.get(),Math.max(70,(y.get()+nextY)/2-bend),nextY] : nextY, { duration: reduced ? 0 : seconds, ease: [.4,0,.2,1] });
     const abort = () => { ax.stop(); ay.stop(); };
     signal?.addEventListener("abort", abort, { once: true });
     await Promise.all([ax, ay]); signal?.removeEventListener("abort", abort);
@@ -55,6 +66,7 @@ export default function CrawlerExperienceProvider({ children }) {
   }, [reduced, x, y]);
 
   async function reveal(signal) {
+    setStation({lane:"rail",x:window.innerWidth-160});
     stage("returning"); setMessage(words.returning); setHighlight(null); setFragment(null);
     await cameraTo(0, reduced ? 0 : Math.min(1400, 400 + window.scrollY * .055), signal);
     const g = geometry(); setLayout(g);
@@ -82,13 +94,15 @@ export default function CrawlerExperienceProvider({ children }) {
         stage("approaching"); setMessage(`${runState.index + 1}/${runState.ids.length} · ${node.closest("[data-crawl-record]")?.querySelector("h3")?.textContent || node.textContent.slice(0, 40)}`);
         const before = node.getBoundingClientRect();
         const viewport = geometry();
-        const safeTop = viewport.compact ? 38 : window.innerHeight * (viewport.mobile ? .23 : .28);
+        const field = collectionLane(runState.index) !== "rail";
+        const safeTop = viewport.compact ? 38 : window.innerHeight * (viewport.mobile ? .23 : field ? .57 : .28);
         const needsCamera = before.top < safeTop - 40 || before.top + Math.min(before.height, window.innerHeight * .35) > window.innerHeight * (viewport.mobile ? .5 : .8);
         if (needsCamera) await cameraTo(window.scrollY + before.top - safeTop, reduced ? 0 : timing.camera, signal);
         if (node.tagName === "IMG" && !node.complete) await Promise.race([node.decode().catch(() => {}), sleep(1400, signal)]);
         const rect = node.getBoundingClientRect(); const g = geometry(); setLayout(g);
-        const actorY = Math.max(g.mobile ? 94 : 86, Math.min(rect.top + rect.height / 2 - g.pet * .4, window.innerHeight - g.pet - 205 - 82));
-        await move(window.innerWidth - g.pet - (g.mobile ? 20 : 42), g.mobile ? g.dockY : actorY, timing.move, signal);
+        const destination = collectionStation(rect,runState.index,{...g,width:window.innerWidth,height:window.innerHeight});
+        setStation(destination);
+        await move(destination.x,destination.y,timing.move,signal);
         const snapshot = readTarget(node);
         stage("inspecting"); setMessage(words.scan); setHighlight({ left: rect.left - 7, top: rect.top - 6, width: rect.width + 14, height: rect.height + 12 });
         await sleep(reduced ? 18 : timing.scan, signal);
@@ -279,7 +293,7 @@ export default function CrawlerExperienceProvider({ children }) {
       <div className="crawl-live sr-only" aria-live="polite">{message}</div>
       <AnimatePresence>
         {active && layout && (
-          <motion.div key="actor" className={`crawl-actor crawl-actor--${phase}`} style={{ x, y, width: layout.pet, "--pet-width": `${layout.pet}px` }} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+          <motion.div key="actor" className={`crawl-actor crawl-actor--${phase}`} data-lane={station.lane} style={{ x, y, width: layout.pet, "--pet-width": `${layout.pet}px`, "--cargo-left": cargoLeft, "--speech-left": speechLeft }} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
             <button className="crawl-body" disabled={isOpen || pickerOpen} aria-hidden={isOpen || pickerOpen || undefined} tabIndex={isOpen || pickerOpen ? -1 : 0} onClick={busy ? pause : open} aria-label={busy ? words.pause : words.open}>
               <CrawlerArtwork className="crawl-sprite" />
               <span className="crawl-screen-light" aria-hidden="true" />
