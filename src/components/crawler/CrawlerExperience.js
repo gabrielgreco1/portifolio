@@ -9,6 +9,7 @@ import { jsonLines } from "@/lib/crawler/json.mjs";
 import { captureTiming } from "@/lib/crawler/pace.mjs";
 import { crawlerGeometry } from "@/lib/crawler/geometry.mjs";
 import ScopePicker from "./ScopePicker";
+import CrawlerArtwork from "../CrawlerArtwork";
 import { useGlassDialog } from "./useGlassDialog";
 import "./crawler.css";
 
@@ -280,9 +281,7 @@ export default function CrawlerExperienceProvider({ children }) {
         {active && layout && (
           <motion.div key="actor" className={`crawl-actor crawl-actor--${phase}`} style={{ x, y, width: layout.pet, "--pet-width": `${layout.pet}px` }} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
             <button className="crawl-body" disabled={isOpen || pickerOpen} aria-hidden={isOpen || pickerOpen || undefined} tabIndex={isOpen || pickerOpen ? -1 : 0} onClick={busy ? pause : open} aria-label={busy ? words.pause : words.open}>
-              {/* The production mascot is used unchanged; all poses move this same sprite. */}
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img className="crawl-sprite" src="/crawler-pet.png" alt="" width="244" height="256" />
+              <CrawlerArtwork className="crawl-sprite" />
               <span className="crawl-screen-light" aria-hidden="true" />
             </button>
             {!isOpen && <span className="crawl-speech" aria-hidden="true">{message}</span>}
@@ -326,8 +325,7 @@ export function ExtractionInvite() {
     <button className="extraction-start" aria-label={title} onClick={chooseScope} disabled={!["idle", "ready"].includes(phase)}>
       <span className="extraction-mini-scene" aria-hidden="true">
         <span className="extraction-mini-fragment">Python</span><span className="extraction-mini-fragment">30B+ requests</span><span className="extraction-mini-fragment">Zyte</span>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/crawler-pet.png" alt="" width="244" height="256" />
+        <CrawlerArtwork />
       </span>
       <span className="extraction-start-copy"><span className="extraction-start-kicker">{lang === 'pt' ? 'DÊ TRABALHO AO TAMAGOTCHI' : 'PUT THE TAMAGOTCHI TO WORK'}</span><strong>{title}</strong><span className="extraction-start-caption">{lang === 'pt' ? 'Seu próximo clique coloca ele em ação.' : 'Your next click puts it to work.'}</span></span>
       <span className="extraction-start-arrow" aria-hidden="true">↗</span>

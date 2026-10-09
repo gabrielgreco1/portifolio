@@ -1,5 +1,5 @@
 "use client";
-import Image from "next/image";
+import CrawlerArtwork from "./CrawlerArtwork";
 import { useEffect, useState } from "react";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { useCrawler } from "@/components/crawler/CrawlerExperience";
@@ -46,7 +46,7 @@ export default function CrawlerPet() {
   if (active) return null;
   return (
     <button className={`crawler-pet crawler-pet--${stage}`} onClick={diagnose} aria-label={t.pet.label}>
-      <Image src="/crawler-pet.png" width={148} height={155} alt="" priority />
+      <CrawlerArtwork />
       <span className="pet-message" aria-live="polite">{t.pet.messages[messageIndex]}</span>
     </button>
   );
