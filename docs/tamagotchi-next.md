@@ -1,0 +1,14 @@
+# Quality pass requested after PR #10
+
+Work one feature at a time. Preserve the approved mascot and actual collected data. Do not merge until the requested experience and production dependencies are verified.
+
+1. **Selection and delivery — validated locally.** Replace competing start buttons with a visible selection and one start action. Preview the exact paginated PDF before download; distinguish the reading document from complete JSON/provenance. Format the current full professional content in four pages, a single company proportionately; retain descriptions and tasks. Decorative site text and image references remain in the complete attached JSON, and hand-picked fragments remain visible in the reading document.
+   Verified in Chrome desktop/portrait/landscape and WebKit portrait: full PT/EN PDFs have four pages; Zyte has one. Hand-picked quote, source navigation, identical JSON download/PDF attachment, 13 collection tests, lint, build and five SEO tests passed.
+2. **Data Run.** Add ducking and fair jump/duck obstacles themed around crawling and anti-bot systems; reduce repetitive collectibles. Refine and play-test difficulty and mobile controls.
+3. **Shared game infrastructure.** Persistent public leaderboards for both games, actual CAPTCHA verification on the server before a scored run, signed run lifecycle and score validation. Funny robot-themed game-over screen. No claim that CAPTCHA guarantees zero bots. Account provisioning/terms must be explicitly approved where required.
+4. **Visitor observatory.** Real access data, richer interactive city/session experience, clear explanation of current/history coverage. Assess existing Google Analytics data if an authorized property is available; never fabricate historical people/locations. Upstash/Vercel terms acceptance remains pending from the prior phase.
+5. **Data Invaders.** Clearly escalating difficulty during play, distinct anti-bot-themed opponents and attack behaviors; play-test progression.
+6. **Both games.** Intentional sound effects with mute and user-gesture activation; fullscreen with mobile fallback; validate landscape and sound cleanup on close.
+7. **Later, not this implementation pass:** custom anti-bot platform inspired by the local webscraping expert skill. User explicitly deferred this until the above is finished.
+
+The previous validated implementation is preserved in commits through e632d46. PR #10 is a draft; production still serves PR #9.

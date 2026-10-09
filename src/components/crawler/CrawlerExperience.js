@@ -2,23 +2,21 @@
 
 import dynamic from "next/dynamic";
 import VisitorPresence from "../pet/VisitorPresence";
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { AnimatePresence, animate, motion, useMotionValue, useTransform, useReducedMotion } from "framer-motion";
 import { useLanguage } from "@/i18n/LanguageContext";
-import { commitEvidence, createCollection, finalizeCollection, scopeTargets, downloadFile, exportName, readTarget } from "@/lib/crawler/collection.mjs";
+import { commitEvidence, createCollection, finalizeCollection, scopeTargets, readTarget } from "@/lib/crawler/collection.mjs";
 import { animateElement, cameraTo, cancelled, sleep, visualCopy } from "@/lib/crawler/motion.mjs";
-import { jsonLines } from "@/lib/crawler/json.mjs";
 import { captureTiming } from "@/lib/crawler/pace.mjs";
 import { crawlerGeometry } from "@/lib/crawler/geometry.mjs";
 import { collectionLane, collectionStation, travelDuration } from "@/lib/crawler/route.mjs";
 import { captureReaction } from "@/lib/crawler/personality.mjs";
-import DeliveryReceipt from "./DeliveryReceipt";
+import CollectionDelivery from "./CollectionDelivery";
 import ScopePicker from "./ScopePicker";
 import CrawlerArtwork from "../CrawlerArtwork";
 import PetMenu from "../pet/PetMenu";
 import PetPerformance from "../pet/PetPerformance";
 import {usePetInteraction} from "../pet/usePetInteraction";
-import { useGlassDialog } from "./useGlassDialog";
 import "./crawler.css";
 
 const PetArcade = dynamic(()=>import("../pet/PetArcade"),{ssr:false});
@@ -44,7 +42,7 @@ export default function CrawlerExperienceProvider({ children }) {
   const reduced = useReducedMotion();
   const [phase, setPhase] = useState("idle"), [collection, setCollection] = useState(null), [message, setMessage] = useState("");
   const [highlight, setHighlight] = useState(null), [fragment, setFragment] = useState(null), [selecting, setSelecting] = useState(false);
-  const [isOpen, setIsOpen] = useState(false), [tab, setTab] = useState("json"), [selectedId, setSelectedId] = useState(null), [layout, setLayout] = useState(null);
+  const [isOpen, setIsOpen] = useState(false), [layout, setLayout] = useState(null);
   const [notice, setNotice] = useState("");
   const [petMenu, setPetMenu] = useState(null);
   const [petPanel,setPetPanel]=useState(null),[mapLoaded,setMapLoaded]=useState(false),[arcadeLoaded,setArcadeLoaded]=useState(false);
@@ -89,7 +87,6 @@ export default function CrawlerExperienceProvider({ children }) {
     await move(nextX, nextY, .48, signal);
     stage("revealing"); setMessage(words.open);
     await sleep(reduced ? 100 : 300, signal);
-    setSelectedId((old) => old || store.current?.evidence[0]?.id || null);
     setIsOpen(true); stage("result");
   }
 
@@ -157,7 +154,7 @@ export default function CrawlerExperienceProvider({ children }) {
     x.set(original?.left || window.innerWidth - 150); y.set(original?.top || window.innerHeight - 150);
     const g = geometry(); setLayout(g);
     const next = createCollection({ url: `${window.location.origin}${window.location.pathname}`, title: document.title, language: lang }, ids, scope, scopeTargets(document, "resume"));
-    publish(next); setPickerOpen(false); setSelectedId(null); setNotice(""); setSelecting(false); setFragment(null); setTab("json");
+    publish(next); setPickerOpen(false); setNotice(""); setSelecting(false); setFragment(null);
     const state = { ids: [...ids], index: 0, abort: new AbortController(), scope };
     control.current = state; stage("starting"); setMessage(words.begin); void run(state);
   }
@@ -281,7 +278,7 @@ export default function CrawlerExperienceProvider({ children }) {
       event.preventDefault(); event.stopPropagation(); setSelecting(false);
       const id = node.dataset.crawlId;
       const existing = store.current?.evidence.find((item) => item.target_id === id);
-      if (existing) { setSelectedId(existing.id); void open(); return; }
+      if (existing) { void open(); return; }
       if (control.current && phaseRef.current === "paused") {
         const next = { ...control.current, ids: [...control.current.ids], abort: new AbortController() };
         next.ids[next.index] = id; next.ids = next.ids.filter((value, index) => index <= next.index || value !== id); control.current = next;
@@ -358,7 +355,7 @@ export default function CrawlerExperienceProvider({ children }) {
       </PetMenu>
       <PetPerformance action={petInteraction.performance} onFinish={petInteraction.finish} reduced={reduced} lang={lang}/>
       <ScopePicker isOpen={pickerOpen} options={scopeOptions} companies={companyOptions} words={words} onPick={pickScope} onManual={pickManual} onClose={closePicker} reduced={reduced} />
-      <Inspector isOpen={isOpen} collection={collection} words={words} tab={tab} setTab={setTab} selectedId={selectedId} onSelect={setSelectedId} onSource={source} onClose={close} onNew={chooseScope} layout={layout} origin={{ x: x.get() + (layout?.pet || 122) * .46, y: y.get() + (layout?.pet || 122) * .49 }} notice={notice} setNotice={setNotice} reduced={reduced} />
+      <CollectionDelivery isOpen={isOpen} collection={collection} words={words} onSource={source} onClose={close} onNew={chooseScope} layout={layout} origin={{ x: x.get() + (layout?.pet || 122) * .46, y: y.get() + (layout?.pet || 122) * .49 }} externalNotice={notice} reduced={reduced} />
     </Context.Provider>
   );
 }
@@ -396,79 +393,4 @@ function ContentFragment({ item }) {
   if (item.kind === "service") return <><strong className="fragment-project-name">{item.raw.name}</strong><p>{item.raw.description}</p></>;
   if (item.kind === "contact") return <><strong className="fragment-project-name">{item.raw.email}</strong><p>{item.raw.description}</p></>;
   return <p>{item.raw}</p>;
-}
-
-function Inspector({ isOpen, collection, words, tab, setTab, selectedId, onSelect, onSource, onClose, onNew, layout, origin, notice, setNotice, reduced }) {
-  const panel = useRef(null);
-  const [delivery,setDelivery]=useState(null);
-  const deliveryVersion=useRef(0);
-  const [copying, setCopying] = useState(false), [pdfBusy, setPdfBusy] = useState(false);
-  useGlassDialog(isOpen, panel, onClose, reduced);
-  useEffect(()=>{if(!isOpen)deliveryVersion.current++;},[isOpen]);
-  const formatted = useMemo(() => {
-    if (!collection) return null;
-    const doc = { records: collection.records, ...collection };
-    return {doc,json:JSON.stringify(doc,null,2),lines:jsonLines(doc,doc.field_origins)};
-  }, [collection]);
-
-  if (!collection || !layout) return null;
-  const selected = collection.evidence.find((item) => item.id === selectedId) || collection.evidence[0];
-  const {doc,json,lines} = formatted;
-  async function receipt(format,bytes) {
-    const version=++deliveryVersion.current;
-    const next={id:version,session:doc.session.id,format,bytes,filename:exportName(doc,format),fragments:doc.evidence.length,records:doc.records.length};
-    setDelivery(next);
-    try {
-      const digest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(json));
-      if(version===deliveryVersion.current)setDelivery({...next,hash:Array.from(new Uint8Array(digest),b=>b.toString(16).padStart(2,'0')).join('')});
-    } catch { /* The file remains usable when Web Crypto is unavailable. */ }
-  }
-  function dismissReceipt(){deliveryVersion.current++;setDelivery(null);}
-  function downloadJson(){downloadFile(json,exportName(doc,'json'),'application/json');void receipt('json',new TextEncoder().encode(json).length);}
-  async function copy() {
-    try { await navigator.clipboard.writeText(json); setCopying(true); setNotice(""); void receipt("clipboard",new TextEncoder().encode(json).length); setTimeout(() => setCopying(false), 1800); }
-    catch { setNotice(words.copyFailure); }
-  }
-  async function pdf() {
-    setPdfBusy(true); setNotice("");
-    try { const { buildCollectionPdf } = await import("@/lib/crawler/pdf.mjs"); const bytes = await buildCollectionPdf(doc); downloadFile(bytes, exportName(doc, "pdf"), "application/pdf"); void receipt("pdf",bytes.length); }
-    catch { setNotice(words.pdfFailure); }
-    finally { setPdfBusy(false); }
-  }
-  return <AnimatePresence>
-    {isOpen && <>
-      <motion.div key="backdrop" className="glass-backdrop" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: .5 }} onClick={onClose} />
-      <motion.section key="inspector" ref={panel} className="glass-inspector glass-inspector--result" role="dialog" aria-modal="true" aria-labelledby="collection-title" style={{ '--collection-left': `${layout.left}px`, '--collection-top': `${layout.top}px`, '--collection-width': `${layout.width}px`, '--collection-height': `${layout.height}px`, transformOrigin: `${origin.x - layout.left}px ${origin.y - layout.top}px` }} initial={{ opacity: 0, scale: reduced ? 1 : .045, y: 15, filter: reduced ? "none" : "blur(9px)" }} animate={{ opacity: 1, scale: 1, y: 0, filter: "blur(0px)" }} exit={{ opacity: 0, scale: reduced ? 1 : .9, y: 10 }} transition={{ duration: reduced ? .15 : .95, ease: [.22, 1, .36, 1] }}>
-        <header className="glass-header">
-          <div><span className="glass-eyebrow">GABRIEL GRECO / COLLECTION.JSON</span><h2 id="collection-title">{words.title}</h2><p>{collection.evidence.length} {collection.evidence.length === 1 ? words.collectedOne : words.collected} <span>·</span> {collection.records.length} {collection.records.length === 1 ? words.record : words.records} <span>·</span> {collection.coverage.complete ? words.complete : collection.coverage.requested_complete ? words.selectedComplete : words.partial}</p></div>
-          <button className="glass-close" data-modal-close onClick={onClose} aria-label={words.close}>×</button>
-        </header>
-        <div className="glass-tabs" role="tablist" aria-label={words.open}>
-          {["summary", "json"].map((value) => <button key={value} id={`collection-tab-${value}`} role="tab" aria-selected={tab === value} aria-controls="collection-panel" onClick={() => setTab(value)} onKeyDown={(event) => { if (["ArrowLeft", "ArrowRight"].includes(event.key)) { setTab(value === "json" ? "summary" : "json"); event.currentTarget.parentElement.querySelector(`[id='collection-tab-${value === "json" ? "summary" : "json"}']`).focus(); } }}>{words[value]}</button>)}
-          <span>{collection.page.language.toUpperCase()} / UTF-8</span>
-        </div>
-        <div className="glass-content">
-          <div className="glass-data" id="collection-panel" role="tabpanel" aria-labelledby={`collection-tab-${tab}`} tabIndex="0">
-            {tab === "json" ? <pre className="collection-json" aria-label="collection.json">{lines.map((line, index) => <span key={index} className={`json-line ${line.evidence_ids?.includes(selected?.id) ? "json-line--selected" : ""}`} onClick={line.evidence_ids?.length ? () => onSelect(line.evidence_ids[0]) : undefined}><span className="json-number" aria-hidden="true">{index + 1}</span><span className="json-text">{colorJson(line.text)}</span></span>)}</pre> : <div className="collection-summary">
-              {collection.records.map((record) => <section key={record.id}><span className="summary-type">{record.type}</span><h3>{record.fields.name}</h3>{record.evidence_ids.map((id) => { const item = collection.evidence.find((e) => e.id === id); return <button className={`summary-fragment ${selected?.id === id ? "summary-fragment--selected" : ""}`} key={id} onClick={() => onSelect(id)}><span>{words[item.kind]}</span><ContentFragment item={item} /></button>; })}</section>)}
-              {!collection.evidence.length && <p>{words.empty}</p>}
-            </div>}
-          </div>
-          <aside className="glass-origin">
-            <h3>{words.source}</h3>
-            <div className="origin-choices">{collection.evidence.map((item, index) => <button className={selected?.id === item.id ? "active" : ""} aria-pressed={selected?.id === item.id} key={item.id} onClick={() => onSelect(item.id)}><span>{String(index + 1).padStart(2, "0")}</span>{item.label}<small>{words[item.kind]}</small></button>)}</div>
-            {selected && <div className="origin-detail"><span className="origin-label">{words.original}</span><div className="origin-preview"><ContentFragment item={selected} /></div><code>{selected.source.anchor}</code><button className="origin-link" onClick={() => onSource(selected)}>{words.viewSource} ↗</button></div>}
-          </aside>
-        </div>
-        {delivery?.session===doc.session.id&&<DeliveryReceipt key={delivery.id} delivery={delivery} lang={doc.page.language} reduced={reduced} onClose={dismissReceipt}/>}
-        <footer className="glass-footer"><div className="glass-downloads"><button className="glass-action-primary" onClick={copy}>{copying ? words.copied : words.copy}</button><button onClick={downloadJson}>{words.download} ↓</button><button disabled={pdfBusy} onClick={pdf}>{pdfBusy ? words.pdfBusy : `${words.pdf} ↓`}</button></div><button className="glass-new" onClick={onNew}>{words.new}</button></footer>
-        <p className={`glass-note ${notice ? "glass-note--warning" : ""}`} role="status">{notice || words.stored}</p>
-      </motion.section>
-    </>}
-  </AnimatePresence>;
-}
-
-function colorJson(line) {
-  const parts = line.split(/("(?:\\.|[^"\\])*"(?=\s*:)|"(?:\\.|[^"\\])*"|\btrue\b|\bfalse\b|\bnull\b|\b-?\d+(?:\.\d+)?\b)/g);
-  return parts.map((part, index) => <span key={index} className={part.startsWith('"') ? /^\s*:/.test(parts[index + 1] || "") ? "json-key" : "json-string" : /^(true|false|null|-?\d)/.test(part) ? "json-value" : undefined}>{part}</span>);
 }

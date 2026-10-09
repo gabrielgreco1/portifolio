@@ -1,52 +1,34 @@
 "use client";
-import { useRef } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
-import { useLanguage } from '@/i18n/LanguageContext';
-import { useGlassDialog } from './useGlassDialog';
+import {useRef,useState} from 'react';
+import {AnimatePresence,motion,useIsPresent} from 'framer-motion';
+import {useLanguage} from '@/i18n/LanguageContext';
+import {useGlassDialog} from './useGlassDialog';
+import './delivery.css';
 
-export default function ScopePicker({isOpen,options,companies,words,onPick,onManual,onClose,reduced}) {
-  const panel = useRef(null);
-  const {lang} = useLanguage();
-  const copy = lang === 'pt' ? {
-    title:'O que você quer levar?',hint:'Clique em “Extrair currículo inteiro” para levar tudo. Ou escolha só a parte que interessa.',
-    complete:'COLETA COMPLETA',start:'Extrair currículo inteiro',parts:'Ou extraia apenas uma parte',
-    experiences:{title:'Só experiências',description:'Todas as empresas, cargos e atividades.',action:'Extrair experiências'},
-    projects:{title:'Só projetos',description:'Descrições, tecnologias e links.',action:'Extrair projetos'},
-    skills:{title:'Só tecnologias',description:'Todas as ferramentas usadas no trabalho.',action:'Extrair tecnologias'},
-    specific:'Prefere uma empresa ou um trecho?',company:'Escolha a empresa. O clique já começa a coleta.',companyAction:'Extrair só',manual:'Escolher um trecho no site',manualHint:'Você aponta o texto ou a imagem que quer coletar.',footer:'O tamagotchi coleta sua escolha e entrega JSON + PDF.'
-  } : {
-    title:'What do you want to take away?',hint:'Click “Extract full résumé” to collect everything. Or pick just the part you need.',
-    complete:'COMPLETE COLLECTION',start:'Extract full résumé',parts:'Or extract just one part',
-    experiences:{title:'Experience only',description:'Every company, role and activity.',action:'Extract experience'},
-    projects:{title:'Projects only',description:'Descriptions, technologies and links.',action:'Extract projects'},
-    skills:{title:'Technologies only',description:'Every tool used in the work.',action:'Extract technologies'},
-    specific:'Prefer one company or a fragment?',company:'Choose a company. Clicking starts the collection.',companyAction:'Extract only',manual:'Choose a fragment on the site',manualHint:'Point to the text or image you want to collect.',footer:'The tamagotchi collects your selection and delivers JSON + PDF.'
-  };
-  useGlassDialog(isOpen,panel,onClose,reduced);
-  const full = options.find(item => item.id === 'resume');
-  return <AnimatePresence>
-    {isOpen && <>
-      <motion.div key="scope-backdrop" className="glass-backdrop scope-backdrop" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} onClick={onClose} />
-      <motion.section key="scope-picker" ref={panel} role="dialog" aria-modal="true" aria-labelledby="scope-title" aria-describedby="scope-instructions" className="glass-inspector scope-picker" initial={{opacity:0,scale:reduced?1:.9,y:15}} animate={{opacity:1,scale:1,y:0}} exit={{opacity:0,scale:.97,y:8}} transition={{duration:reduced?.1:.45,ease:[.22,1,.36,1]}}>
-        <header className="glass-header"><div><span className="glass-eyebrow">GABRIEL GRECO / {words.extractLabel}</span><h2 id="scope-title">{copy.title}</h2><p id="scope-instructions">{copy.hint}</p></div><button data-modal-close className="glass-close" aria-label={words.close} onClick={onClose}>×</button></header>
-        <div className="scope-body">
-          {full && <button data-modal-autofocus className="scope-full" aria-label={copy.start} onClick={()=>onPick('resume')}>
-            <span className="scope-full-top"><span>{copy.complete}</span><small>{full.count} {words.fragments}</small></span>
-            <strong>{full.title}</strong><span className="scope-full-description">{full.description}</span>
-            <span className="scope-full-action">{copy.start}<span aria-hidden="true">↗</span></span>
-          </button>}
-          <h3 className="scope-parts-title">{copy.parts}</h3>
-          <div className="scope-part-options" role="group" aria-label={copy.parts}>
-            {options.filter(item=>item.id!=='resume').map(item => <button key={item.id} aria-label={copy[item.id].action} onClick={()=>onPick(item.id)}>
-              <strong>{copy[item.id].title}</strong><span>{copy[item.id].description}</span><small>{copy[item.id].action}<span aria-hidden="true">↗</span></small>
-            </button>)}
-          </div>
-          <details className="scope-specific"><summary>{copy.specific}<span aria-hidden="true">+</span></summary><p>{copy.company}</p><div className="scope-companies">{companies.map(item=><button key={item.id} aria-label={`${copy.companyAction} ${item.title}`} onClick={()=>onPick(item.id)}><span>{item.title}</span><small>{copy.companyAction} {item.title}</small><span aria-hidden="true">↗</span></button>)}</div>
-            <button className="scope-manual" onClick={onManual}><strong>{copy.manual} ↗</strong><span>{copy.manualHint}</span></button>
-          </details>
-        </div>
-        <footer className="scope-footer"><span>{copy.footer}</span></footer>
-      </motion.section>
-    </>}
-  </AnimatePresence>;
+function ScopeComposer({options,companies,onPick,onManual,onClose,reduced}){
+ const {lang}=useLanguage(),pt=lang==='pt',panel=useRef(null),present=useIsPresent();
+ const [selected,setSelected]=useState('resume');
+ useGlassDialog(present,panel,onClose,reduced);
+ const choices=pt?[
+  ['resume','Currículo completo','Todas as seções do site'],['experiences','Experiências','Todas as empresas e atividades'],['projects','Projetos','Descrições, tecnologias e links'],['skills','Tecnologias','Ferramentas organizadas por área'],
+ ]:[['resume','Full résumé','Every section of this site'],['experiences','Experience','Every company and activity'],['projects','Projects','Descriptions, technologies and links'],['skills','Technologies','Tools organized by area']];
+ const company=companies.find(item=>item.id===selected),label=company?.title||choices.find(item=>item[0]===selected)?.[1];
+ const previews=company?[pt?'Cargo, período e contexto':'Role, period and context',pt?'Atividades e resultados completos':'Complete activities and results']:selected==='resume'?[pt?'Apresentação e contato':'Profile and contact',pt?'Todas as experiências e atividades':'All experience and activities',pt?'Projetos, tecnologias e serviços':'Projects, technologies and services']:selected==='experiences'?companies.map(item=>item.title):selected==='projects'?[pt?'Todos os projetos publicados':'Every published project',pt?'Descrição, ferramentas e links':'Descriptions, tools and links']:[pt?'Extrair · mover · modelar · entregar':'Extract · move · model · deliver',pt?'Todas as ferramentas publicadas':'Every published tool'];
+ return <>
+  <motion.div className="glass-backdrop" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} onClick={onClose}/>
+  <motion.section ref={panel} className="glass-inspector scope-composer" role="dialog" aria-modal="true" aria-labelledby="scope-title" aria-describedby="scope-hint" initial={{opacity:0,scale:reduced?1:.93,y:12}} animate={{opacity:1,scale:1,y:0}} exit={{opacity:0,scale:.97}} transition={{duration:reduced?.1:.4}}>
+   <header className="delivery-header"><div><span className="delivery-eyebrow">01 {pt?'ESCOLHER':'CHOOSE'} <i/> 02 {pt?'ASSISTIR':'WATCH'} <i/> 03 {pt?'LEVAR':'TAKE AWAY'}</span><h2 id="scope-title">{pt?'Dê uma missão a ele.':'Give it a mission.'}</h2><p id="scope-hint">{pt?'Escolha o conteúdo. O Tamagotchi busca e prepara seus arquivos.':'Pick the content. Tamagotchi collects it and prepares your files.'}</p></div><button className="delivery-close" data-modal-close onClick={onClose} aria-label={pt?'Fechar':'Close'}>×</button></header>
+   <div className="scope-workbench">
+    <div className="scope-selections" role="radiogroup" aria-label={pt?'Conteúdo para extrair':'Content to extract'}>
+     <div className="scope-choice-grid">{choices.map(([id,title,description])=><label className={`scope-choice ${selected===id?'is-selected':''}`} key={id}><input type="radio" name="crawl-scope" value={id} checked={selected===id} onChange={()=>setSelected(id)}/><span className="scope-radio" aria-hidden="true"/><span><strong>{title}</strong><small>{description}</small></span></label>)}</div>
+     <p className="scope-group-label">{pt?'Ou apenas uma empresa':'Or just one company'}</p>
+     <div className="scope-company-grid">{companies.map(item=><label className={`scope-company ${selected===item.id?'is-selected':''}`} key={item.id}><input type="radio" name="crawl-scope" value={item.id} checked={selected===item.id} onChange={()=>setSelected(item.id)}/><span>{item.title}</span><span aria-hidden="true">{selected===item.id?'✓':'+'}</span></label>)}</div>
+     <button className="scope-point" onClick={onManual}>{pt?'Quero apontar um trecho no site':'I want to point to a fragment'} <span>↗</span></button>
+    </div>
+    <aside className="scope-manifest" aria-live="polite"><span className="scope-manifest-kicker">{pt?'SUA SELEÇÃO':'YOUR SELECTION'}</span><h3>{label}</h3><ul>{previews.map(line=><li key={line}>{line}</li>)}</ul><div className="scope-output-formats"><span><b>PDF</b>{pt?'Documento para ler e compartilhar':'A document to read and share'}</span><span><b>JSON</b>{pt?'Dados completos para reutilizar':'Complete data to reuse'}</span></div><p>{pt?'Você confere o resultado antes de baixar.':'Review the result before downloading.'}</p></aside>
+   </div>
+   <footer className="scope-command"><span>{pt?'Os originais continuam no site.':'The originals stay on the site.'}</span><button data-modal-autofocus className="delivery-primary" disabled={!options.length} onClick={()=>onPick(selected)}>{pt?'Começar coleta':'Start collecting'} <span>↗</span></button></footer>
+  </motion.section>
+ </>;
 }
+export default function ScopePicker(props){return <AnimatePresence>{props.isOpen&&<ScopeComposer key="scope-composer" {...props}/>}</AnimatePresence>;}
