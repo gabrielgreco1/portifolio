@@ -32,3 +32,14 @@ export function petPose(kind, ms, reduced = false) {
 }
 
 export function clickGesture(count) { return count >= 5 ? 'overload' : count >= 3 ? 'spin' : 'menu'; }
+
+export function dragPose(dx,dy,elapsed,releasedFor=null,reduced=false) {
+  const amount=Math.hypot(dx,dy),direction=Math.sign(dx)||1;
+  const grip=smooth((amount-35)/70)*smooth((elapsed-120)/480);
+  const bounded=n=>Math.sign(n)*(Math.min(35,Math.abs(n))+65*(1-Math.exp(-Math.max(0,Math.abs(n)-35)/110)));
+  const returnProgress=releasedFor===null?0:clamp(releasedFor/680);
+  const settle=1-smooth(returnProgress);
+  const x=(bounded(dx)-direction*grip*14)*settle,y=bounded(dy)*.55*settle;
+  const strain=direction*grip*10.5*settle;
+  return {x,y,grip:grip*settle,strain:reduced?0:strain,step:reduced?0:Math.sin(elapsed*.027)*(1-grip)*Math.min(1,amount/25)*5*settle,done:returnProgress===1};
+}

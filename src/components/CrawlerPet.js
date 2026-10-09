@@ -8,7 +8,7 @@ const SECTIONS = ["hero", "experience", "projects", "skills", "contact"];
 
 export default function CrawlerPet() {
   const { t } = useLanguage();
-  const { active, petClick, menuOpen } = useCrawler();
+  const { active, petClick, petDrag, menuOpen } = useCrawler();
   const [stage, setStage] = useState(0);
   const [clicked, setClicked] = useState(0);
 
@@ -46,7 +46,7 @@ export default function CrawlerPet() {
 
   if (active) return null;
   return (
-    <button className={`crawler-pet crawler-pet--${stage}`} onClick={diagnose} aria-label={t.pet.label} aria-haspopup="dialog" aria-expanded={menuOpen}>
+    <button {...petDrag} aria-keyshortcuts="ArrowLeft ArrowRight ArrowUp ArrowDown" className={`crawler-pet crawler-pet--${stage}`} onClick={diagnose} aria-label={t.pet.label} aria-haspopup="dialog" aria-expanded={menuOpen}>
       <CrawlerArtwork />
       <span className="pet-message" aria-live="polite">{t.pet.messages[messageIndex]}</span>
     </button>

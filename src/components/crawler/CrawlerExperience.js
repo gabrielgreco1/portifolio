@@ -301,13 +301,13 @@ export default function CrawlerExperienceProvider({ children }) {
   const memory = collection?.evidence.slice(-4) || [];
   const showMemory = !["idle", "ready", "source"].includes(phase);
   return (
-    <Context.Provider value={{ start, open, select, chooseScope, togglePetMenu, petClick:petInteraction.click, menuOpen:!!petMenu, phase, active, collection, words }}>
+    <Context.Provider value={{ start, open, select, chooseScope, togglePetMenu, petClick:petInteraction.click, petDrag:petInteraction.dragHandlers, menuOpen:!!petMenu, phase, active, collection, words }}>
       {children}
       <div className="crawl-live sr-only" aria-live="polite">{message}</div>
       <AnimatePresence>
         {active && layout && (
           <motion.div key="actor" className={`crawl-actor crawl-actor--${phase}`} data-lane={station.lane} style={{ x, y, width: layout.pet, "--pet-width": `${layout.pet}px`, "--cargo-left": cargoLeft, "--speech-left": speechLeft }} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-            <button className="crawl-body" disabled={isOpen || pickerOpen} aria-hidden={isOpen || pickerOpen || undefined} tabIndex={isOpen || pickerOpen ? -1 : 0} onClick={petInteraction.click} aria-haspopup="dialog" aria-expanded={!!petMenu} aria-label={lang==="pt"?"Abrir menu do Tamagotchi":"Open Tamagotchi menu"}>
+            <button {...petInteraction.dragHandlers} className="crawl-body" disabled={isOpen || pickerOpen} aria-hidden={isOpen || pickerOpen || undefined} tabIndex={isOpen || pickerOpen ? -1 : 0} onClick={petInteraction.click} aria-haspopup="dialog" aria-expanded={!!petMenu} aria-label={lang==="pt"?"Abrir menu do Tamagotchi":"Open Tamagotchi menu"}>
               <CrawlerArtwork className="crawl-sprite" />
               <span className="crawl-screen-light" aria-hidden="true" />
             </button>

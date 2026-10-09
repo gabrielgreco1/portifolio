@@ -7,4 +7,6 @@
 .pet-performance canvas{width:100%;height:100%;display:block}
 .pet-performance-caption{position:absolute;width:200px;text-align:center;font:500 10px/1.4 Arial,sans-serif;color:#405341;background:#f6faeff2;border:1px solid #c6d3be;border-radius:9px;padding:7px 9px;box-shadow:0 4px 16px #20332112;animation:pet-caption .24s ease both}
 @keyframes pet-caption{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
-.crawler-pet,.crawl-body{touch-action:manipulation;user-select:none;-webkit-user-select:none}
+.crawler-pet,.crawl-body{touch-action:none;user-select:none;-webkit-user-select:none}
+
+.crawler-pet[data-pet-acting="drag"],.crawl-body[data-pet-acting="drag"]{cursor:grabbing}
