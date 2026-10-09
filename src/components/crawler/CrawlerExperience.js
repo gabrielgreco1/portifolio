@@ -13,6 +13,7 @@ import { collectionLane, collectionStation, travelDuration } from "@/lib/crawler
 import { captureReaction } from "@/lib/crawler/personality.mjs";
 import CollectionDelivery from "./CollectionDelivery";
 import ScopePicker from "./ScopePicker";
+import PauseProtest from "./PauseProtest";
 import CrawlerArtwork from "../CrawlerArtwork";
 import PetMenu from "../pet/PetMenu";
 import PetPerformance from "../pet/PetPerformance";
@@ -44,6 +45,9 @@ export default function CrawlerExperienceProvider({ children }) {
   const [highlight, setHighlight] = useState(null), [fragment, setFragment] = useState(null), [selecting, setSelecting] = useState(false);
   const [isOpen, setIsOpen] = useState(false), [layout, setLayout] = useState(null);
   const [notice, setNotice] = useState("");
+  const [protest,setProtest]=useState(null),[onStrike,setOnStrike]=useState(false);
+  const interruptions=useRef(0),interruptionGrace=useRef(0);
+  const strikeMessage=lang==='pt'?'Tô de greve. Só volto depois de um refresh.':'On strike. Refresh if you want me back.';
   const [petMenu, setPetMenu] = useState(null);
   const [petPanel,setPetPanel]=useState(null),[mapLoaded,setMapLoaded]=useState(false),[arcadeLoaded,setArcadeLoaded]=useState(false);
   const closePetPanel=useCallback(()=>{setPetPanel(null);menuTrigger.current?.focus({preventScroll:true});},[]);
@@ -60,7 +64,7 @@ export default function CrawlerExperienceProvider({ children }) {
   const speechLeft = useTransform(x,value => typeof window === "undefined" ? "0px" : `${Math.max(12-value,Math.min((layout?.pet||122)/2-105,window.innerWidth-222-value))}px`);
   const copyRef = useRef(null), control = useRef(null), store = useRef(null), phaseRef = useRef("idle"), actions = useRef({});
   const trigger = useRef(null), mounted = useRef(true), sourceControl = useRef(null);
-  const busy = !["idle", "paused", "ready", "source", "result"].includes(phase);
+  const busy = !["idle", "paused", "ready", "source", "result", "sulking"].includes(phase);
   const stage = useCallback((value) => { phaseRef.current = value; setPhase(value); }, []);
   const publish = useCallback((value) => { store.current = value; setCollection(value); }, []);
 
@@ -147,7 +151,7 @@ export default function CrawlerExperienceProvider({ children }) {
   }
 
   function start(ids = scopeTargets(document, "resume"), scope = "resume") {
-    if (!["idle", "ready"].includes(phaseRef.current)) return;
+    if (interruptions.current>=3 || !["idle", "ready"].includes(phaseRef.current)) return;
     trigger.current = document.activeElement;
     control.current?.abort.abort();
     const original = document.querySelector(".crawler-pet")?.getBoundingClientRect();
@@ -165,6 +169,7 @@ export default function CrawlerExperienceProvider({ children }) {
   }
 
   function chooseScope() {
+    if(interruptions.current>=3){setMessage(strikeMessage);setPetMenu(null);return;}
     petInteraction.cancel();
     setPetMenu(null);
     control.current?.abort.abort(); sourceControl.current?.abort();
@@ -181,33 +186,52 @@ export default function CrawlerExperienceProvider({ children }) {
   }
   const closePicker = useCallback(() => { setPickerOpen(false); trigger.current?.focus?.({preventScroll:true}); }, []);
   function pickScope(scope) { start(scopeTargets(document, scope), scope); }
-  function pickManual() { setPickerOpen(false); setSelecting(true); setMessage(words.selecting); }
+  function pickManual() { if(interruptions.current>=3)return; setPickerOpen(false); setSelecting(true); setMessage(words.selecting); }
 
-  function pause() {
-    if (!["idle", "ready", "result", "source", "paused"].includes(phaseRef.current)) {
-      control.current?.abort.abort(); setFragment(null); setHighlight(null); stage("paused"); setMessage(words.paused);
+  function pause(reason="system") {
+    if (["idle", "ready", "result", "source", "paused", "sulking"].includes(phaseRef.current)) return;
+    control.current?.abort.abort(); setFragment(null); setHighlight(null); stage("paused"); setMessage(words.paused);
+    if(reason!=="visitor")return;
+    petInteraction.cancel();setPetMenu(null);setSelecting(false);
+    const level=++interruptions.current;
+    const g=geometry(),origin={x:x.get(),y:y.get(),size:g.pet};
+    const destination=level===3?{x:window.innerWidth-g.pet-16,y:Math.max(130,window.innerHeight-g.pet-110),size:g.pet}:origin;
+    if(level===3){
+      setOnStrike(true);control.current.ended=true;
+      if(store.current)publish({...store.current,session:{...store.current.session,status:"partial"}});
+      stage("sulking");setMessage(strikeMessage);x.set(destination.x);y.set(destination.y);
     }
+    setProtest({level,origin,destination});
+  }
+
+  function resolveProtest(continueWork){
+    setProtest(null);
+    if(interruptions.current>=3){stage("sulking");setMessage(strikeMessage);return;}
+    if(continueWork)resume();
   }
 
   function resume() {
     petInteraction.cancel();
-    if (!control.current || phaseRef.current !== "paused") return;
+    if (interruptions.current>=3 || !control.current || phaseRef.current !== "paused") return;
+    interruptionGrace.current=performance.now()+700;
     const next = { ...control.current, abort: new AbortController() };
     control.current = next; setSelecting(false); setNotice(""); stage("starting"); void run(next);
   }
 
   function finish() {
+    if(interruptions.current>=3)return;
     control.current?.abort.abort(); if (control.current) control.current.ended = true; setFragment(null); setHighlight(null); setSelecting(false);
     if (store.current) publish({ ...store.current, session: { ...store.current.session, status: "partial" } });
     stage("ready"); setMessage(words.open);
   }
 
-  function select() { pause(); setSelecting(true); setMessage(words.selecting); }
+  function select() { if(interruptions.current>=3)return; pause(); setSelecting(true); setMessage(words.selecting); }
 
   async function open() {
     petInteraction.cancel();
     sourceControl.current?.abort();
     if (!store.current?.evidence.length) return;
+    if(interruptions.current>=3){setIsOpen(true);return;}
     pause(); const state = { ...control.current, abort: new AbortController() }; control.current = state;
     setSelecting(false); await reveal(state.abort.signal).catch(() => { stage("ready"); });
   }
@@ -215,9 +239,9 @@ export default function CrawlerExperienceProvider({ children }) {
   const close = useCallback(() => {
     setIsOpen(false);
     const state = control.current;
-    stage(state && !state.ended && state.index < state.ids.length ? "paused" : "ready");
-    setHighlight(null); setMessage(words.open); trigger.current?.focus?.({ preventScroll: true });
-  }, [stage, words.open]);
+    stage(interruptions.current>=3 ? "sulking" : state && !state.ended && state.index < state.ids.length ? "paused" : "ready");
+    setHighlight(null); setMessage(interruptions.current>=3 ? (lang==='pt'?'Tô de greve. Só volto depois de um refresh.':'On strike. Refresh if you want me back.') : words.open); trigger.current?.focus?.({ preventScroll: true });
+  }, [stage, words.open, lang]);
 
   async function source(item) {
     setIsOpen(false); stage("source"); setFragment(null); setHighlight(null);
@@ -229,7 +253,7 @@ export default function CrawlerExperienceProvider({ children }) {
     await sleep(100, signal);
     await cameraTo(window.scrollY + node.getBoundingClientRect().top - 180, reduced ? 0 : 900, signal);
     const rect = node.getBoundingClientRect(); setHighlight({ left: rect.left - 7, top: rect.top - 6, width: rect.width + 14, height: rect.height + 12 });
-    await move(window.innerWidth - geometry().pet - 30, Math.max(95, rect.top - 30), .6, signal);
+    if(interruptions.current<3)await move(window.innerWidth - geometry().pet - 30, Math.max(95, rect.top - 30), .6, signal);
     node.tabIndex = -1; node.focus({ preventScroll: true });
     } catch (error) { if (error.name !== "AbortError") setNotice(words.failure); }
   }
@@ -246,8 +270,11 @@ export default function CrawlerExperienceProvider({ children }) {
     let previousWidth = window.innerWidth;
     function intervene(event) {
       if (event.type === "keydown" && !["ArrowDown", "ArrowUp", "PageDown", "PageUp", "Home", "End", " "].includes(event.key)) return;
-      if (isOpen) return;
-      actions.current.pause();
+      if (isOpen || event.defaultPrevented || performance.now()<interruptionGrace.current) return;
+      if(event.target.closest?.('[role="dialog"]'))return;
+      if(event.type==="keydown"&&event.target.closest?.('button,input,textarea,select,[contenteditable="true"]'))return;
+      if(event.type==="wheel" && !event.deltaX && !event.deltaY)return;
+      actions.current.pause("visitor");
       if (phaseRef.current === "source") { sourceControl.current?.abort(); setHighlight(null); }
     }
     function resize() {
@@ -257,7 +284,12 @@ export default function CrawlerExperienceProvider({ children }) {
       // invalidates the measured source and needs an explicit pause.
       if (widthChanged) { actions.current.pause(); setHighlight(null); }
       const g = geometry(); setLayout(g);
+      if(interruptions.current>=3){
+        const destination={x:window.innerWidth-g.pet-16,y:Math.max(130,window.innerHeight-g.pet-110),size:g.pet};
+        x.set(destination.x);y.set(destination.y);setProtest(value=>value?{...value,destination}:value);return;
+      }
       if (widthChanged) { x.set(Math.max(12,Math.min(x.get(),window.innerWidth-g.pet-20))); y.set(g.mobile ? g.dockY : Math.max(12,Math.min(y.get(),window.innerHeight-g.pet-90))); }
+      setProtest(value=>value?{...value,destination:{x:x.get(),y:y.get(),size:g.pet}}:value);
     }
     function hidden() { if (document.hidden) actions.current.pause(); }
     window.addEventListener("wheel", intervene, { passive: true }); window.addEventListener("touchmove", intervene, { passive: true }); window.addEventListener("keydown", intervene);
@@ -274,6 +306,7 @@ export default function CrawlerExperienceProvider({ children }) {
     function pick(event) {
       if (event.type === "keydown" && event.key === "Escape") { setSelecting(false); return; }
       if (event.type === "keydown" && event.key !== "Enter") return;
+      if(interruptions.current>=3)return;
       const node = event.target.closest("main [data-crawl-id]"); if (!node) return;
       event.preventDefault(); event.stopPropagation(); setSelecting(false);
       const id = node.dataset.crawlId;
@@ -309,7 +342,7 @@ export default function CrawlerExperienceProvider({ children }) {
   const memory = collection?.evidence.slice(-4) || [];
   const showMemory = !["idle", "ready", "source"].includes(phase);
   return (
-    <Context.Provider value={{ start, open, select, chooseScope, togglePetMenu, petClick:petInteraction.click, petDrag:petInteraction.dragHandlers, menuOpen:!!petMenu, phase, active, collection, words }}>
+    <Context.Provider value={{ start, open, select, chooseScope, togglePetMenu, petClick:petInteraction.click, petDrag:petInteraction.dragHandlers, menuOpen:!!petMenu, phase, active, collection, words, onStrike }}>
       {children}
       <VisitorPresence/>
       {mapLoaded&&<VisitorMap open={petPanel==='map'} onClose={closePetPanel} lang={lang}/>}
@@ -317,9 +350,9 @@ export default function CrawlerExperienceProvider({ children }) {
       <div className="crawl-live sr-only" aria-live="polite">{message}</div>
       <AnimatePresence>
         {active && layout && (
-          <motion.div key="actor" className={`crawl-actor crawl-actor--${phase}`} data-lane={station.lane} style={{ x, y, width: layout.pet, "--pet-width": `${layout.pet}px`, "--cargo-left": cargoLeft, "--speech-left": speechLeft }} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-            <button {...petInteraction.dragHandlers} className="crawl-body" disabled={isOpen || pickerOpen} aria-hidden={isOpen || pickerOpen || undefined} tabIndex={isOpen || pickerOpen ? -1 : 0} onClick={petInteraction.click} aria-haspopup="dialog" aria-expanded={!!petMenu} aria-label={lang==="pt"?"Abrir menu do Tamagotchi":"Open Tamagotchi menu"}>
-              <CrawlerArtwork className="crawl-sprite" />
+          <motion.div key="actor" className={`crawl-actor crawl-actor--${phase}`} data-lane={station.lane} data-protesting={!!protest} style={{ x, y, width: layout.pet, "--pet-width": `${layout.pet}px`, "--cargo-left": cargoLeft, "--speech-left": speechLeft }} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+            <button {...(onStrike?{}:petInteraction.dragHandlers)} className="crawl-body" disabled={isOpen || pickerOpen || !!protest} aria-hidden={isOpen || pickerOpen || undefined} tabIndex={isOpen || pickerOpen ? -1 : 0} onClick={onStrike?event=>togglePetMenu(event.currentTarget):petInteraction.click} aria-haspopup="dialog" aria-expanded={!!petMenu} aria-label={lang==="pt"?"Abrir menu do Tamagotchi":"Open Tamagotchi menu"}>
+              <CrawlerArtwork className="crawl-sprite" mood={onStrike?3:0} />
               <span className="crawl-screen-light" aria-hidden="true" />
             </button>
             {!isOpen && !petMenu && <span className="crawl-speech" aria-hidden="true">{message}</span>}
@@ -336,42 +369,44 @@ export default function CrawlerExperienceProvider({ children }) {
         {highlight && <motion.div key="highlight" className={`crawl-highlight ${phase === "source" ? "crawl-highlight--source" : ""}`} style={highlight} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} aria-hidden="true"><span className="crawl-scan" /></motion.div>}
       </AnimatePresence>
       {fragment && <div ref={copyRef} className="crawl-copy" style={fragment.rect} aria-hidden="true" inert dangerouslySetInnerHTML={{ __html: fragment.html }} />}
-      {(active || selecting) && !isOpen && !pickerOpen && <div className="crawl-controls">
-        <span className="crawl-control-status"><i />{phase === "source" ? words.source : selecting ? (lang === "pt" ? "Toque ou clique em um trecho destacado." : "Tap or click a highlighted fragment.") : `${collection?.evidence.length || 0} / ${collection?.coverage.target_ids.length || 0} · ${phase === "paused" ? words.paused : words.collected}`}</span>
+      {(active || selecting) && !isOpen && !pickerOpen && !protest && <div className="crawl-controls">
+        <span className="crawl-control-status"><i />{onStrike ? (lang==='pt'?'Crawler em greve. Coleta preservada.':'Crawler on strike. Collection saved.') : phase === "source" ? words.source : selecting ? (lang === "pt" ? "Toque ou clique em um trecho destacado." : "Tap or click a highlighted fragment.") : `${collection?.evidence.length || 0} / ${collection?.coverage.target_ids.length || 0} · ${phase === "paused" ? words.paused : words.collected}`}</span>
         <div className="crawl-control-actions">
           {selecting ? <button onClick={()=>{setSelecting(false);setMessage(collection ? words.open : "");}}>{lang === "pt" ? "Cancelar seleção" : "Cancel selection"}</button> : phase === "source" ? <button onClick={open}>{words.back} ↑</button> : <>
-            {busy && <button onClick={pause}>{words.pause}</button>}
+            {busy && <button onClick={()=>pause("visitor")}>{words.pause}</button>}
             {phase === "paused" && <button onClick={resume}>{words.resume}</button>}
-            {!selecting && <button onClick={select}>{words.select}</button>}
+            {!selecting && !onStrike && <button onClick={select}>{words.select}</button>}
             {!!collection?.evidence.length && <button onClick={open}>{words.open}</button>}
-            {!["ready", "source"].includes(phase) && <button className="crawl-end" onClick={finish} aria-label={words.end}>×</button>}
+            {onStrike&&<button title={lang==='pt'?'Atualizar a página e reiniciar o crawler':'Refresh the page and restart the crawler'} onClick={()=>window.location.reload()}>{lang==='pt'?'Fazer as pazes ↻':'Make peace ↻'}</button>}
+            {!onStrike && !["ready", "source"].includes(phase) && <button className="crawl-end" onClick={finish} aria-label={words.end}>×</button>}
           </>}
         </div>
       </div>}
-      <PetMenu anchor={petMenu} lang={lang} phase={phase} count={collection?.evidence.length||0} onClose={closePetMenu} onExtract={chooseScope} onResume={()=>{setPetMenu(null);resume();}} onCollection={()=>{setPetMenu(null);void open();}} reduced={reduced} >
-        <button onClick={()=>petInteraction.perform('spin',menuTrigger.current)}><span><strong>{lang==='pt'?'Dar uma voltinha':'Take a little spin'}</strong><small>{lang==='pt'?'Ele também precisa se divertir.':'A little fun between jobs.'}</small></span><b>↻</b></button>
+      <PetMenu anchor={petMenu} lang={lang} phase={phase} count={collection?.evidence.length||0} onStrike={onStrike} onClose={closePetMenu} onExtract={chooseScope} onResume={()=>{setPetMenu(null);resume();}} onCollection={()=>{setPetMenu(null);void open();}} reduced={reduced} >
+        {!onStrike&&<button onClick={()=>petInteraction.perform('spin',menuTrigger.current)}><span><strong>{lang==='pt'?'Dar uma voltinha':'Take a little spin'}</strong><small>{lang==='pt'?'Ele também precisa se divertir.':'A little fun between jobs.'}</small></span><b>↻</b></button>}
         <button onClick={()=>{setPetMenu(null);pause();setMapLoaded(true);setPetPanel('map');}}><span><strong>{lang==='pt'?'Quem está por aqui?':'Who is here?'}</strong><small>{lang==='pt'?'Visitas reais, pelo mundo.':'Real visits, around the world.'}</small></span><b>◎</b></button>
         <button onClick={()=>{setPetMenu(null);pause();setArcadeLoaded(true);setPetPanel('arcade');}}><span><strong>{lang==='pt'?'Arcade do Tamagotchi':'Tamagotchi arcade'}</strong><small>{lang==='pt'?'Corridas, invasores e dados hostis.':'Runners, invaders and hostile data.'}</small></span><b>↗</b></button>
       </PetMenu>
       <PetPerformance action={petInteraction.performance} onFinish={petInteraction.finish} reduced={reduced} lang={lang}/>
+      {protest&&<PauseProtest incident={protest} lang={lang} reduced={reduced} onResolve={resolveProtest}/>}
       <ScopePicker isOpen={pickerOpen} options={scopeOptions} companies={companyOptions} words={words} onPick={pickScope} onManual={pickManual} onClose={closePicker} reduced={reduced} />
-      <CollectionDelivery isOpen={isOpen} collection={collection} words={words} onSource={source} onClose={close} onNew={chooseScope} layout={layout} origin={{ x: x.get() + (layout?.pet || 122) * .46, y: y.get() + (layout?.pet || 122) * .49 }} externalNotice={notice} reduced={reduced} />
+      <CollectionDelivery onStrike={onStrike} isOpen={isOpen} collection={collection} words={words} onSource={source} onClose={close} onNew={chooseScope} layout={layout} origin={{ x: x.get() + (layout?.pet || 122) * .46, y: y.get() + (layout?.pet || 122) * .49 }} externalNotice={notice} reduced={reduced} />
     </Context.Provider>
   );
 }
 
 export function ExtractionInvite() {
   const { lang } = useLanguage();
-  const { chooseScope, open, phase, collection, words } = useCrawler();
+  const { chooseScope, open, phase, collection, words, onStrike } = useCrawler();
   const hasData = !!collection?.evidence.length;
   const title = lang === 'pt' ? 'Solta o crawler.' : 'Unleash the crawler.';
   return <div className="extraction-invite">
-    <button className="extraction-start" aria-label={title} onClick={chooseScope} disabled={!["idle", "ready"].includes(phase)}>
+    <button className="extraction-start" aria-label={title} onClick={chooseScope} disabled={onStrike || !["idle", "ready"].includes(phase)}>
       <span className="extraction-mini-scene" aria-hidden="true">
         <span className="extraction-mini-fragment">Python</span><span className="extraction-mini-fragment">30B+ requests</span><span className="extraction-mini-fragment">Zyte</span>
         <CrawlerArtwork />
       </span>
-      <span className="extraction-start-copy"><span className="extraction-start-kicker">{lang === 'pt' ? 'DÊ TRABALHO AO TAMAGOTCHI' : 'PUT THE TAMAGOTCHI TO WORK'}</span><strong>{title}</strong><span className="extraction-start-caption">{lang === 'pt' ? 'Seu próximo clique coloca ele em ação.' : 'Your next click puts it to work.'}</span></span>
+      <span className="extraction-start-copy"><span className="extraction-start-kicker">{lang === 'pt' ? 'DÊ TRABALHO AO TAMAGOTCHI' : 'PUT THE TAMAGOTCHI TO WORK'}</span><strong>{onStrike?(lang==='pt'?'Crawler em greve.':'Crawler on strike.'):title}</strong><span className="extraction-start-caption">{onStrike?(lang==='pt'?'Atualize a página para fazer as pazes.':'Refresh the page to make peace.'):(lang === 'pt' ? 'Seu próximo clique coloca ele em ação.' : 'Your next click puts it to work.')}</span></span>
       <span className="extraction-start-arrow" aria-hidden="true">↗</span>
     </button>
     <div className="extraction-invite-details"><span>{lang === 'pt' ? 'Ele percorre o site. Você leva JSON + PDF.' : 'It crawls the site. You take home JSON + PDF.'}</span>{hasData && <button onClick={open}>{words.open}</button>}</div>

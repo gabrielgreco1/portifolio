@@ -62,3 +62,13 @@ SEO_TEST_ORIGIN=http://127.0.0.1:4322 npm run test:seo
 The capture scripts render the actual local application using installed Chrome. Default origin is port 4318; screenshots go to `/tmp/tamagotchi-*`.
 
 Implementation references: [Vercel request geolocation headers](https://vercel.com/docs/headers/request-headers), [Upstash REST commands](https://upstash.com/docs/redis/features/restapi), [D3 geographic projections](https://d3js.org/d3-geo/projection), [Natural Earth geometry via world-atlas](https://github.com/topojson/world-atlas).
+
+### Interruption protests (2026-10-09)
+
+Intentional page scrolling (wheel, touch, page-navigation keys) or the Pause control escalates the crawler's reaction once per running-to-paused transition. Resizing, switching tabs, opening menus and selecting a source pause safely without adding an interruption. A short grace period after resuming prevents scroll inertia from immediately triggering another protest.
+
+1. The approved character travels from its actual collection position to the foreground. The site progressively blurs behind it, with a larger dialogue asking to finish its work.
+2. A second interruption adds a warmer tint, angular brows, steam and a different warning. Both early dialogues let the visitor resume or remain paused; Escape remains paused.
+3. The third interruption marks the session partial, ends collection and sends the character to the lower-right corner after the dialogue. Every new-collection entry point stays locked until a page refresh. Existing JSON/PDF and provenance remain accessible. The refresh control explicitly reloads the page; no persistent strike flag is stored.
+
+The overlay traps focus, restores scrolling/inert state and respects reduced motion. Portrait, compact and landscape layouts keep dialogue controls visible. `scripts/check-crawler-protest.mjs` covers progression, automatic retreat, deduplication of repeated events, resize exclusions, keyboard focus/Escape, partial-data preservation, locked menu/delivery actions and refresh recovery. `TEST_COMPLETE=1` verifies all 52 distinct fragments after two interruptions; `TEST_TOUCH=1` uses Chrome touch input; `TEST_REDUCED=1` checks reduced motion. Build, lint and all 13 crawler tests pass.

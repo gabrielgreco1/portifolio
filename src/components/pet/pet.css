@@ -11,3 +11,5 @@
 
 .crawler-pet[data-pet-acting="drag"],.crawl-body[data-pet-acting="drag"]{cursor:grabbing}
 .pet-menu{max-height:calc(100dvh - 24px);overflow:auto;overscroll-behavior:contain;scrollbar-width:thin}
+
+.pet-menu-options>button:disabled{opacity:.55;cursor:default;transform:none;background:transparent;border-color:transparent}

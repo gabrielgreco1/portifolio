@@ -13,7 +13,7 @@ function PagePreview({page,width,height,index}){
   {page.map((op,i)=>op.kind==='text'?<text key={i} x={op.x} y={op.y+op.size} fill={op.color} fontSize={op.size} fontFamily={op.font==='serif'?'Times New Roman, serif':'Arial, sans-serif'} fontWeight={op.font==='bold'?700:400} textLength={op.width||undefined} lengthAdjust="spacingAndGlyphs">{op.text}</text>:op.kind==='line'?<line key={i} x1={op.x} x2={op.x+op.width} y1={op.y} y2={op.y} stroke={op.color} strokeWidth=".5"/>:op.kind==='image'?<image key={i} href={op.url} x={op.x} y={op.y} width={op.width} height={op.height}/>:null)}
  </svg>;
 }
-function DeliveryPanel({collection,words,onClose,onNew,layout,origin,reduced,onSource,externalNotice}){
+function DeliveryPanel({collection,words,onClose,onNew,layout,origin,reduced,onSource,externalNotice,onStrike}){
  const panel=useRef(null),[mode,setMode]=useState('document'),[report,setReport]=useState(null),[pdfError,setPdfError]=useState(false),[retry,setRetry]=useState(0),[zoom,setZoom]=useState(false),[pageIndex,setPageIndex]=useState(0),[receipt,setReceipt]=useState(null),[notice,setNotice]=useState(''),[trace,setTrace]=useState(false);
  const present=useIsPresent();
  const pt=collection.page.language==='pt';
@@ -48,7 +48,7 @@ function DeliveryPanel({collection,words,onClose,onNew,layout,origin,reduced,onS
     </>}
    </div>
    <footer className="delivery-export"><div><strong>{mode==='document'?(pt?'Pronto para compartilhar.':'Ready to share.'):(pt?'Conteúdo + rastreabilidade.':'Content + provenance.')}</strong><p>{mode==='document'?(pt?'Conteúdo profissional diagramado. JSON original anexado.':'Professional content, laid out. Original JSON attached.'):(pt?'O download inclui todos os campos e suas origens.':'The download includes every field and its source.')}</p></div><button className="delivery-primary" onClick={download} disabled={mode==='document'&&!report}>{mode==='document'?(pt?'Baixar PDF':'Download PDF'):(pt?'Baixar JSON':'Download JSON')} <span>↓</span></button></footer>
-   <div className="delivery-bottom"><button onClick={onNew}>{pt?'Fazer outra coleta':'Start another collection'}</button><span role="status">{notice||externalNotice}</span>{mode==='json'&&<button onClick={copy}>{pt?'Copiar JSON completo':'Copy complete JSON'}</button>}</div>
+   <div className="delivery-bottom"><button onClick={onNew} disabled={onStrike}>{onStrike?(pt?'Nova coleta só após refresh':'Refresh to collect again'):(pt?'Fazer outra coleta':'Start another collection')}</button><span role="status">{notice||externalNotice}</span>{mode==='json'&&<button onClick={copy}>{pt?'Copiar JSON completo':'Copy complete JSON'}</button>}</div>
    {receipt&&<DeliveryReceipt key={receipt.id} delivery={receipt} lang={doc.page.language} reduced={reduced} onClose={()=>setReceipt(null)}/>}
   </motion.section>
  </>;
