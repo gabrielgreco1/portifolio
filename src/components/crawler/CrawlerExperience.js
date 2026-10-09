@@ -19,6 +19,7 @@ import {usePetInteraction} from "../pet/usePetInteraction";
 import { useGlassDialog } from "./useGlassDialog";
 import "./crawler.css";
 
+const PetArcade = dynamic(()=>import("../pet/PetArcade"),{ssr:false});
 const VisitorMap = dynamic(()=>import("../pet/VisitorMap"),{ssr:false});
 const Context = createContext(null);
 export const useCrawler = () => useContext(Context);
@@ -44,7 +45,7 @@ export default function CrawlerExperienceProvider({ children }) {
   const [isOpen, setIsOpen] = useState(false), [tab, setTab] = useState("json"), [selectedId, setSelectedId] = useState(null), [layout, setLayout] = useState(null);
   const [notice, setNotice] = useState("");
   const [petMenu, setPetMenu] = useState(null);
-  const [petPanel,setPetPanel]=useState(null),[mapLoaded,setMapLoaded]=useState(false);
+  const [petPanel,setPetPanel]=useState(null),[mapLoaded,setMapLoaded]=useState(false),[arcadeLoaded,setArcadeLoaded]=useState(false);
   const closePetPanel=useCallback(()=>{setPetPanel(null);menuTrigger.current?.focus({preventScroll:true});},[]);
   const menuTrigger = useRef(null);
   const closePetMenu = useCallback(()=>{setPetMenu(null);menuTrigger.current?.focus({preventScroll:true});},[]);
@@ -310,6 +311,7 @@ export default function CrawlerExperienceProvider({ children }) {
       {children}
       <VisitorPresence/>
       {mapLoaded&&<VisitorMap open={petPanel==='map'} onClose={closePetPanel} lang={lang}/>}
+      {arcadeLoaded&&<PetArcade open={petPanel==='arcade'} onClose={closePetPanel} lang={lang}/>}
       <div className="crawl-live sr-only" aria-live="polite">{message}</div>
       <AnimatePresence>
         {active && layout && (
@@ -347,6 +349,7 @@ export default function CrawlerExperienceProvider({ children }) {
       <PetMenu anchor={petMenu} lang={lang} phase={phase} count={collection?.evidence.length||0} onClose={closePetMenu} onExtract={chooseScope} onResume={()=>{setPetMenu(null);resume();}} onCollection={()=>{setPetMenu(null);void open();}} reduced={reduced} >
         <button onClick={()=>petInteraction.perform('spin',menuTrigger.current)}><span><strong>{lang==='pt'?'Dar uma voltinha':'Take a little spin'}</strong><small>{lang==='pt'?'Ele também precisa se divertir.':'A little fun between jobs.'}</small></span><b>↻</b></button>
         <button onClick={()=>{setPetMenu(null);pause();setMapLoaded(true);setPetPanel('map');}}><span><strong>{lang==='pt'?'Quem está por aqui?':'Who is here?'}</strong><small>{lang==='pt'?'Visitas reais, pelo mundo.':'Real visits, around the world.'}</small></span><b>◎</b></button>
+        <button onClick={()=>{setPetMenu(null);pause();setArcadeLoaded(true);setPetPanel('arcade');}}><span><strong>{lang==='pt'?'Arcade do Tamagotchi':'Tamagotchi arcade'}</strong><small>{lang==='pt'?'Uma corrida contra dados hostis.':'A run through hostile data.'}</small></span><b>↗</b></button>
       </PetMenu>
       <PetPerformance action={petInteraction.performance} onFinish={petInteraction.finish} reduced={reduced} lang={lang}/>
       <ScopePicker isOpen={pickerOpen} options={scopeOptions} companies={companyOptions} words={words} onPick={pickScope} onManual={pickManual} onClose={closePicker} reduced={reduced} />

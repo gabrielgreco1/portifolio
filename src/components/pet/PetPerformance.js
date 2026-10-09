@@ -1,5 +1,6 @@
 "use client";
 import {useEffect,useRef} from 'react';
+import {drawPetTension} from '@/lib/crawler/pet-render.mjs';
 import {PET_DURATION,petPose,dragPose} from '@/lib/crawler/pet-motion.mjs';
 
 const VIEWS=[[17,69,426,333],[480,69,367,341],[914,69,391,337],[1353,69,393,325],[22,511,394,330],[491,510,355,341],[903,507,412,336],[1349,507,405,333]];
@@ -39,7 +40,7 @@ export default function PetPerformance({action,onFinish,reduced,lang}) {
         ctx.fillStyle=`rgba(28,40,29,${.13*(1+p.y/100)})`;ctx.beginPath();ctx.ellipse(122,202,61+p.y*.45,8,0,0,Math.PI*2);ctx.fill();
         ctx.save();ctx.translate(122+p.x,197+p.y);ctx.rotate(p.angle);ctx.scale(p.sx,p.sy);ctx.translate(-122,-197);
         if(p.heat)ctx.filter=`sepia(${p.heat*.85}) saturate(${1+p.heat*5}) hue-rotate(${-65*p.heat}deg)`;
-        if(drag)drawTension(ctx,artwork[0],drag.strain/scale,drag.step/scale,drag.grip);
+        if(drag)drawPetTension(ctx,artwork[0],drag.strain/scale,drag.step/scale,drag.grip);
         else if(p.frame<0)ctx.drawImage(artwork[0],10,16,224,224);
         else {const [x,y,w,h]=VIEWS[p.frame],height=133,width=w/h*height;ctx.drawImage(artwork[1],x,y,w,h,122-width/2,197-height,width,height);}
         ctx.filter='none';
@@ -78,22 +79,3 @@ export default function PetPerformance({action,onFinish,reduced,lang}) {
 }
 function smoothFade(t){return Math.max(0,(t-.65)/.35);}
 
-// Deform the approved texture, keeping four original feet planted. The housing
-// moves rigidly; only the leg strips flex between their joints and their toes.
-function drawTension(ctx,image,strain,step,grip){
-  const ratio=image.width/224;
-  ctx.drawImage(image,0,0,image.width,139*ratio,10+strain,16,224,139);
-  const columns=[10,60,122,184,234];
-  for(let y=155;y<240;y+=1.5){
-    const height=Math.min(1.5,240-y),t=Math.max(0,Math.min(1,(y-155)/42)),flex=1-t*t*(3-2*t);
-    for(let i=0;i<4;i++){
-      const left=columns[i],width=columns[i+1]-left,footLift=(i%2?1:-1)*step*t;
-      ctx.drawImage(image,(left-10)*ratio,(y-16)*ratio,width*ratio,height*ratio,left+strain*flex,y+footLift,width,height+.35);
-    }
-  }
-  if(grip>.4){
-    ctx.globalAlpha=(grip-.4)*.42;ctx.strokeStyle='#526046';ctx.lineWidth=1.5;
-    for(const foot of [38,68,164,204]){ctx.beginPath();ctx.moveTo(foot-Math.sign(strain)*7,201);ctx.lineTo(foot-Math.sign(strain)*15,201);ctx.stroke();}
-    ctx.globalAlpha=1;
-  }
-}

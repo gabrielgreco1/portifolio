@@ -9,6 +9,8 @@ Work sequentially and inspect each feature in Chrome and mobile before continuin
 - Three clicks: eight-view axial spin with anticipation, jump and landing; five clicks: overload, steam and real page text fragments. Rest uses the exact approved artwork. Reduced motion supported. Deterministic Playwright frame capture and real Chrome clicks validated.
 - Drag: pointer capture, four planted feet, bounded movement, increasing resistance, smooth release. Arrow keys work when the character has focus. Drag cannot accidentally open the menu. Mouse, touch and keyboard validated.
 
+- Data Run: parallax server district, approved character with moving legs, beveled HTTP obstacles, collectible packets, immediate keyboard and touch jump, pause, collision, retry and local best score. Chrome gameplay and deterministic desktop/mobile frame captures passed.
+
 ## Visitor map: implementation ready, production connection pending
 
 - Orthographic globe, pan, zoom, city selection and keyboard controls, current/history toggle, mobile glass dialog.
@@ -22,7 +24,6 @@ Work sequentially and inspect each feature in Chrome and mobile before continuin
 
 ## Remaining
 
-- Runner game: polished data obstacles, keyboard/space and touch, glass popup, real gameplay validation.
 - Space Invaders: polished sprites, keyboard/space and touch, glass popup, real gameplay validation.
 - Extraction/delivery/download Easter eggs without corrupting the data or interrupting the flow.
 - Final regression: PT/EN, complete and scoped extraction, pause/resume with menu/gestures, JSON/PDF, phone portrait/landscape, reduced motion, production build and SEO tests.
@@ -38,6 +39,8 @@ node --test tests/pet-motion.test.mjs tests/visitors.test.mjs
 node scripts/capture-pet-motion.mjs
 node scripts/capture-pet-drag.mjs
 node scripts/capture-visitor-map.mjs
+node scripts/capture-runner.mjs
+node --test tests/runner.test.mjs
 SEO_TEST_ORIGIN=http://127.0.0.1:4322 npm run test:seo
 ```
 

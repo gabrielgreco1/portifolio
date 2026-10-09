@@ -1,0 +1,36 @@
+import {chromium} from 'playwright';
+import {mkdir} from 'node:fs/promises';
+import assert from 'node:assert/strict';
+const output='/tmp/tamagotchi-runner';await mkdir(output,{recursive:true});
+const browser=await chromium.launch({channel:'chrome',headless:true});
+for(const width of [1280,390]){
+ const context=await browser.newContext({viewport:{width,height:width===390?844:900},hasTouch:width===390,isMobile:width===390});
+ const page=await context.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));
+ await page.clock.install({time:new Date('2026-10-09T12:00:00Z')});
+ await page.goto('http://127.0.0.1:4318/pt');await page.waitForTimeout(750);
+ await page.locator('.crawler-pet').press('Enter');await page.getByRole('button',{name:/Arcade do Tamagotchi/}).click();
+ await page.getByRole('button',{name:/Começar corrida/}).waitFor();await page.waitForTimeout(500);
+ await page.screenshot({animations:'disabled',path:`${output}/${width}-intro.png`});
+ await page.clock.pauseAt(new Date('2026-10-09T12:01:00Z'));
+ await page.getByRole('button',{name:/Começar corrida/}).click({force:true});
+ await page.clock.runFor(120);assert.equal(await page.locator('.runner-overlay').count(),0);
+ const box=await page.getByRole('application',{name:'Data Run'}).boundingBox(),playerX=width===390?66:108;
+ const approach=Math.round((.7+(box.width+42-playerX)/250-.4)*1000);
+ await page.clock.runFor(approach-120);
+ if(width===390)await page.getByRole('button',{name:'Pular ↑',exact:true}).tap();
+ else await page.getByRole('application',{name:'Data Run'}).press('ArrowUp');
+ await page.clock.runFor(350);await page.screenshot({animations:'disabled',path:`${output}/${width}-jump.png`});
+ await page.clock.runFor(400);
+ assert.match(await page.locator('.runner-stage').getAttribute('class'),/running/);
+ assert.match(await page.locator('.arcade-hud>div').nth(1).innerText(),/1$/);
+ await page.getByRole('application',{name:'Data Run'}).press('p');await page.clock.runFor(100);
+ const score=await page.locator('.arcade-hud>div').first().innerText();
+ await page.clock.runFor(1500);assert.equal(await page.locator('.arcade-hud>div').first().innerText(),score);assert.match(await page.locator('.runner-stage').getAttribute('class'),/paused/);
+ await page.getByRole('button',{name:/Continuar corrida/}).click({force:true});await page.clock.runFor(7000);
+ assert.match(await page.locator('.runner-stage').getAttribute('class'),/over/);
+ await page.screenshot({animations:'disabled',path:`${output}/${width}-over.png`});
+ await page.getByRole('application',{name:'Data Run'}).press('Space');await page.clock.runFor(150);assert.match(await page.locator('.runner-stage').getAttribute('class'),/running/);
+ await page.keyboard.press('Escape');await page.clock.runFor(500);assert.equal(await page.getByRole('dialog').count(),0);
+ assert.deepEqual(errors,[]);await context.close();
+}
+await browser.close();console.log(`Runner keyboard, touch, collection, pause, collision, restart and modal close passed: ${output}`);
