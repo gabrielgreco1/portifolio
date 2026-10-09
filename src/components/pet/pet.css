@@ -13,3 +13,16 @@
 .pet-menu{max-height:calc(100dvh - 24px);overflow:auto;overscroll-behavior:contain;scrollbar-width:thin}
 
 .pet-menu-options>button:disabled{opacity:.55;cursor:default;transform:none;background:transparent;border-color:transparent}
+
+@media (min-width:981px) and (min-height:500px){
+  .pet-menu{padding:18px 14px 14px}
+  .pet-menu header{gap:10px;padding-bottom:14px}
+  .pet-menu-avatar{width:42px;flex-basis:42px}
+  .pet-menu h2{font-size:18px}
+  .pet-menu-status{font-size:10px}
+  .pet-menu-options{gap:5px}
+  .pet-menu-options>button{min-height:66px;padding:12px 15px}
+  .pet-menu-options strong{font-size:14.5px}
+  .pet-menu-options small{font-size:11.5px}
+  .pet-menu-footnote{font-size:10px}
+}

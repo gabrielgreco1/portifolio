@@ -28,7 +28,8 @@ function PetMenuPanel({anchor,lang,phase,count,onStrike,onClose,onExtract,onResu
     return()=>{clearTimeout(focus);document.removeEventListener('pointerdown',outside);document.removeEventListener('keydown',key);window.removeEventListener('resize',dismiss);window.removeEventListener('scroll',dismiss);};
   },[anchor,onClose,present]);
   if(!anchor)return null;
-  const width=Math.min(292,window.innerWidth-24);
+  const desktop=window.matchMedia("(min-width: 981px) and (min-height: 500px)").matches;
+  const width=Math.min(desktop?324:292,window.innerWidth-24);
   const left=Math.max(12,Math.min(anchor.left+anchor.width/2-width/2,window.innerWidth-width-12));
   const top=Math.max(12,Math.min(anchor.top-height+20,window.innerHeight-height-12));
   const origin=`${anchor.left+anchor.width/2-left}px ${anchor.top+anchor.height/2-top}px`;
