@@ -10,3 +10,4 @@
 .crawler-pet,.crawl-body{touch-action:none;user-select:none;-webkit-user-select:none}
 
 .crawler-pet[data-pet-acting="drag"],.crawl-body[data-pet-acting="drag"]{cursor:grabbing}
+.pet-menu{max-height:calc(100dvh - 24px);overflow:auto;overscroll-behavior:contain;scrollbar-width:thin}

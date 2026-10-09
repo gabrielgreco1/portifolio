@@ -11,6 +11,8 @@ Work sequentially and inspect each feature in Chrome and mobile before continuin
 
 - Data Run: parallax server district, approved character with moving legs, beveled HTTP obstacles, collectible packets, immediate keyboard and touch jump, pause, collision, retry and local best score. Chrome gameplay and deterministic desktop/mobile frame captures passed.
 
+- Data Invaders: approved character, three enemy classes, waves, shield and three lives; held keyboard fire, arrows, two-finger touch and swipe controls. Desktop, phone and 844×390 landscape capture passed. Both games preserve a playable world when the phone rotates.
+
 ## Visitor map: implementation ready, production connection pending
 
 - Orthographic globe, pan, zoom, city selection and keyboard controls, current/history toggle, mobile glass dialog.
@@ -24,7 +26,6 @@ Work sequentially and inspect each feature in Chrome and mobile before continuin
 
 ## Remaining
 
-- Space Invaders: polished sprites, keyboard/space and touch, glass popup, real gameplay validation.
 - Extraction/delivery/download Easter eggs without corrupting the data or interrupting the flow.
 - Final regression: PT/EN, complete and scoped extraction, pause/resume with menu/gestures, JSON/PDF, phone portrait/landscape, reduced motion, production build and SEO tests.
 - Push, PR, attach it to the chat, merge after validation, verify gabrielgreco.com. None of this branch has been published yet.
@@ -40,7 +41,8 @@ node scripts/capture-pet-motion.mjs
 node scripts/capture-pet-drag.mjs
 node scripts/capture-visitor-map.mjs
 node scripts/capture-runner.mjs
-node --test tests/runner.test.mjs
+node --test tests/runner.test.mjs tests/invaders.test.mjs
+node scripts/capture-invaders.mjs
 SEO_TEST_ORIGIN=http://127.0.0.1:4322 npm run test:seo
 ```
 

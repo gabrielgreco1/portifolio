@@ -1,0 +1,38 @@
+import {chromium} from 'playwright';
+import {mkdir} from 'node:fs/promises';
+import assert from 'node:assert/strict';
+const output='/tmp/tamagotchi-invaders';await mkdir(output,{recursive:true});
+const browser=await chromium.launch({channel:'chrome',headless:true});
+for(const [width,height] of [[1280,900],[390,844],[844,390]]){
+ const mobile=width!==1280,context=await browser.newContext({viewport:{width,height},hasTouch:mobile,isMobile:mobile});
+ const page=await context.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));
+ await page.clock.install({time:new Date('2026-10-09T12:00:00Z')});
+ await page.goto('http://127.0.0.1:4318/pt');await page.waitForTimeout(750);
+ await page.locator('.crawler-pet').press('Enter');await page.getByRole('button',{name:/Arcade do Tamagotchi/}).click();
+ await page.getByRole('tab',{name:/Data Invaders/}).click();await page.getByRole('button',{name:/Defender os dados/}).waitFor();await page.waitForTimeout(500);
+ await page.screenshot({animations:'disabled',path:`${output}/${width}-intro.png`});
+ await page.clock.pauseAt(new Date('2026-10-09T12:01:00Z'));
+ await page.getByRole('button',{name:/Defender os dados/}).click({force:true});await page.clock.runFor(120);
+ assert.equal(await page.locator('.runner-overlay').count(),0);
+ if(mobile){
+  const cdp=await context.newCDPSession(page),fire=await page.getByRole('button',{name:'Atirar ↑',exact:true}).boundingBox(),left=await page.getByRole('button',{name:'Mover para esquerda',exact:true}).boundingBox();
+  assert.ok(fire.y+fire.height<=height,'Touch controls must fit without scrolling');
+  const finger={x:fire.x+fire.width/2,y:fire.y+fire.height/2,id:0},second={x:left.x+left.width/2,y:left.y+left.height/2,id:1};
+  await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[finger]});await page.clock.runFor(1700);
+  await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[finger,second]});await page.clock.runFor(240);
+  await page.screenshot({animations:'disabled',path:`${output}/${width}-multitouch.png`});
+  await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[finger]});await page.clock.runFor(300);
+  await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+ }else{
+  await page.keyboard.down('Space');await page.clock.runFor(1700);await page.keyboard.down('ArrowLeft');await page.clock.runFor(240);await page.keyboard.up('ArrowLeft');await page.clock.runFor(300);await page.keyboard.up('Space');
+  await page.screenshot({animations:'disabled',path:`${output}/${width}-keyboard.png`});
+ }
+ const score=Number(await page.locator('.arcade-hud>div strong').first().innerText());assert.ok(score>0,'Holding fire must score real hits');
+ await page.getByRole('application',{name:'Data Invaders'}).press('p');await page.clock.runFor(100);
+ const paused=await page.locator('.arcade-hud').innerText();await page.clock.runFor(1000);assert.equal(await page.locator('.arcade-hud').innerText(),paused);assert.match(await page.locator('.runner-stage').getAttribute('class'),/paused/);
+ await page.screenshot({animations:'disabled',path:`${output}/${width}-paused.png`});
+ await page.getByRole('button',{name:/Retomar defesa/}).click({force:true});await page.clock.runFor(200);assert.match(await page.locator('.runner-stage').getAttribute('class'),/running/);
+ await page.keyboard.press('Escape');await page.clock.runFor(500);assert.equal(await page.getByRole('dialog').count(),0);
+ assert.deepEqual(errors,[]);await context.close();
+}
+await browser.close();console.log(`Invaders keyboard, held fire, simultaneous touch, score, pause, landscape and close passed: ${output}`);

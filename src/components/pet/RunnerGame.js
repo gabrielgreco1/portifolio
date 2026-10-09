@@ -14,8 +14,8 @@ export default function RunnerGame({lang,reduced}){
     bestRef.current=readBest();
     const image=new Image();image.onload=()=>{if(!disposed){picture.current=image;setReady(true);lastSignature='';}};image.src='/crawler-character-v2.png';
     const resize=()=>{
-      const width=Math.round(surface.clientWidth),height=Math.round(surface.clientHeight),dpr=Math.min(2,window.devicePixelRatio||1);
-      if(!width||!height)return;surface.width=width*dpr;surface.height=height*dpr;ctx.setTransform(dpr,0,0,dpr,0,0);
+      const cssWidth=Math.round(surface.clientWidth),cssHeight=Math.round(surface.clientHeight),scale=Math.min(1,cssHeight/320),width=Math.round(cssWidth/scale),height=Math.round(cssHeight/scale),dpr=Math.min(2,window.devicePixelRatio||1);
+      if(!width||!height)return;surface.width=cssWidth*dpr;surface.height=cssHeight*dpr;ctx.setTransform(dpr*scale,0,0,dpr*scale,0,0);
       if(!state.current)state.current=createRunner(width,height);
       else{const s=state.current;s.width=width;s.height=height;s.ground=height-65;s.playerX=width<500?66:108;if(s.status==='running')pauseRunner(s);}
       lastSignature='';
