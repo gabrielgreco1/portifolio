@@ -4,7 +4,7 @@ import {mkdir} from 'node:fs/promises';
 import assert from 'node:assert/strict';
 const output='/tmp/tamagotchi-invaders';await mkdir(output,{recursive:true});
 const browser=await chromium.launch({channel:'chrome',headless:true});
-for(const [width,height] of [[1280,900],[390,844],[844,390]]){
+for(const [width,height] of [[1280,900],[390,844],[844,390],[320,568]].filter(([w])=>!process.env.TEST_WIDTH||w===Number(process.env.TEST_WIDTH))){
  const mobile=width!==1280,context=await browser.newContext({viewport:{width,height},hasTouch:mobile,isMobile:mobile});
  const page=await context.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));
  await page.clock.install({time:new Date('2026-10-09T12:00:00Z')});
@@ -32,6 +32,7 @@ for(const [width,height] of [[1280,900],[390,844],[844,390]]){
  const paused=await page.locator('.arcade-hud').innerText();await page.clock.runFor(1000);assert.equal(await page.locator('.arcade-hud').innerText(),paused);assert.match(await page.locator('.runner-stage').getAttribute('class'),/paused/);
  await page.screenshot({animations:'disabled',path:`${output}/${width}-paused.png`});
  await page.getByRole('button',{name:/Retomar defesa/}).click({force:true});await page.clock.runFor(200);assert.match(await page.locator('.runner-stage').getAttribute('class'),/running/);
+ if(width===390){await page.setViewportSize({width:844,height:390});await page.clock.runFor(150);assert.match(await page.locator('.runner-stage').getAttribute('class'),/paused/);await page.getByRole('button',{name:/Retomar defesa/}).click();await page.clock.runFor(150);assert.match(await page.locator('.runner-stage').getAttribute('class'),/running/);await page.screenshot({path:`${output}/rotation.png`});}
  await page.keyboard.press('Escape');await page.clock.runFor(500);assert.equal(await page.getByRole('dialog').count(),0);
  assert.deepEqual(errors,[]);await context.close();
 }

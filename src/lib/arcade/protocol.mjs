@@ -1,6 +1,6 @@
 import {createRunner,startRunner,advanceRunner,jumpRunner,duckRunner} from '../crawler/runner.mjs';
 import {createInvaders,startInvaders,advanceInvaders} from '../crawler/invaders.mjs';
-export const GAME_VERSIONS={runner:'runner-3',invaders:'invaders-1'};
+export const GAME_VERSIONS={runner:'runner-3',invaders:'invaders-2'};
 export const TICK_RATE=60,MAX_TICKS=60*60*10,MAX_EVENTS=MAX_TICKS;
 export const validGame=game=>Object.hasOwn(GAME_VERSIONS,game);
 export function validSize(width,height){return Number.isInteger(width)&&Number.isInteger(height)&&width>=280&&width<=1500&&height>=320&&height<=430;}
@@ -13,7 +13,7 @@ export function resizeArcade(game,s,width,height){
   const ground=height-65,playerX=width<500?66:108,dx=playerX-s.playerX,dy=ground-s.ground;
   s.ground=ground;s.playerX=playerX;for(const o of s.obstacles)o.x+=dx;for(const t of [...s.tokens,...s.particles]){t.x+=dx;t.y+=dy;}
  }else{
-  const rx=width/s.width,ry=height/s.height;s.playerX*=rx;for(const item of [...s.enemies,...s.shots,...s.threats]){item.x*=rx;item.y*=ry;}s.playerY=height-24;
+  const rx=width/s.width,ry=height/s.height;s.playerX*=rx;for(const item of [...s.enemies,...s.shots,...s.threats]){item.x*=rx;item.y*=ry;if(item.charge)item.charge.targetX*=rx;if(item.splitY!==undefined)item.splitY*=ry;}s.playerY=height-24;
  }
  s.width=width;s.height=height;
 }

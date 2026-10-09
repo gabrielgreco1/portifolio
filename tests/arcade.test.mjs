@@ -3,6 +3,7 @@ import {mkdtemp,rm} from 'node:fs/promises';import {tmpdir} from 'node:os';impor
 import {ArcadeRecording,GAME_VERSIONS,replayArcade,MAX_TICKS} from '../src/lib/arcade/protocol.mjs';
 import {arcadeConfig,arcadeIdentity,handleArcade,verifyTurnstile} from '../src/lib/arcade/service.mjs';
 import {LocalArcade} from '../src/lib/arcade/storage.mjs';
+import {invadersTestPilot} from '../scripts/invaders-test-pilot.mjs';
 const spec=game=>({id:'test',owner:'test',game,version:GAME_VERSIONS[game],width:760,height:390,seed:3854});
 function play(run,control=()=>({})){const recording=new ArcadeRecording(run);for(let i=0;i<MAX_TICKS*2&&recording.state.status==='running';i++)recording.advance([1/120,1/60,1/40][i%3],control(recording));return recording;}
 const runnerControl=r=>{const s=r.state,next=s.obstacles.find(o=>o.x+o.width>s.playerX-17),ahead=next?next.x-s.playerX:Infinity;return {duck:next?.kind==='scanner'&&ahead<s.speed*.3,jump:!!next&&next.kind!=='scanner'&&ahead<s.speed*.3&&ahead>0&&s.y===0};};
@@ -65,4 +66,22 @@ test('resize and out-of-bounds touch gestures replay consistently',()=>{
   while(r.state.status==='running'&&r.tick<MAX_TICKS){if(r.tick>30&&!resized){r.resize(390,320);resized=true;}r.advance(1/60,game==='invaders'?{fire:true,targetX:r.tick%100<50?-200:1000}:{});}
   assert.equal(replayArcade(run,r.proof()).score,r.state.score);
  }
+});
+test('a complete multi-wave Invaders run replays through the guardian with exactly the same score',()=>{
+ for(const width of [390,760]){
+  const run={...spec('invaders'),width,height:340,seed:2},r=play(run,recording=>invadersTestPilot(recording.state));
+  assert.ok(r.state.wave>=4,'The replay fixture must actually reach the boss encounter');
+  const replay=replayArcade(run,r.proof());assert.equal(replay.wave,r.state.wave);assert.equal(replay.score,r.state.score);
+ }
+});
+test('rotation during a fingerprint lock preserves server replay and the target position',()=>{
+ const run={...spec('invaders'),width:390,height:340,seed:2},r=new ArcadeRecording(run);let rotated=false;
+ while(r.state.status==='running'&&r.tick<MAX_TICKS){
+  if(!rotated&&r.state.enemies.some(e=>e.charge)){
+   const target=r.state.enemies.find(e=>e.charge).charge.targetX;r.resize(760,405);
+   assert.equal(r.state.enemies.find(e=>e.charge).charge.targetX,target*760/390);rotated=true;
+  }
+  r.advance(1/60,invadersTestPilot(r.state));
+ }
+ assert.ok(rotated);assert.equal(replayArcade(run,r.proof()).score,r.state.score);
 });
