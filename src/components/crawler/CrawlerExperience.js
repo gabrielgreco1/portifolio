@@ -11,6 +11,7 @@ import { crawlerGeometry } from "@/lib/crawler/geometry.mjs";
 import { collectionLane, collectionStation, travelDuration } from "@/lib/crawler/route.mjs";
 import ScopePicker from "./ScopePicker";
 import CrawlerArtwork from "../CrawlerArtwork";
+import PetMenu from "../pet/PetMenu";
 import { useGlassDialog } from "./useGlassDialog";
 import "./crawler.css";
 
@@ -37,6 +38,9 @@ export default function CrawlerExperienceProvider({ children }) {
   const [highlight, setHighlight] = useState(null), [fragment, setFragment] = useState(null), [selecting, setSelecting] = useState(false);
   const [isOpen, setIsOpen] = useState(false), [tab, setTab] = useState("json"), [selectedId, setSelectedId] = useState(null), [layout, setLayout] = useState(null);
   const [notice, setNotice] = useState("");
+  const [petMenu, setPetMenu] = useState(null);
+  const menuTrigger = useRef(null);
+  const closePetMenu = useCallback(()=>{setPetMenu(null);menuTrigger.current?.focus({preventScroll:true});},[]);
   const [station, setStation] = useState({lane:"rail",x:0});
   const [pickerOpen, setPickerOpen] = useState(false), [scopeOptions, setScopeOptions] = useState([]), [companyOptions, setCompanyOptions] = useState([]);
   const x = useMotionValue(0), y = useMotionValue(0);
@@ -148,7 +152,13 @@ export default function CrawlerExperienceProvider({ children }) {
     control.current = state; stage("starting"); setMessage(words.begin); void run(state);
   }
 
+  function togglePetMenu(element) {
+    if(petMenu){closePetMenu();return;}
+    pause();menuTrigger.current=element;setPetMenu(element.getBoundingClientRect());
+  }
+
   function chooseScope() {
+    setPetMenu(null);
     control.current?.abort.abort(); sourceControl.current?.abort();
     if (control.current) control.current.ended = true;
     setIsOpen(false); setSelecting(false); setFragment(null); setHighlight(null);
@@ -288,17 +298,17 @@ export default function CrawlerExperienceProvider({ children }) {
   const memory = collection?.evidence.slice(-4) || [];
   const showMemory = !["idle", "ready", "source"].includes(phase);
   return (
-    <Context.Provider value={{ start, open, select, chooseScope, phase, active, collection, words }}>
+    <Context.Provider value={{ start, open, select, chooseScope, togglePetMenu, menuOpen:!!petMenu, phase, active, collection, words }}>
       {children}
       <div className="crawl-live sr-only" aria-live="polite">{message}</div>
       <AnimatePresence>
         {active && layout && (
           <motion.div key="actor" className={`crawl-actor crawl-actor--${phase}`} data-lane={station.lane} style={{ x, y, width: layout.pet, "--pet-width": `${layout.pet}px`, "--cargo-left": cargoLeft, "--speech-left": speechLeft }} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-            <button className="crawl-body" disabled={isOpen || pickerOpen} aria-hidden={isOpen || pickerOpen || undefined} tabIndex={isOpen || pickerOpen ? -1 : 0} onClick={busy ? pause : open} aria-label={busy ? words.pause : words.open}>
+            <button className="crawl-body" disabled={isOpen || pickerOpen} aria-hidden={isOpen || pickerOpen || undefined} tabIndex={isOpen || pickerOpen ? -1 : 0} onClick={event=>togglePetMenu(event.currentTarget)} aria-haspopup="dialog" aria-expanded={!!petMenu} aria-label={lang==="pt"?"Abrir menu do Tamagotchi":"Open Tamagotchi menu"}>
               <CrawlerArtwork className="crawl-sprite" />
               <span className="crawl-screen-light" aria-hidden="true" />
             </button>
-            {!isOpen && <span className="crawl-speech" aria-hidden="true">{message}</span>}
+            {!isOpen && !petMenu && <span className="crawl-speech" aria-hidden="true">{message}</span>}
             {showMemory && <div className="crawl-memory" aria-hidden="true">
               <AnimatePresence initial={false}>
                 {memory.map((item, index) => <motion.div className={`crawl-memory-fragment crawl-memory-fragment--${item.kind}`} key={`${item.id}-${item.source.snapshot_revision}`} style={{ zIndex: index + 1 }} initial={{ opacity: 0, x: 24, y: -45, scale: .5, rotate: -7 }} animate={{ opacity: 1, x: 0, y: index * layout.pileStep, scale: 1, rotate: index % 2 ? -1.6 : 1 }} transition={{ duration: reduced ? .05 : captureTiming(control.current?.ids.length || 1).card, ease: [.2, .9, .25, 1] }}>
@@ -324,6 +334,7 @@ export default function CrawlerExperienceProvider({ children }) {
           </>}
         </div>
       </div>}
+      <PetMenu anchor={petMenu} lang={lang} phase={phase} count={collection?.evidence.length||0} onClose={closePetMenu} onExtract={chooseScope} onResume={()=>{setPetMenu(null);resume();}} onCollection={()=>{setPetMenu(null);void open();}} reduced={reduced} />
       <ScopePicker isOpen={pickerOpen} options={scopeOptions} companies={companyOptions} words={words} onPick={pickScope} onManual={pickManual} onClose={closePicker} reduced={reduced} />
       <Inspector isOpen={isOpen} collection={collection} words={words} tab={tab} setTab={setTab} selectedId={selectedId} onSelect={setSelectedId} onSource={source} onClose={close} onNew={chooseScope} layout={layout} origin={{ x: x.get() + (layout?.pet || 122) * .46, y: y.get() + (layout?.pet || 122) * .49 }} notice={notice} setNotice={setNotice} reduced={reduced} />
     </Context.Provider>
