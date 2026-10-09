@@ -5,7 +5,12 @@ import {dirname} from 'node:path';
 export const ACTIVE_WINDOW=90_000,SESSION_WINDOW=30*60_000;
 const COOKIE='pet_visit';
 const credentials=()=>({url:process.env.UPSTASH_REDIS_REST_URL||process.env.KV_REST_API_URL,token:process.env.UPSTASH_REDIS_REST_TOKEN||process.env.KV_REST_API_TOKEN});
-const secret=()=>process.env.VISITOR_SESSION_SECRET||credentials().token||(process.env.NODE_ENV==='development'?'local-visitor-session-only':null);
+const secret=()=>{
+  const key=process.env.VISITOR_SESSION_SECRET;
+  if(key?.length>=32)return key;
+  if(process.env.NODE_ENV==='development'&&!process.env.VERCEL)return 'local-visitor-session-only';
+  throw new Error('Visitor session secret is not configured');
+};
 const sign=(value,key)=>createHmac('sha256',key).update(value).digest('hex');
 
 export function visitorSession(cookieHeader,key=secret()){
@@ -19,7 +24,7 @@ export function visitorSession(cookieHeader,key=secret()){
 }
 export function visitorCookie(session,secure){return `${COOKIE}=${session.value}; Path=/; Max-Age=1800; HttpOnly; SameSite=Lax${secure?'; Secure':''}`;}
 export function visitorRateKey(headers){
-  const ip=process.env.VERCEL==='1'?headers.get('x-vercel-forwarded-for'):null;
+  const ip=process.env.VERCEL==='1'?(headers.get('x-vercel-forwarded-for')||'unknown'):null;
   return ip?sign(`${Math.floor(Date.now()/60000)}:${ip}`,secret()).slice(0,32):'';
 }
 
@@ -51,6 +56,13 @@ function publicSnapshot({started,total,locations,counts,active,first={},last={},
 const RECORD=`
 local prefix, sid, now, city, location = ARGV[1], ARGV[2], tonumber(ARGV[3]), ARGV[4], ARGV[5]
 local session = prefix .. ':s:' .. sid
+-- Bound all writes, including heartbeats using an already signed cookie.
+if ARGV[6] ~= '' then
+  local key=prefix .. ':requests:' .. ARGV[6]
+  local count=redis.call('INCR',key)
+  if count == 1 then redis.call('EXPIRE',key,90) end
+  if count > 120 then return -1 end
+end
 local previous = redis.call('GET',session)
 if not previous then
   if ARGV[6] ~= '' then

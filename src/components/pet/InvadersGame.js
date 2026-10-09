@@ -51,10 +51,16 @@ export default function InvadersGame({lang,reduced,sound}){
     if(action){event.preventDefault();if(down&&['ready','over'].includes(state.current?.status)){if(action==='fire')start();return;}inputs.current[`${action}Key`]=down;if(action!=='fire')inputs.current.targetX=null;}
     if(down&&!event.repeat&&['p','P'].includes(event.key)){event.preventDefault();pause();}
   }
+  function accessibleTap(event){
+    const control=event.currentTarget.dataset.control;
+    if(event.detail!==0||state.current?.status!=='running')return;
+    inputs.current[`${control}Touch`]=true;
+    const timer=setTimeout(()=>{inputs.current[`${control}Touch`]=false;},150);
+    timers.current.push(timer);
+  }
   function touch(control){return{
     onPointerDown:event=>{event.preventDefault();if(state.current?.status!=='running')return;event.currentTarget.setPointerCapture(event.pointerId);inputs.current[`${control}Touch`]=true;if(control!=='fire')inputs.current.targetX=null;},
     onPointerUp:()=>{inputs.current[`${control}Touch`]=false;},onPointerCancel:()=>{inputs.current[`${control}Touch`]=false;},onLostPointerCapture:()=>{inputs.current[`${control}Touch`]=false;},
-    onClick:event=>{if(event.detail===0){inputs.current[`${control}Touch`]=true;timers.current.push(setTimeout(()=>{inputs.current[`${control}Touch`]=false;},150));}},
   };}
   function steer(event){const rect=event.currentTarget.getBoundingClientRect();inputs.current.targetX=arcadePointerX(event.clientX,rect,display.current);}
   const phase=hud.phase,playing=['running','crashed'].includes(phase);
@@ -71,7 +77,7 @@ export default function InvadersGame({lang,reduced,sound}){
       </motion.div>}
       {phase==='crashed'&&<span className="runner-hit-label" role="status">{pt?'INTEGRIDADE PERDIDA':'INTEGRITY LOST'}</span>}
     </div>
-    <div className="invaders-bottom"><p id="invaders-instructions"><span><kbd>←</kbd><kbd>→</kbd> {pt?'mover':'move'}</span><span><kbd>{pt?'ESPAÇO':'SPACE'}</kbd> {pt?'atirar':'fire'}</span><span><kbd>P</kbd> {pt?'pausar':'pause'}</span></p><div className="invaders-touch"><button data-control="left" {...touch('left')} disabled={!playing} aria-label={pt?'Mover para esquerda':'Move left'}>←</button><button data-control="fire" {...touch('fire')} disabled={!playing}>{pt?'Atirar':'Fire'} <span>↑</span></button><button data-control="right" {...touch('right')} disabled={!playing} aria-label={pt?'Mover para direita':'Move right'}>→</button></div></div>
+    <div className="invaders-bottom"><p id="invaders-instructions"><span><kbd>←</kbd><kbd>→</kbd> {pt?'mover':'move'}</span><span><kbd>{pt?'ESPAÇO':'SPACE'}</kbd> {pt?'atirar':'fire'}</span><span><kbd>P</kbd> {pt?'pausar':'pause'}</span></p><div className="invaders-touch"><button data-control="left" {...touch('left')} onClick={accessibleTap} disabled={!playing} aria-label={pt?'Mover para esquerda':'Move left'}>←</button><button data-control="fire" {...touch('fire')} onClick={accessibleTap} disabled={!playing}>{pt?'Atirar':'Fire'} <span>↑</span></button><button data-control="right" {...touch('right')} onClick={accessibleTap} disabled={!playing} aria-label={pt?'Mover para direita':'Move right'}>→</button></div></div>
     <p className="sr-only" role="status">{phase==='over'?`${pt?'Fim de jogo':'Game over'}. ${hud.score} ${pt?'pontos':'points'}.`:phase==='paused'?(pt?'Jogo pausado':'Game paused'):''}</p>
   </div></div>;
 }

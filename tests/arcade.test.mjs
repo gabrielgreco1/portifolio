@@ -85,3 +85,17 @@ test('rotation during a fingerprint lock preserves server replay and the target 
  }
  assert.ok(rotated);assert.equal(replayArcade(run,r.proof()).score,r.state.score);
 });
+
+ test('host, body and origin attacks are rejected before database writes',async()=>{
+ let writes=0;const config={mode:'live',sitekey:'public',signingSecret:'s'.repeat(32),hosts:['gabrielgreco.com'],store:{limit:async()=>{writes++;},create:async()=>{writes++;}}};
+ const call=(body,headers={},method='POST',url='https://gabrielgreco.com/api/arcade')=>handleArcade(new Request(url,{method,headers:{origin:'https://gabrielgreco.com','content-type':'application/json',...headers},...(method==='POST'?{body}:{})}),{config});
+ assert.equal((await call('{}',{},'DELETE')).status,405);
+ assert.equal((await call('{}',{'sec-fetch-site':'cross-site'})).status,403);
+ assert.equal((await call('{}',{origin:'null'})).status,403);
+ assert.equal((await call('{}',{origin:'https://attacker.example'},'POST','https://attacker.example/api/arcade')).status,503);
+ assert.equal((await call('{}',{'content-type':'text/plain'})).status,415);
+ assert.equal((await call('[]')).status,400);assert.equal((await call('{')).status,400);
+ assert.equal((await call('{}',{'content-length':'1000001'})).status,413);
+ assert.equal((await call('x'.repeat(1000001))).status,413);
+ assert.equal(writes,0);
+ });

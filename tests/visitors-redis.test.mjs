@@ -57,6 +57,12 @@ test('Redis atomically counts, expires presence, limits new sessions and isolate
   assert.equal((await store.snapshot(start+ACTIVE_WINDOW+8)).total,63);
   // A heartbeat from an existing session still works after the new-session cap.
   await store.record('rate-0',city,start+ACTIVE_WINDOW+9,'limited-ip');
+  // A valid cookie cannot bypass the all-request budget, even concurrently.
+  const burst=await Promise.allSettled(Array.from({length:130},()=>store.record('rate-0',city,start+ACTIVE_WINDOW+10,'heartbeat-abuse')));
+  assert.equal(burst.filter(r=>r.status==='fulfilled').length,120);
+  assert.equal(burst.filter(r=>r.status==='rejected'&&r.reason.status===429).length,10);
+  assert.ok(await command(['TTL',`${prefix}:requests:heartbeat-abuse`])>0);
+  assert.equal((await store.snapshot(start+ACTIVE_WINDOW+11)).total,63);
   const preview=new RedisVisitors(endpoint,'integration-only','test:preview');
   assert.equal((await preview.snapshot(start)).total,0);
   await preview.record('one-session',city,start);

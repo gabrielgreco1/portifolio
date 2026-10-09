@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {mkdtemp,rm} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
-import {LocalVisitors,visitorSession,visitorCookie,visitorLocation,ACTIVE_WINDOW,SESSION_WINDOW} from '../src/lib/visitors.mjs';
+import {LocalVisitors,visitorSession,visitorCookie,visitorLocation,ACTIVE_WINDOW,SESSION_WINDOW,visitorRateKey} from '../src/lib/visitors.mjs';
 
 test('sessions cannot be chosen or tampered with by a visitor',()=>{
   const session=visitorSession('', 'test-key');
@@ -63,3 +63,15 @@ test('the public feed is bounded while totals include every active session',asyn
  const snapshot=await store.snapshot(start+111);assert.equal(snapshot.active,110);assert.equal(snapshot.signals.length,100);assert.equal(snapshot.unlocatedActive,110);assert.equal(snapshot.total,110);assert.equal(snapshot.signals[0].lastSeen,new Date(start+109).toISOString());assert.ok(!JSON.stringify(snapshot).includes('private-'));
  }finally{await rm(dir,{recursive:true,force:true});}
 });
+
+ test('deployed visitor signing fails closed and missing trusted IP shares a bounded bucket',()=>{
+ const previous={VERCEL:process.env.VERCEL,NODE_ENV:process.env.NODE_ENV,VISITOR_SESSION_SECRET:process.env.VISITOR_SESSION_SECRET};
+ try{process.env.VERCEL='1';process.env.NODE_ENV='production';delete process.env.VISITOR_SESSION_SECRET;
+ assert.throws(()=>visitorSession(''),/not configured/);
+ process.env.VISITOR_SESSION_SECRET='short';assert.throws(()=>visitorSession(''),/not configured/);
+ process.env.VISITOR_SESSION_SECRET='security-test-key-with-32-characters';
+ const fallback=visitorRateKey(new Headers());assert.match(fallback,/^[a-f0-9]{32}$/);
+ assert.equal(visitorRateKey(new Headers({'x-forwarded-for':'attacker-controlled'})),fallback);
+ assert.notEqual(visitorRateKey(new Headers({'x-vercel-forwarded-for':'192.0.2.1'})),fallback);
+ }finally{for(const[key,value]of Object.entries(previous)){if(value===undefined)delete process.env[key];else process.env[key]=value;}}
+ });

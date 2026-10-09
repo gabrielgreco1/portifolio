@@ -9,7 +9,7 @@ export async function GET(){
 export async function POST(request){
   const origin=request.headers.get('origin');
   let sameOrigin=false;
-  try{const source=new URL(origin);sameOrigin=['http:','https:'].includes(source.protocol)&&source.host===request.headers.get('host');}catch{}
+  try{const source=new URL(origin);sameOrigin=['http:','https:'].includes(source.protocol)&&source.host===request.headers.get('host')&&source.protocol===new URL(request.url).protocol;}catch{}
   if(!sameOrigin)return Response.json({error:'Invalid origin'},{status:403});
   if(request.headers.get('sec-fetch-site')==='cross-site')return Response.json({error:'Invalid origin'},{status:403});
   if(request.headers.get('dnt')==='1'||/bot|crawler|spider|headless/i.test(request.headers.get('user-agent')||''))return Response.json({skipped:true});
