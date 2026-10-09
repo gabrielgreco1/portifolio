@@ -1,4 +1,5 @@
 import {chromium} from 'playwright';
+import {authorizeTestArcade} from './arcade-test-access.mjs';
 import {mkdir} from 'node:fs/promises';
 import assert from 'node:assert/strict';
 const output='/tmp/tamagotchi-invaders';await mkdir(output,{recursive:true});
@@ -11,8 +12,7 @@ for(const [width,height] of [[1280,900],[390,844],[844,390]]){
  await page.locator('.crawler-pet').press('Enter');await page.getByRole('button',{name:/Arcade do Tamagotchi/}).click();
  await page.getByRole('tab',{name:/Data Invaders/}).click();await page.getByRole('button',{name:/Defender os dados/}).waitFor();await page.waitForTimeout(500);
  await page.screenshot({animations:'disabled',path:`${output}/${width}-intro.png`});
- await page.clock.pauseAt(new Date('2026-10-09T12:01:00Z'));
- await page.getByRole('button',{name:/Defender os dados/}).click({force:true});await page.clock.runFor(120);
+ await authorizeTestArcade(page,'invaders',{start:/Defender os dados/,freezeAt:new Date('2026-10-09T12:01:00Z')});await page.clock.runFor(120);
  assert.equal(await page.locator('.runner-overlay').count(),0);
  if(mobile){
   const cdp=await context.newCDPSession(page),fire=await page.getByRole('button',{name:'Atirar ↑',exact:true}).boundingBox(),left=await page.getByRole('button',{name:'Mover para esquerda',exact:true}).boundingBox();

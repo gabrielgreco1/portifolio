@@ -1,20 +1,21 @@
+import {authorizeTestArcade} from './arcade-test-access.mjs';
 import {webkit} from 'playwright';
 import assert from 'node:assert/strict';
 const browser=await webkit.launch();
 const page=await browser.newPage({viewport:{width:390,height:844},hasTouch:true,isMobile:true});
 const errors=[];page.on('pageerror',error=>errors.push(error.message));
-await page.goto(process.env.TEST_ORIGIN||'http://127.0.0.1:4322/pt');await page.waitForTimeout(700);
+await page.goto(new URL('/pt',process.env.TEST_ORIGIN||'http://127.0.0.1:4318').href);await page.waitForTimeout(700);
 // Gesture timing and canvas support differ from Chromium on iOS.
 await page.locator('.crawler-pet').click({clickCount:5,delay:55});
 await page.locator('[data-pet-performance="overload"]').waitFor();await page.waitForTimeout(850);
 await page.screenshot({path:'/tmp/tamagotchi-motion/webkit-overload.png'});
 await page.locator('[data-pet-performance]').waitFor({state:'detached',timeout:6000});
 await page.locator('.crawler-pet').press('Enter');await page.getByRole('button',{name:/Arcade do Tamagotchi/}).click();
-await page.getByRole('button',{name:/Começar corrida/}).click();await page.getByRole('button',{name:'Pular ↑',exact:true}).tap();
+await authorizeTestArcade(page,'runner',{start:/Começar corrida/});await page.getByRole('button',{name:'Pular ↑',exact:true}).tap();
 await page.waitForFunction(()=>document.querySelector('.runner-stage')?.classList.contains('runner-stage--running'));
 await page.getByRole('application',{name:'Data Run'}).press('p');
 await page.waitForFunction(()=>document.querySelector('.runner-stage')?.classList.contains('runner-stage--paused'));
-await page.getByRole('tab',{name:/Data Invaders/}).click();await page.getByRole('button',{name:/Defender os dados/}).click();
+await page.getByRole('tab',{name:/Data Invaders/}).click();await authorizeTestArcade(page,'invaders',{start:/Defender os dados/});
 await page.getByRole('application',{name:'Data Invaders'}).focus();await page.keyboard.down('Space');await page.waitForTimeout(2500);await page.keyboard.up('Space');
 assert.ok(Number(await page.locator('.arcade-hud strong').first().innerText())>0);
 await page.screenshot({path:'/tmp/tamagotchi-invaders/webkit.png'});await page.keyboard.press('Escape');await page.getByRole('dialog').waitFor({state:'hidden'});
