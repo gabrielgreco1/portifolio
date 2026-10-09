@@ -2,6 +2,10 @@
 
 Work sequentially and inspect each feature in Chrome and mobile before continuing. Preserve `public/crawler-character-v2.png`, existing extraction coverage, stacked fragments, JSON and PDF.
 
+## Current quality pass
+
+Selection and delivery now use a single start action, exact PDF previews and formatted four-page full résumés / one-page Zyte PDFs. Data Run now supports held ducking and four crawling-themed hazards with occasional data caches. Validation and remaining requested improvements are tracked in [tamagotchi-next.md](tamagotchi-next.md).
+
 ## Validated locally
 
 - Source-aware collection excursions: rail → center → left in short groups; distance-based travel; bounded cargo on mobile. Full résumé: 52 fragments / 22 records; scoped Zyte: 7 fragments / 1 record. Chrome desktop and phone, pause/resume.
