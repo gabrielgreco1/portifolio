@@ -13,6 +13,10 @@ Work sequentially and inspect each feature in Chrome and mobile before continuin
 
 - Data Invaders: approved character, three enemy classes, waves, shield and three lives; held keyboard fire, arrows, two-finger touch and swipe controls. Desktop, phone and 844×390 landscape capture passed. Both games preserve a playable world when the phone rotates.
 
+- Collection personality: real-fragment reactions (Zyte, work activities, images, quotations, Python), no extra collection delay.
+- Delivery receipt: exact exported byte size, real fragment/record counts, approved character nod, optional seal revealing the SHA-256 of the JSON. JSON downloads and the identical JSON embedded in PDFs verified. PT/EN and portrait/landscape.
+- WebKit: scoped extraction and downloads, overload color fallback, runner touch and pause, invaders held firing and points verified. This is browser-engine testing, not a claim of testing every physical iPhone.
+
 ## Visitor map: implementation ready, production connection pending
 
 - Orthographic globe, pan, zoom, city selection and keyboard controls, current/history toggle, mobile glass dialog.
@@ -26,7 +30,6 @@ Work sequentially and inspect each feature in Chrome and mobile before continuin
 
 ## Remaining
 
-- Extraction/delivery/download Easter eggs without corrupting the data or interrupting the flow.
 - Final regression: PT/EN, complete and scoped extraction, pause/resume with menu/gestures, JSON/PDF, phone portrait/landscape, reduced motion, production build and SEO tests.
 - Push, PR, attach it to the chat, merge after validation, verify gabrielgreco.com. None of this branch has been published yet.
 
@@ -43,6 +46,9 @@ node scripts/capture-visitor-map.mjs
 node scripts/capture-runner.mjs
 node --test tests/runner.test.mjs tests/invaders.test.mjs
 node scripts/capture-invaders.mjs
+TEST_ORIGIN=http://127.0.0.1:4322 node scripts/capture-delivery.mjs
+TEST_BROWSER=webkit TEST_ORIGIN=http://127.0.0.1:4322 node scripts/capture-delivery.mjs
+node scripts/check-pet-webkit.mjs
 SEO_TEST_ORIGIN=http://127.0.0.1:4322 npm run test:seo
 ```
 

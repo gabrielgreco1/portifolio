@@ -22,6 +22,15 @@ export default function PetPerformance({action,onFinish,reduced,lang}) {
       if(disposed)return;
       const surface=canvas.current,ctx=surface.getContext('2d'),dpr=Math.min(2,window.devicePixelRatio||1);
       surface.width=window.innerWidth*dpr;surface.height=window.innerHeight*dpr;
+      // WebKit has no CanvasRenderingContext2D.filter; tint the same sprite
+      // through an alpha-preserving offscreen layer on that renderer.
+      const supportsFilter=typeof ctx.filter==='string';
+      let heated;
+      if(!supportsFilter&&kind==='overload'){
+        heated=document.createElement('canvas');heated.width=heated.height=224;
+        const tint=heated.getContext('2d');tint.drawImage(artwork[0],0,0,224,224);
+        tint.globalCompositeOperation='source-atop';tint.fillStyle='#da4828';tint.fillRect(0,0,224,224);
+      }
       const start=performance.now(),duration=kind==='drag'?Infinity:reduced?700:PET_DURATION[kind];
       element.setAttribute('data-pet-acting',kind);
       const draw=now=>{
@@ -39,11 +48,12 @@ export default function PetPerformance({action,onFinish,reduced,lang}) {
         // Feet stay on one floor; the shadow separates the jump from a flat spin.
         ctx.fillStyle=`rgba(28,40,29,${.13*(1+p.y/100)})`;ctx.beginPath();ctx.ellipse(122,202,61+p.y*.45,8,0,0,Math.PI*2);ctx.fill();
         ctx.save();ctx.translate(122+p.x,197+p.y);ctx.rotate(p.angle);ctx.scale(p.sx,p.sy);ctx.translate(-122,-197);
-        if(p.heat)ctx.filter=`sepia(${p.heat*.85}) saturate(${1+p.heat*5}) hue-rotate(${-65*p.heat}deg)`;
+        if(p.heat&&supportsFilter)ctx.filter=`sepia(${p.heat*.85}) saturate(${1+p.heat*5}) hue-rotate(${-65*p.heat}deg)`;
         if(drag)drawPetTension(ctx,artwork[0],drag.strain/scale,drag.step/scale,drag.grip);
         else if(p.frame<0)ctx.drawImage(artwork[0],10,16,224,224);
         else {const [x,y,w,h]=VIEWS[p.frame],height=133,width=w/h*height;ctx.drawImage(artwork[1],x,y,w,h,122-width/2,197-height,width,height);}
-        ctx.filter='none';
+        if(supportsFilter)ctx.filter='none';
+        if(heated&&p.heat){ctx.globalAlpha=p.heat*.58;ctx.drawImage(heated,10,16);ctx.globalAlpha=1;}
         if(p.heat>.15){
           ctx.globalAlpha=p.heat*.85;ctx.fillStyle='#df542b';ctx.fillRect(93,107,20,4);ctx.fillRect(128,107,20,4);
           ctx.globalAlpha=1;

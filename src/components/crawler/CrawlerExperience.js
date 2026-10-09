@@ -11,6 +11,8 @@ import { jsonLines } from "@/lib/crawler/json.mjs";
 import { captureTiming } from "@/lib/crawler/pace.mjs";
 import { crawlerGeometry } from "@/lib/crawler/geometry.mjs";
 import { collectionLane, collectionStation, travelDuration } from "@/lib/crawler/route.mjs";
+import { captureReaction } from "@/lib/crawler/personality.mjs";
+import DeliveryReceipt from "./DeliveryReceipt";
 import ScopePicker from "./ScopePicker";
 import CrawlerArtwork from "../CrawlerArtwork";
 import PetMenu from "../pet/PetMenu";
@@ -121,7 +123,7 @@ export default function CrawlerExperienceProvider({ children }) {
         if (snapshot.quality.status === "empty") throw new Error("Empty source");
         const html = visualCopy(node);
         setFragment({ html, rect: { left: rect.left, top: rect.top, width: rect.width, height: rect.height } });
-        stage("lifting"); setMessage(words.lift); await sleep(reduced ? 18 : timing.frame, signal);
+        stage("lifting"); setMessage(captureReaction(snapshot,lang)); await sleep(reduced ? 18 : timing.frame, signal);
         if (!reduced) {
           await animateElement(copyRef.current, [{ transform: "translate(0, 0) rotate(0deg)", opacity: .25 }, { transform: "translate(-7px, -18px) rotate(-1deg)", opacity: 1 }], { duration: timing.lift, easing: "cubic-bezier(.2,.8,.2,1)" }, signal);
           await sleep(timing.hold, signal);
@@ -166,6 +168,7 @@ export default function CrawlerExperienceProvider({ children }) {
   }
 
   function chooseScope() {
+    petInteraction.cancel();
     setPetMenu(null);
     control.current?.abort.abort(); sourceControl.current?.abort();
     if (control.current) control.current.ended = true;
@@ -190,6 +193,7 @@ export default function CrawlerExperienceProvider({ children }) {
   }
 
   function resume() {
+    petInteraction.cancel();
     if (!control.current || phaseRef.current !== "paused") return;
     const next = { ...control.current, abort: new AbortController() };
     control.current = next; setSelecting(false); setNotice(""); stage("starting"); void run(next);
@@ -204,6 +208,7 @@ export default function CrawlerExperienceProvider({ children }) {
   function select() { pause(); setSelecting(true); setMessage(words.selecting); }
 
   async function open() {
+    petInteraction.cancel();
     sourceControl.current?.abort();
     if (!store.current?.evidence.length) return;
     pause(); const state = { ...control.current, abort: new AbortController() }; control.current = state;
@@ -395,8 +400,11 @@ function ContentFragment({ item }) {
 
 function Inspector({ isOpen, collection, words, tab, setTab, selectedId, onSelect, onSource, onClose, onNew, layout, origin, notice, setNotice, reduced }) {
   const panel = useRef(null);
+  const [delivery,setDelivery]=useState(null);
+  const deliveryVersion=useRef(0);
   const [copying, setCopying] = useState(false), [pdfBusy, setPdfBusy] = useState(false);
   useGlassDialog(isOpen, panel, onClose, reduced);
+  useEffect(()=>{if(!isOpen)deliveryVersion.current++;},[isOpen]);
   const formatted = useMemo(() => {
     if (!collection) return null;
     const doc = { records: collection.records, ...collection };
@@ -406,13 +414,24 @@ function Inspector({ isOpen, collection, words, tab, setTab, selectedId, onSelec
   if (!collection || !layout) return null;
   const selected = collection.evidence.find((item) => item.id === selectedId) || collection.evidence[0];
   const {doc,json,lines} = formatted;
+  async function receipt(format,bytes) {
+    const version=++deliveryVersion.current;
+    const next={id:version,session:doc.session.id,format,bytes,filename:exportName(doc,format),fragments:doc.evidence.length,records:doc.records.length};
+    setDelivery(next);
+    try {
+      const digest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(json));
+      if(version===deliveryVersion.current)setDelivery({...next,hash:Array.from(new Uint8Array(digest),b=>b.toString(16).padStart(2,'0')).join('')});
+    } catch { /* The file remains usable when Web Crypto is unavailable. */ }
+  }
+  function dismissReceipt(){deliveryVersion.current++;setDelivery(null);}
+  function downloadJson(){downloadFile(json,exportName(doc,'json'),'application/json');void receipt('json',new TextEncoder().encode(json).length);}
   async function copy() {
-    try { await navigator.clipboard.writeText(json); setCopying(true); setNotice(""); setTimeout(() => setCopying(false), 1800); }
+    try { await navigator.clipboard.writeText(json); setCopying(true); setNotice(""); void receipt("clipboard",new TextEncoder().encode(json).length); setTimeout(() => setCopying(false), 1800); }
     catch { setNotice(words.copyFailure); }
   }
   async function pdf() {
     setPdfBusy(true); setNotice("");
-    try { const { buildCollectionPdf } = await import("@/lib/crawler/pdf.mjs"); const bytes = await buildCollectionPdf(doc); downloadFile(bytes, exportName(doc, "pdf"), "application/pdf"); }
+    try { const { buildCollectionPdf } = await import("@/lib/crawler/pdf.mjs"); const bytes = await buildCollectionPdf(doc); downloadFile(bytes, exportName(doc, "pdf"), "application/pdf"); void receipt("pdf",bytes.length); }
     catch { setNotice(words.pdfFailure); }
     finally { setPdfBusy(false); }
   }
@@ -441,7 +460,8 @@ function Inspector({ isOpen, collection, words, tab, setTab, selectedId, onSelec
             {selected && <div className="origin-detail"><span className="origin-label">{words.original}</span><div className="origin-preview"><ContentFragment item={selected} /></div><code>{selected.source.anchor}</code><button className="origin-link" onClick={() => onSource(selected)}>{words.viewSource} ↗</button></div>}
           </aside>
         </div>
-        <footer className="glass-footer"><div className="glass-downloads"><button className="glass-action-primary" onClick={copy}>{copying ? words.copied : words.copy}</button><button onClick={() => downloadFile(json, exportName(doc, "json"), "application/json")}>{words.download} ↓</button><button disabled={pdfBusy} onClick={pdf}>{pdfBusy ? words.pdfBusy : `${words.pdf} ↓`}</button></div><button className="glass-new" onClick={onNew}>{words.new}</button></footer>
+        {delivery?.session===doc.session.id&&<DeliveryReceipt key={delivery.id} delivery={delivery} lang={doc.page.language} reduced={reduced} onClose={dismissReceipt}/>}
+        <footer className="glass-footer"><div className="glass-downloads"><button className="glass-action-primary" onClick={copy}>{copying ? words.copied : words.copy}</button><button onClick={downloadJson}>{words.download} ↓</button><button disabled={pdfBusy} onClick={pdf}>{pdfBusy ? words.pdfBusy : `${words.pdf} ↓`}</button></div><button className="glass-new" onClick={onNew}>{words.new}</button></footer>
         <p className={`glass-note ${notice ? "glass-note--warning" : ""}`} role="status">{notice || words.stored}</p>
       </motion.section>
     </>}

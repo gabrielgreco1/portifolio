@@ -1,0 +1,43 @@
+import {chromium,webkit} from 'playwright';
+import {mkdir,readFile} from 'node:fs/promises';
+import {createHash} from 'node:crypto';
+import assert from 'node:assert/strict';
+import {PDFDocument,PDFName,PDFDict,PDFArray,PDFRawStream,decodePDFRawStream} from 'pdf-lib';
+const output='/tmp/tamagotchi-delivery';await mkdir(output,{recursive:true});
+const safari=process.env.TEST_BROWSER==='webkit';
+const browser=await (safari?webkit:chromium).launch(safari?{headless:true}:{channel:'chrome',headless:true});
+for(const [width,height,lang,full,reduced] of (safari?[[390,844,'pt',false,false]]:[[1280,900,'pt',true,false],[390,844,'pt',false,false],[844,390,'en',false,true]])){
+ if(process.env.TEST_LANGUAGE&&lang!==process.env.TEST_LANGUAGE)continue;
+ console.log(`Checking ${safari?'WebKit':'Chrome'} ${width}×${height} ${lang}`);
+ const context=await browser.newContext({viewport:{width,height},hasTouch:width!==1280,isMobile:width!==1280,reducedMotion:reduced?'reduce':'no-preference'});
+ const page=await context.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));
+ await page.goto(`${process.env.TEST_ORIGIN||'http://127.0.0.1:4318'}/${lang==='pt'?'pt':''}`);await page.waitForTimeout(900);
+ await page.getByRole('button',{name:lang==='pt'?'Solta o crawler.':'Unleash the crawler.',exact:true}).click();
+ const picker=page.getByRole('dialog');
+ if(full)await picker.getByRole('button',{name:'Extrair currículo inteiro',exact:true}).click();
+ else{await picker.locator('summary').click();await picker.getByRole('button',{name:lang==='pt'?'Extrair só Zyte':'Extract only Zyte',exact:true}).click();}
+ console.log('Collection started');
+ const result=page.getByRole('dialog',{name:lang==='pt'?'A página, em dados.':'The page, as data.'});
+ await result.waitFor({timeout:90000});await page.waitForTimeout(1100);
+ const json=(await page.locator('.json-text').allTextContents()).join('\n'),doc=JSON.parse(json);
+ assert.equal(doc.evidence.length,full?52:7);assert.equal(doc.records.length,full?22:1);assert.equal(doc.coverage.requested_complete,true);assert.equal(doc.coverage.complete,full);assert.deepEqual(doc.coverage.failed_ids,[]);
+ console.log('Coverage verified');
+ const dl=page.waitForEvent('download',{timeout:20000});await result.getByRole('button',{name:lang==='pt'?'Baixar JSON ↓':'Download JSON ↓',exact:true}).click();const download=await dl;assert.equal(await readFile(await download.path(),'utf8'),json);
+ console.log('JSON verified');
+ const receipt=page.getByRole('complementary',{name:lang==='pt'?'Entrega do Tamagotchi':'Tamagotchi delivery'});
+ await receipt.getByRole('button',{name:/Abrir lacre|Break the seal/}).click();
+ assert.equal(await receipt.locator('.delivery-secret code').innerText(),createHash('sha256').update(json).digest('hex'));
+ await page.screenshot({animations:'disabled',path:`${output}/${width}-receipt.png`});
+ const box=await receipt.boundingBox();assert.ok(box.x>=0&&box.y>=0&&box.x+box.width<=width&&box.y+box.height<=height);
+ await receipt.getByRole('button',{name:/Fechar recibo|Close receipt/}).click();
+ console.log('Receipt verified');
+ const pdfDl=page.waitForEvent('download',{timeout:20000});await result.getByRole('button',{name:lang==='pt'?'Baixar PDF ↓':'Download PDF ↓',exact:true}).click();
+ const pdfDownload=await pdfDl;const bytes=await readFile(await pdfDownload.path());const pdf=await PDFDocument.load(bytes);assert.ok(pdf.getPageCount()>0);
+ const names=pdf.catalog.lookup(PDFName.of('Names'),PDFDict).lookup(PDFName.of('EmbeddedFiles'),PDFDict).lookup(PDFName.of('Names'),PDFArray);
+ const stream=names.lookup(1,PDFDict).lookup(PDFName.of('EF'),PDFDict).lookup(PDFName.of('F'),PDFRawStream);
+ assert.equal(new TextDecoder().decode(decodePDFRawStream(stream).decode()),json);
+ await pdfDownload.saveAs(`${output}/${width}-collection.pdf`);
+ console.log('PDF verified');
+ assert.deepEqual(errors,[]);await context.close();
+}
+await browser.close();console.log('Complete/scoped extraction, PT/EN, reduced motion, receipt, JSON bytes and PDF embedded JSON passed.');

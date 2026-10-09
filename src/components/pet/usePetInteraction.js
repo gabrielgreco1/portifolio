@@ -67,6 +67,7 @@ export function usePetInteraction({onMenu,onBeforeAction}) {
     if(!dragging.current)beginDrag(event.currentTarget,0,0,null);
     dragging.current.dx+=direction[0]*24;dragging.current.dy+=direction[1]*24;activateDrag();
   };
-  return {performance,click,perform,finish:()=>setPerformance(null),dragHandlers:{onPointerDown:pointerDown,onPointerMove:pointerMove,onPointerUp:release,onPointerCancel:release,onLostPointerCapture:release,onKeyDown:keyDown,onKeyUp:event=>{if(event.key.startsWith('Arrow'))release();},onBlur:release}};
+  function cancel(){clearTimeout(pending.current.timer);pending.current.count=0;dragging.current=null;setPerformance(null);}
+  return {performance,click,perform,cancel,finish:()=>setPerformance(null),dragHandlers:{onPointerDown:pointerDown,onPointerMove:pointerMove,onPointerUp:release,onPointerCancel:release,onLostPointerCapture:release,onKeyDown:keyDown,onKeyUp:event=>{if(event.key.startsWith('Arrow'))release();},onBlur:release}};
 }
 function performanceNow(){return window.performance.now();}
