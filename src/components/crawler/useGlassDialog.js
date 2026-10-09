@@ -19,7 +19,7 @@ export function useGlassDialog(isOpen, panel, onClose, reduced) {
     function key(event) {
       if (event.defaultPrevented) return;
       if (event.key === 'Escape' && event.target.closest?.('[data-glass-inner]')) return;
-      if (event.key === 'Escape') { event.preventDefault(); onClose(); }
+      if (event.key === 'Escape') { event.preventDefault(); onClose(event); }
       if (event.key === 'Tab') {
         const scope = panel.current?.querySelector('[data-glass-inner]') || panel.current;
         const items = [...(scope?.querySelectorAll('button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), iframe, summary, a[href], [tabindex="0"]') || [])].filter(node => node.getClientRects().length && !node.closest('[inert]'));

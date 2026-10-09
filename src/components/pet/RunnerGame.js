@@ -4,22 +4,24 @@ import {motion} from 'framer-motion';
 import {useArcadeSession} from './useArcadeSession';
 import ArcadePanels from './ArcadePanels';
 import {resizeArcade} from '@/lib/arcade/protocol.mjs';
+import {arcadeViewport} from '@/lib/arcade/viewport.mjs';
 import {advanceRunner,createRunner,drawRunner,pauseRunner} from '@/lib/crawler/runner.mjs';
 
 const bestKey='tamagotchi-data-run-v3-best';
 function readBest(){try{return Math.max(0,Number(localStorage.getItem(bestKey))||0);}catch{return 0;}}
 
-export default function RunnerGame({lang,reduced}){
+export default function RunnerGame({lang,reduced,sound}){
   const session=useArcadeSession('runner'),recording=session.recording;
-  const pt=lang==='pt',canvas=useRef(null),state=useRef(null),picture=useRef(null),bestRef=useRef(0),duckSources=useRef(new Set()),jumpQueue=useRef(false);
+  const pt=lang==='pt',canvas=useRef(null),display=useRef(null),state=useRef(null),picture=useRef(null),bestRef=useRef(0),duckSources=useRef(new Set()),jumpQueue=useRef(false);
   const [best,setBest]=useState(readBest),[ready,setReady]=useState(false),[hud,setHud]=useState({phase:'ready',score:0,packets:0,cleared:0,ducking:false,distance:0});
   useEffect(()=>{
     const surface=canvas.current,ctx=surface.getContext('2d');let raf,last=0,lastHud=0,lastSignature='',disposed=false,saved=false;
     bestRef.current=readBest();
     const image=new Image();image.onload=()=>{if(!disposed){picture.current=image;setReady(true);lastSignature='';}};image.src='/crawler-character-v2.png';
     const resize=()=>{
-      const cssWidth=Math.round(surface.clientWidth),cssHeight=Math.round(surface.clientHeight),scale=Math.min(1,cssHeight/320),width=Math.round(cssWidth/scale),height=Math.round(cssHeight/scale),dpr=Math.min(2,window.devicePixelRatio||1);
-      if(!width||!height)return;surface.width=cssWidth*dpr;surface.height=cssHeight*dpr;ctx.setTransform(dpr*scale,0,0,dpr*scale,0,0);
+      const cssWidth=Math.round(surface.clientWidth),cssHeight=Math.round(surface.clientHeight),dpr=Math.min(2,window.devicePixelRatio||1);
+      if(!cssWidth||!cssHeight)return;const view=arcadeViewport(cssWidth,cssHeight),{width,height,scale}=view;display.current=view;
+      if(!width||!height)return;surface.width=cssWidth*dpr;surface.height=cssHeight*dpr;ctx.setTransform(dpr*scale,0,0,dpr*scale,dpr*view.x,dpr*view.y);
       if(!state.current)state.current=createRunner(width,height);
       else{const s=state.current;resizeArcade('runner',s,width,height);if(s.status==='running')pauseRunner(s);duckSources.current.clear();jumpQueue.current=false;}
       lastSignature='';
@@ -28,6 +30,7 @@ export default function RunnerGame({lang,reduced}){
     const frame=now=>{
       const s=state.current;if(s){
         const dt=last?Math.min(.05,(now-last)/1000):0;if(s.status==='running'&&recording.current){const tick=recording.current.tick;recording.current.advance(dt,{jump:jumpQueue.current,duck:duckSources.current.size>0});if(recording.current.tick!==tick)jumpQueue.current=false;}else advanceRunner(s,dt);
+        sound?.observe('runner',s);
         const signature=`${s.status}:${s.width}:${s.height}`;
         if(s.status==='running'||s.status==='over'&&s.overTime<1.5||signature!==lastSignature){drawRunner(ctx,s,picture.current,{reduced});lastSignature=signature;}
         if(now-lastHud>80){
@@ -43,9 +46,9 @@ export default function RunnerGame({lang,reduced}){
     const release=event=>{if(['ArrowDown','s','S'].includes(event.key)){duckSources.current.delete(`keyboard:${event.key.toLowerCase()}`);}};
     window.addEventListener('keyup',release);
     window.addEventListener('blur',pause);document.addEventListener('visibilitychange',pause);
-    return()=>{disposed=true;cancelAnimationFrame(raf);observer.disconnect();window.removeEventListener('keyup',release);window.removeEventListener('blur',pause);document.removeEventListener('visibilitychange',pause);};
-  },[reduced,recording]);
-  async function start(){const previous=state.current;if(!previous||!ready)return;const run=await session.requestStart(previous.width,previous.height);if(!run)return;duckSources.current.clear();jumpQueue.current=false;state.current=run.state;requestAnimationFrame(()=>canvas.current?.focus({preventScroll:true}));}
+    return()=>{disposed=true;sound?.silence();cancelAnimationFrame(raf);observer.disconnect();window.removeEventListener('keyup',release);window.removeEventListener('blur',pause);document.removeEventListener('visibilitychange',pause);};
+  },[reduced,recording,sound]);
+  async function start(){const previous=state.current;if(!previous||!ready)return;const run=await session.requestStart(previous.width,previous.height);if(!run)return;duckSources.current.clear();jumpQueue.current=false;if(display.current)run.resize(display.current.width,display.current.height);state.current=run.state;requestAnimationFrame(()=>canvas.current?.focus({preventScroll:true}));}
   function jump(){if(state.current?.status==='running')jumpQueue.current=true;canvas.current?.focus({preventScroll:true});}
   function duck(held,source='pointer'){if(held)duckSources.current.add(source);else duckSources.current.delete(source);}
   function pause(){duckSources.current.clear();if(state.current)pauseRunner(state.current);canvas.current?.focus({preventScroll:true});}
@@ -56,7 +59,7 @@ export default function RunnerGame({lang,reduced}){
     if(['p','P'].includes(event.key)){event.preventDefault();if(!event.repeat)pause();}
   }
   const phase=hud.phase,playing=['running','crashed'].includes(phase);
-  return <div className="runner-game" onKeyDown={key}><ArcadePanels session={session} game="runner" lang={lang}/><div inert={session.panel?true:undefined}>
+  return <div className="runner-game" onBlur={event=>{if(!event.currentTarget.contains(event.relatedTarget)){duckSources.current.clear();jumpQueue.current=false;}}} onKeyDown={key}><ArcadePanels session={session} game="runner" lang={lang}/><div inert={session.panel?true:undefined}>
     <div className="arcade-hud"><div><span>{pt?'PONTOS':'SCORE'}</span><strong>{String(hud.score).padStart(5,'0')}</strong></div><div><span>{pt?'DESVIOS':'DODGED'}</span><strong>{String(hud.cleared).padStart(2,'0')}</strong></div><div><span>{pt?'SEU RECORDE':'YOUR BEST'}</span><strong>{String(best).padStart(5,'0')}</strong></div><button onClick={pause} disabled={!['running','paused'].includes(phase)} aria-label={phase==='paused'?(pt?'Continuar jogo':'Resume game'):(pt?'Pausar jogo':'Pause game')}>{phase==='paused'?'▷':'Ⅱ'}</button></div>
     <div className={`runner-stage runner-stage--${phase}`}>
       <canvas ref={canvas} tabIndex="0" role="application" aria-label="Data Run" aria-describedby="runner-instructions" data-ducking={hud.ducking} onPointerDown={event=>{if(playing){event.preventDefault();jump();}}}/>
