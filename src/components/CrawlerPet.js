@@ -8,7 +8,7 @@ const SECTIONS = ["hero", "experience", "projects", "skills", "contact"];
 
 export default function CrawlerPet() {
   const { t } = useLanguage();
-  const { active, togglePetMenu, menuOpen } = useCrawler();
+  const { active, petClick, menuOpen } = useCrawler();
   const [stage, setStage] = useState(0);
   const [clicked, setClicked] = useState(0);
 
@@ -39,7 +39,7 @@ export default function CrawlerPet() {
 
   function diagnose(event) {
     setClicked((value) => value + 1);
-    togglePetMenu(event.currentTarget);
+    petClick(event);
   }
 
   const messageIndex = (stage + clicked) % t.pet.messages.length;

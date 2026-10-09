@@ -12,6 +12,8 @@ import { collectionLane, collectionStation, travelDuration } from "@/lib/crawler
 import ScopePicker from "./ScopePicker";
 import CrawlerArtwork from "../CrawlerArtwork";
 import PetMenu from "../pet/PetMenu";
+import PetPerformance from "../pet/PetPerformance";
+import {usePetInteraction} from "../pet/usePetInteraction";
 import { useGlassDialog } from "./useGlassDialog";
 import "./crawler.css";
 
@@ -294,17 +296,18 @@ export default function CrawlerExperienceProvider({ children }) {
     return () => { mounted.current = false; control.current?.abort.abort(); sourceControl.current?.abort(); };
   }, []);
 
+  const petInteraction = usePetInteraction({onMenu:togglePetMenu,onBeforeAction:()=>{setPetMenu(null);pause();}});
   const active = phase !== "idle";
   const memory = collection?.evidence.slice(-4) || [];
   const showMemory = !["idle", "ready", "source"].includes(phase);
   return (
-    <Context.Provider value={{ start, open, select, chooseScope, togglePetMenu, menuOpen:!!petMenu, phase, active, collection, words }}>
+    <Context.Provider value={{ start, open, select, chooseScope, togglePetMenu, petClick:petInteraction.click, menuOpen:!!petMenu, phase, active, collection, words }}>
       {children}
       <div className="crawl-live sr-only" aria-live="polite">{message}</div>
       <AnimatePresence>
         {active && layout && (
           <motion.div key="actor" className={`crawl-actor crawl-actor--${phase}`} data-lane={station.lane} style={{ x, y, width: layout.pet, "--pet-width": `${layout.pet}px`, "--cargo-left": cargoLeft, "--speech-left": speechLeft }} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-            <button className="crawl-body" disabled={isOpen || pickerOpen} aria-hidden={isOpen || pickerOpen || undefined} tabIndex={isOpen || pickerOpen ? -1 : 0} onClick={event=>togglePetMenu(event.currentTarget)} aria-haspopup="dialog" aria-expanded={!!petMenu} aria-label={lang==="pt"?"Abrir menu do Tamagotchi":"Open Tamagotchi menu"}>
+            <button className="crawl-body" disabled={isOpen || pickerOpen} aria-hidden={isOpen || pickerOpen || undefined} tabIndex={isOpen || pickerOpen ? -1 : 0} onClick={petInteraction.click} aria-haspopup="dialog" aria-expanded={!!petMenu} aria-label={lang==="pt"?"Abrir menu do Tamagotchi":"Open Tamagotchi menu"}>
               <CrawlerArtwork className="crawl-sprite" />
               <span className="crawl-screen-light" aria-hidden="true" />
             </button>
@@ -334,7 +337,10 @@ export default function CrawlerExperienceProvider({ children }) {
           </>}
         </div>
       </div>}
-      <PetMenu anchor={petMenu} lang={lang} phase={phase} count={collection?.evidence.length||0} onClose={closePetMenu} onExtract={chooseScope} onResume={()=>{setPetMenu(null);resume();}} onCollection={()=>{setPetMenu(null);void open();}} reduced={reduced} />
+      <PetMenu anchor={petMenu} lang={lang} phase={phase} count={collection?.evidence.length||0} onClose={closePetMenu} onExtract={chooseScope} onResume={()=>{setPetMenu(null);resume();}} onCollection={()=>{setPetMenu(null);void open();}} reduced={reduced} >
+        <button onClick={()=>petInteraction.perform('spin',menuTrigger.current)}><span><strong>{lang==='pt'?'Dar uma voltinha':'Take a little spin'}</strong><small>{lang==='pt'?'Ele também precisa se divertir.':'A little fun between jobs.'}</small></span><b>↻</b></button>
+      </PetMenu>
+      <PetPerformance action={petInteraction.performance} onFinish={petInteraction.finish} reduced={reduced} lang={lang}/>
       <ScopePicker isOpen={pickerOpen} options={scopeOptions} companies={companyOptions} words={words} onPick={pickScope} onManual={pickManual} onClose={closePicker} reduced={reduced} />
       <Inspector isOpen={isOpen} collection={collection} words={words} tab={tab} setTab={setTab} selectedId={selectedId} onSelect={setSelectedId} onSource={source} onClose={close} onNew={chooseScope} layout={layout} origin={{ x: x.get() + (layout?.pet || 122) * .46, y: y.get() + (layout?.pet || 122) * .49 }} notice={notice} setNotice={setNotice} reduced={reduced} />
     </Context.Provider>
