@@ -1,25 +1,30 @@
-// Synthetic locations exist ONLY in this isolated rendering test, never in the site or its database.
-import {chromium} from 'playwright';
+// Synthetic locations exist ONLY in intercepted test responses, never in the site or database.
+import {chromium,webkit} from 'playwright';
 import {mkdir} from 'node:fs/promises';
 import assert from 'node:assert/strict';
-const output='/tmp/tamagotchi-map';await mkdir(output,{recursive:true});
-const browser=await chromium.launch({channel:'chrome',headless:true});
-const page=await browser.newPage({viewport:{width:1280,height:900},deviceScaleFactor:1});
-const errors=[];page.on('pageerror',error=>errors.push(error.message));
-const fixture={available:true,mode:'local',startedAt:'2026-10-09T00:00:00Z',updatedAt:new Date().toISOString(),activeWindowSeconds:90,total:12,active:3,unlocated:1,unlocatedActive:0,points:[{id:'fixture-sp',city:'TEST · São Paulo',country:'BR',latitude:-23.6,longitude:-46.6,visits:6,active:2},{id:'fixture-ny',city:'TEST · New York',country:'US',latitude:40.7,longitude:-74,visits:3,active:1},{id:'fixture-ty',city:'TEST · Tokyo',country:'JP',latitude:35.7,longitude:139.7,visits:2,active:0}]};
-await page.route('**/api/visitors',route=>route.request().method()==='GET'?route.fulfill({json:fixture}):route.continue());
-await page.goto('http://127.0.0.1:4318/pt');await page.waitForTimeout(900);
-await page.locator('.crawler-pet').press('Enter');await page.getByRole('button',{name:/Quem está por aqui/}).click();await page.getByRole('dialog',{name:'Pequeno mundo. Conexões reais.'}).waitFor();
-await page.locator('.visitor-city-list button').first().waitFor();
-assert.equal(await page.locator('.visitor-city-list button').count(),2);
-await page.getByRole('button',{name:'Desde o início',exact:true}).click();assert.equal(await page.locator('.visitor-city-list button').count(),3);
-await page.locator('.visitor-city-list button').filter({hasText:'Tokyo'}).click();await page.waitForTimeout(950);
-assert.equal(await page.locator('.visitor-point--selected').count(),1);
-await page.screenshot({path:`${output}/desktop-fixture.png`});
-const coord=await page.locator('.visitor-globe-coordinate').textContent(),globe=page.locator('.visitor-globe > svg');
-await globe.press('ArrowRight');assert.notEqual(await page.locator('.visitor-globe-coordinate').textContent(),coord);
-await page.getByRole('button',{name:'Aproximar',exact:true}).click();assert.equal(await page.locator('.planet-halo').getAttribute('r'),'295.2');
-await page.setViewportSize({width:390,height:844});await page.waitForTimeout(250);await page.screenshot({path:`${output}/mobile-fixture.png`});
-const bounds=await page.locator('.visitor-map').boundingBox();assert.ok(bounds.x>=0&&bounds.x+bounds.width<=390);assert.ok(bounds.y>=0&&bounds.y+bounds.height<=844);
-await page.keyboard.press('Escape');await page.waitForTimeout(450);assert.equal(await page.getByRole('dialog').count(),0);assert.equal(await page.locator('main').getAttribute('inert'),null);
-assert.deepEqual(errors,[]);await browser.close();console.log(`Map period, location selection, rotation, zoom, mobile bounds and close passed: ${output}`);
+const output='/tmp/tamagotchi-map',origin=process.env.TEST_ORIGIN||'http://127.0.0.1:4318';await mkdir(output,{recursive:true});
+const now=Date.now(),iso=n=>new Date(n).toISOString(),hour=Math.floor(now/3600000)*3600000;
+const fixture={available:true,mode:'local',startedAt:iso(now-86400000),updatedAt:iso(now),activityStartedAt:iso(now-6*3600000),activeWindowSeconds:90,total:12,active:3,unlocated:1,unlocatedActive:0,points:[{id:'fixture-sp',city:'TEST · São Paulo',country:'BR',latitude:-23.6,longitude:-46.6,visits:6,active:2},{id:'fixture-ny',city:'TEST · New York',country:'US',latitude:40.7,longitude:-74,visits:3,active:1},{id:'fixture-ty',city:'TEST · Tokyo',country:'JP',latitude:35.7,longitude:139.7,visits:2,active:0}].map(p=>({...p,firstSeen:iso(now-86400000),lastSeen:iso(now-15000)})),signals:[{id:'aaaaaa111111',cityId:'fixture-sp'},{id:'bbbbbb222222',cityId:'fixture-sp'},{id:'cccccc333333',cityId:'fixture-ny'}].map(s=>({...s,observedSince:iso(now-60000),lastSeen:iso(now-15000)})),activity:Array.from({length:24},(_,i)=>({at:iso(hour-(23-i)*3600000),visits:i<17?null:[0,4,5,0,2,1,0][i-17],partial:i===17||i===23}))};
+for(const engine of process.env.TEST_BROWSER?[process.env.TEST_BROWSER]:['chrome','webkit']){
+ const browser=await(engine==='chrome'?chromium.launch({channel:'chrome'}):webkit.launch());
+ try{for(const [width,height]of[[1280,1000],[390,844],[320,568],[844,390]]){
+  if(process.env.TEST_WIDTH&&width!==Number(process.env.TEST_WIDTH))continue;
+  const context=await browser.newContext({viewport:{width,height},hasTouch:width<1000,isMobile:width<1000}),page=await context.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));
+  try{
+   await page.route('**/api/visitors',route=>route.request().method()==='GET'?route.fulfill({json:fixture}):route.continue());
+   await page.goto(`${origin}/pt`);await page.locator('.crawler-pet').press('Enter');await page.getByRole('button',{name:/Quem está por aqui/}).click();await page.getByRole('dialog',{name:'Pequeno mundo. Conexões reais.'}).waitFor();await page.locator('.visitor-city-list button').first().waitFor();
+   assert.equal(await page.locator('.visitor-city-list button').count(),2);
+   await page.getByRole('searchbox',{name:'Buscar cidade ou país'}).fill('sao paulo');assert.equal(await page.locator('.visitor-city-list button').count(),1);await page.getByRole('searchbox',{name:'Buscar cidade ou país'}).fill('');
+   await page.getByRole('button',{name:/Sinais agora/}).click();assert.equal(await page.locator('.visitor-signal-list button').count(),3);await page.locator('.visitor-signal-list button').first().click();await page.getByRole('region',{name:'Detalhes do sinal'}).waitFor();assert.match(await page.locator('.visitor-city-detail').innerText(),/AAAAAA/);assert.match(await page.locator('.visitor-city-detail').innerText(),/São Paulo/);await page.waitForTimeout(900);await page.locator('.visitor-city-detail').scrollIntoViewIfNeeded();await page.screenshot({path:`${output}/${engine}-${width}-selected-fixture.png`});
+   assert.equal(await page.locator('.visitor-hour-bars button').count(),24);await page.locator('.visitor-hour-bars button').nth(18).click();assert.match(await page.locator('.visitor-activity strong').innerText(),/4 visitas/);
+   await page.getByRole('button',{name:'Desde o início',exact:true}).click();assert.equal(await page.locator('.visitor-city-list button').count(),3);await page.locator('.visitor-city-list button').filter({hasText:'Tokyo'}).click();await page.waitForTimeout(900);assert.equal(await page.locator('.visitor-point--selected').count(),1);
+   const coord=await page.locator('.visitor-globe-coordinate').textContent(),globe=page.locator('.visitor-globe > svg');await globe.press('ArrowRight');assert.notEqual(await page.locator('.visitor-globe-coordinate').textContent(),coord);
+   await page.getByRole('button',{name:'Aproximar',exact:true}).click();assert.equal(await page.locator('.planet-halo').getAttribute('r'),'295.2');
+   if(engine==='chrome'&&width===390){await globe.scrollIntoViewIfNeeded();const box=await globe.boundingBox(),x=box.x+box.width/2,y=box.y+box.height/2,cdp=await context.newCDPSession(page);const touch=(id,x)=>({id,x,y,radiusX:4,radiusY:4});await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[touch(1,x-25),touch(2,x+25)]});await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[touch(1,x-40),touch(2,x+40)]});await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});await page.waitForTimeout(100);assert.ok(Number(await page.locator('.planet-halo').getAttribute('r'))>295.2,'Pinch zoom changes actual projection scale');}
+   await page.getByRole('button',{name:'Voltar ao Brasil',exact:true}).click();await page.getByRole('button',{name:'Limpar seleção',exact:true}).click();await page.locator('.visitor-scroll').evaluate(el=>el.scrollTop=0);await page.waitForTimeout(900);
+   await page.screenshot({path:`${output}/${engine}-${width}-fixture.png`});
+   const bounds=await page.locator('.visitor-map').boundingBox();assert.ok(bounds.x>=0&&bounds.x+bounds.width<=width+1&&bounds.y>=0&&bounds.y+bounds.height<=height+1);assert.equal(await page.locator('.visitor-scroll').evaluate(el=>el.scrollWidth>el.clientWidth+1),false,'No horizontal overflow');
+   await page.keyboard.press('Escape');await page.getByRole('dialog').waitFor({state:'hidden'});assert.equal(await page.locator('main').getAttribute('inert'),null);assert.deepEqual(errors,[]);console.log(`${engine} ${width}×${height}: city search, individual signals, activity, selection, rotation, zoom and layout passed`);
+  }catch(error){await page.screenshot({path:`${output}/${engine}-${width}-failure.png`});throw error;}finally{await context.close();}
+ }}finally{await browser.close();}
+}

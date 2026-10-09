@@ -38,3 +38,28 @@ test('real sessions persist, deduplicate concurrent heartbeats and expire indepe
     assert.equal(next.total,3);assert.equal(next.active,1);assert.equal(next.points[0].visits,2);assert.equal(next.startedAt,first.startedAt);
   }finally{await rm(dir,{recursive:true,force:true});}
 });
+
+test('signal details and hourly arrivals describe real sessions without inventing pre-activation history',async()=>{
+ const dir=await mkdtemp(join(tmpdir(),'portfolio-signals-'));
+ try{
+  const store=new LocalVisitors(join(dir,'visits.json')),start=Date.UTC(2026,9,9,12,20),city={id:'city',city:'TEST',country:'BR',latitude:-23.6,longitude:-46.6};
+  await store.record('private-session',city,start);
+  const first=await store.snapshot(start+1000),signal=first.signals[0];
+  assert.equal(first.activity.length,24);assert.equal(first.activity.filter(h=>h.visits===null).length,23);assert.equal(first.activity.at(-1).visits,1);assert.equal(first.activity.at(-1).partial,true);
+  assert.equal(signal.observedSince,new Date(start).toISOString());assert.equal(signal.lastSeen,new Date(start).toISOString());assert.match(signal.id,/^[a-f0-9]{12}$/);assert.ok(!JSON.stringify(first).includes('private-session'));
+  await store.record('private-session',city,start+45000);
+  const heartbeat=await store.snapshot(start+45001);assert.equal(heartbeat.signals[0].id,signal.id);assert.equal(heartbeat.signals[0].observedSince,signal.observedSince);assert.equal(heartbeat.activity.at(-1).visits,1);assert.equal(heartbeat.points[0].firstSeen,new Date(start).toISOString());assert.equal(heartbeat.points[0].lastSeen,new Date(start+45000).toISOString());
+  const inactive=await store.snapshot(start+45000+ACTIVE_WINDOW);assert.equal(inactive.active,0);assert.deepEqual(inactive.signals,[]);assert.equal(inactive.total,1);
+  await store.record('private-session',city,start+45000+SESSION_WINDOW);
+  const renewed=await store.snapshot(start+45001+SESSION_WINDOW);assert.notEqual(renewed.signals[0].id,signal.id);assert.equal(renewed.total,2);assert.equal(renewed.activity.reduce((sum,h)=>sum+(h.visits||0),0),2);
+  const later=await store.snapshot(start+27*3600000);assert.equal(later.activity.reduce((sum,h)=>sum+(h.visits||0),0),0);assert.equal(later.total,2);assert.equal(later.activity.filter(h=>h.visits===null).length,0);
+ }finally{await rm(dir,{recursive:true,force:true});}
+});
+
+test('the public feed is bounded while totals include every active session',async()=>{
+ const dir=await mkdtemp(join(tmpdir(),'portfolio-signals-cap-'));
+ try{const store=new LocalVisitors(join(dir,'visits.json')),start=Date.UTC(2026,9,9,12),unknown=visitorLocation(new Headers(),false);
+ await Promise.all(Array.from({length:110},(_,i)=>store.record(`private-${i}`,unknown,start+i)));
+ const snapshot=await store.snapshot(start+111);assert.equal(snapshot.active,110);assert.equal(snapshot.signals.length,100);assert.equal(snapshot.unlocatedActive,110);assert.equal(snapshot.total,110);assert.equal(snapshot.signals[0].lastSeen,new Date(start+109).toISOString());assert.ok(!JSON.stringify(snapshot).includes('private-'));
+ }finally{await rm(dir,{recursive:true,force:true});}
+});

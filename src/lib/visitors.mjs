@@ -38,10 +38,14 @@ export function visitorLocation(headers,trusted=process.env.VERCEL==='1'){
   return{id,city,country,latitude:Math.round(lat*10)/10,longitude:Math.round(lon*10)/10};
 }
 
-function publicSnapshot({started,total,locations,counts,active},now,mode){
-  const online=new Map();for(const city of active)online.set(city,(online.get(city)||0)+1);
-  const points=Object.entries(counts).filter(([id])=>id!=='unknown'&&locations[id]).map(([id,visits])=>({...locations[id],visits:Number(visits),active:online.get(id)||0})).sort((a,b)=>b.visits-a.visits);
-  return {available:true,mode,startedAt:started?new Date(Number(started)).toISOString():null,updatedAt:new Date(now).toISOString(),activeWindowSeconds:ACTIVE_WINDOW/1000,total:Number(total),active:active.length,unlocated:Number(counts.unknown||0),unlocatedActive:online.get('unknown')||0,points};
+function publicSnapshot({started,total,locations,counts,active,first={},last={},hours={},activityStarted},now,mode,key){
+  const online=new Map();for(const signal of active)online.set(signal.city,(online.get(signal.city)||0)+1);
+  const iso=value=>value?new Date(Number(value)).toISOString():null;
+  const points=Object.entries(counts).filter(([id])=>id!=='unknown'&&locations[id]).map(([id,visits])=>({...locations[id],visits:Number(visits),active:online.get(id)||0,firstSeen:iso(first[id]),lastSeen:iso(last[id])})).sort((a,b)=>b.visits-a.visits);
+  const currentHour=Math.floor(now/3600000),firstHour=activityStarted?Math.floor(Number(activityStarted)/3600000):Infinity;
+  const activity=Array.from({length:24},(_,i)=>{const hour=currentHour-23+i;return{at:iso(hour*3600000),visits:hour<firstHour?null:Number(hours[hour]||0),partial:hour===firstHour||hour===currentHour};});
+  const signals=[...active].sort((a,b)=>b.last-a.last).slice(0,100).map(signal=>({id:sign(`public-signal:${signal.id}:${signal.arrived}`,key).slice(0,12),cityId:signal.city,observedSince:iso(signal.arrived),lastSeen:iso(signal.last)}));
+  return {available:true,mode,startedAt:iso(started),updatedAt:iso(now),activeWindowSeconds:ACTIVE_WINDOW/1000,total:Number(total),active:active.length,unlocated:Number(counts.unknown||0),unlocatedActive:online.get('unknown')||0,points,signals,activity,activityStartedAt:iso(activityStarted)};
 }
 
 const RECORD=`
@@ -55,6 +59,10 @@ if not previous then
     if count == 1 then redis.call('EXPIRE',key,90) end
     if count > 60 then return -1 end
   end
+  local hour=prefix .. ':hour:' .. math.floor(now/3600000)
+  redis.call('INCR',hour)
+  redis.call('EXPIRE',hour,93600)
+  redis.call('SET',prefix .. ':arrived:' .. sid,now,'EX',1800)
   redis.call('INCR',prefix .. ':total')
   redis.call('HINCRBY',prefix .. ':counts',city,1)
   redis.call('SET',prefix .. ':started',now,'NX')
@@ -62,13 +70,29 @@ if not previous then
 else
   city = previous
 end
+redis.call('SET',prefix .. ':activity-started',now,'NX')
+redis.call('HSETNX',prefix .. ':first',city,now)
+redis.call('HSET',prefix .. ':last',city,now)
+redis.call('SET',prefix .. ':arrived:' .. sid,now,'NX','EX',1800)
+redis.call('EXPIRE',prefix .. ':arrived:' .. sid,1800)
 redis.call('SET',session,city,'EX',1800)
 redis.call('ZADD',prefix .. ':active',now,sid .. '|' .. city)
 redis.call('ZREMRANGEBYSCORE',prefix .. ':active','-inf',now-90000)
 return 1`;
 const SNAPSHOT=`
 local p, now=ARGV[1],tonumber(ARGV[2])
-return {redis.call('GET',p..':started') or '',redis.call('GET',p..':total') or '0',redis.call('HGETALL',p..':locations'),redis.call('HGETALL',p..':counts'),redis.call('ZRANGEBYSCORE',p..':active',now-90000,'+inf')}`;
+local members=redis.call('ZRANGEBYSCORE',p..':active','('..(now-90000),'+inf','WITHSCORES')
+local active={}
+for i=1,#members,2 do
+  local sid=string.match(members[i],'^(.-)|')
+  table.insert(active,{members[i],members[i+1],redis.call('GET',p..':arrived:'..sid) or members[i+1]})
+end
+local hours={}
+for hour=math.floor(now/3600000)-23,math.floor(now/3600000) do
+  table.insert(hours,tostring(hour));table.insert(hours,redis.call('GET',p..':hour:'..hour) or '0')
+end
+return {redis.call('GET',p..':started') or '',redis.call('GET',p..':total') or '0',redis.call('HGETALL',p..':locations'),redis.call('HGETALL',p..':counts'),active,redis.call('HGETALL',p..':first'),redis.call('HGETALL',p..':last'),hours,redis.call('GET',p..':activity-started') or ''}`;
+
 const pairs=values=>Object.fromEntries(Array.from({length:values.length/2},(_,i)=>[values[i*2],values[i*2+1]]));
 
 export class RedisVisitors{
@@ -83,9 +107,9 @@ export class RedisVisitors{
     if(result===-1){const error=new Error('Visit rate limit');error.status=429;throw error;}
   }
   async snapshot(now=Date.now()){
-    const [started,total,places,counts,active]=await this.command(['EVAL',SNAPSHOT,0,this.prefix,now]);
+    const [started,total,places,counts,active,first,last,hours,activityStarted]=await this.command(['EVAL',SNAPSHOT,0,this.prefix,now]);
     const locations=Object.fromEntries(Object.entries(pairs(places)).map(([id,value])=>[id,JSON.parse(value)]));
-    return publicSnapshot({started,total,locations,counts:pairs(counts),active:active.map(id=>id.slice(id.indexOf('|')+1))},now,'live');
+    return publicSnapshot({started,total,locations,counts:pairs(counts),first:pairs(first),last:pairs(last),hours:pairs(hours),activityStarted,active:active.map(([member,seen,arrived])=>({id:member.slice(0,member.indexOf('|')),city:member.slice(member.indexOf('|')+1),last:Number(seen),arrived:Number(arrived)}))},now,'live',this.token+this.prefix);
   }
 }
 
@@ -98,16 +122,20 @@ export class LocalVisitors{
   async record(id,location,now=Date.now()){
     const work=localQueue.then(async()=>{
       const data=await this.read();const existing=data.sessions[id];
+      data.hours||={};data.first||={};data.last||={};data.activityStarted||=now;
       if(!existing||now-existing.last>=SESSION_WINDOW){
         data.started||=now;data.total++;data.counts[location.id]=(data.counts[location.id]||0)+1;data.locations[location.id]=location;
-        data.sessions[id]={city:location.id,last:now};
-      }else existing.last=now;
+        data.sessions[id]={city:location.id,last:now,arrived:now};
+        const hour=Math.floor(now/3600000);data.hours[hour]=(data.hours[hour]||0)+1;
+      }else{existing.last=now;existing.arrived||=now;}
+      const city=data.sessions[id].city;data.first[city]||=now;data.last[city]=now;
+      for(const hour of Object.keys(data.hours))if(Number(hour)<Math.floor(now/3600000)-25)delete data.hours[hour];
       for(const [key,value]of Object.entries(data.sessions))if(now-value.last>=SESSION_WINDOW)delete data.sessions[key];
       await mkdir(dirname(this.path),{recursive:true});const temporary=`${this.path}.${randomUUID()}`;
       await writeFile(temporary,JSON.stringify(data),{mode:0o600});await rename(temporary,this.path);
     });localQueue=work.catch(()=>{});return work;
   }
-  async snapshot(now=Date.now()){await localQueue;const data=await this.read();return publicSnapshot({...data,active:Object.values(data.sessions).filter(v=>now-v.last<ACTIVE_WINDOW).map(v=>v.city)},now,'local');}
+  async snapshot(now=Date.now()){await localQueue;const data=await this.read();return publicSnapshot({...data,active:Object.entries(data.sessions).filter(([,v])=>now-v.last<ACTIVE_WINDOW).map(([id,v])=>({id,...v,arrived:v.arrived||v.last}))},now,'local','local-public-signals');}
 }
 export function visitorStore(){
   const {url,token}=credentials();

@@ -38,8 +38,11 @@ test('Redis atomically counts, expires presence, limits new sessions and isolate
   let snapshot=await store.snapshot(start+1);
   assert.equal(snapshot.total,1);assert.equal(snapshot.active,1);assert.equal(snapshot.points[0].visits,1);
   assert.ok(!JSON.stringify(snapshot).includes('one-session'));
+  const initialSignal=snapshot.signals[0];assert.match(initialSignal.id,/^[a-f0-9]{12}$/);assert.equal(initialSignal.observedSince,new Date(start).toISOString());assert.equal(snapshot.points[0].firstSeen,new Date(start).toISOString());assert.equal(snapshot.activity.reduce((sum,h)=>sum+(h.visits||0),0),1);
+  await store.record('one-session',city,start+2,'one-ip');const heartbeat=await store.snapshot(start+3);assert.equal(heartbeat.signals[0].id,initialSignal.id);assert.equal(heartbeat.activity.reduce((sum,h)=>sum+(h.visits||0),0),1);assert.equal(heartbeat.points[0].lastSeen,new Date(start+2).toISOString());
+  assert.ok(await command(['TTL',`${prefix}:arrived:one-session`])>1790);
   assert.equal(await command(['TTL',`${prefix}:s:one-session`]),1800);
-  snapshot=await store.snapshot(start+ACTIVE_WINDOW+1);
+  snapshot=await store.snapshot(start+ACTIVE_WINDOW+3);
   assert.equal(snapshot.active,0);assert.equal(snapshot.total,1);
   const unknown={id:'unknown',city:null,country:null,latitude:null,longitude:null};
   await store.record('unknown-session',unknown,start+ACTIVE_WINDOW+2,'one-ip');
@@ -48,7 +51,7 @@ test('Redis atomically counts, expires presence, limits new sessions and isolate
   assert.equal(await command(['ZCARD',`${prefix}:active`]),1);
   await command(['PEXPIRE',`${prefix}:s:one-session`,1]);await delay(5);
   await store.record('one-session',city,start+ACTIVE_WINDOW+4,'one-ip');
-  assert.equal((await store.snapshot(start+ACTIVE_WINDOW+5)).total,3);
+  const renewed=await store.snapshot(start+ACTIVE_WINDOW+5);assert.equal(renewed.total,3);assert.notEqual(renewed.signals.find(s=>s.cityId===city.id).id,initialSignal.id);assert.equal(renewed.activity.reduce((sum,h)=>sum+(h.visits||0),0),3);
   for(let index=0;index<60;index++)await store.record(`rate-${index}`,city,start+ACTIVE_WINDOW+6,'limited-ip');
   await assert.rejects(store.record('rate-61',city,start+ACTIVE_WINDOW+7,'limited-ip'),error=>error.status===429);
   assert.equal((await store.snapshot(start+ACTIVE_WINDOW+8)).total,63);

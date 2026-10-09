@@ -23,7 +23,7 @@ Selection and delivery now use a single start action, exact PDF previews and for
 
 ## Visitor map: implementation ready, production connection pending
 
-- Orthographic globe, pan, zoom, city selection and keyboard controls, current/history toggle, mobile glass dialog.
+- Orthographic globe, pan, pinch/zoom, city/country search, city details and keyboard controls, current/history toggle, mobile glass dialog. Individual anonymous current-session signals and hourly arrivals are available with explicit coverage and source labels; see [visitor-observatory.md](visitor-observatory.md).
 - Real browser sessions recorded by `/api/visitors`. No hardcoded visitor data in application code.
 - Production: Upstash Redis REST, atomic history increments and expiring presence; local development: persistent `.local/visits.json`, always unknown location. Production never falls back to local storage.
 - New visit after 30 minutes of inactivity; presence window 90 seconds, heartbeat every 45 seconds while visible; map refresh every 15 seconds. DNT and recognized bots are excluded.
@@ -31,7 +31,7 @@ Selection and delivery now use a single start action, exact PDF previews and for
 - Local browser records, persistence, concurrency, cookie validation, location validation and expiration tested. Marker layout and navigation tested in an isolated Playwright fixture explicitly labelled TEST; fixtures never enter the database or site.
 - Production Redis Lua scripts also passed against an isolated Redis 7.4.2 instance through an HTTP bridge using the Upstash command envelope: 20 concurrent heartbeats count once; session TTL, presence expiration, unlocated visits, rate limiting and preview/production namespace isolation. No test records entered any deployed database. This does not replace validation against the actual Upstash connection.
 - **Still required:** user confirmation for Vercel marketplace / Upstash terms, choose a free plan, connect only `portifolio`, validate real deployed Redis writes and real geolocation, confirm preview/production namespace separation. Do not claim the map is live before this.
-- Historical records begin at activation. Older analytics have not been imported and must not be invented.
+- Historical records begin at activation. The existing Google Analytics stream and measurement ID have now been verified against the domain. Older analytics have not been imported; stream/hostname filtering and a separate historical source are required.
 
 ## Remaining
 
