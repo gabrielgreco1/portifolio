@@ -1,0 +1,321 @@
+city|country|activeUsers|engagedSessions
+Sao Paulo|Brazil|129|39
+Rio de Janeiro|Brazil|37|11
+Curitiba|Brazil|32|15
+Belo Horizonte|Brazil|24|6
+(not set)|Brazil|20|7
+Brasilia|Brazil|15|5
+Florianopolis|Brazil|15|2
+Porto Alegre|Brazil|15|8
+Fortaleza|Brazil|13|2
+Campinas|Brazil|12|3
+Joinville|Brazil|12|6
+Recife|Brazil|12|1
+Santo Andre|Brazil|12|5
+Goiania|Brazil|10|3
+Salvador|Brazil|10|4
+Mogi das Cruzes|Brazil|9|2
+Council Bluffs|United States|8|0
+Guarulhos|Brazil|8|3
+Lisbon|Portugal|8|0
+Ribeirao Preto|Brazil|8|2
+Serra|Brazil|7|3
+Aracaju|Brazil|6|4
+Blumenau|Brazil|6|1
+Londrina|Brazil|6|2
+Natal|Brazil|6|2
+Uberlandia|Brazil|6|2
+Campo Grande|Brazil|5|2
+Chapeco|Brazil|5|1
+Contagem|Brazil|5|0
+Cuiaba|Brazil|5|2
+Glenview|United States|5|0
+Jundiai|Brazil|5|2
+Vila Velha|Brazil|5|1
+Volta Redonda|Brazil|5|3
+(not set)|(not set)|4|2
+Apucarana|Brazil|4|3
+Itajai|Brazil|4|2
+Joao Pessoa|Brazil|4|2
+Osasco|Brazil|4|1
+Sorocaba|Brazil|4|1
+Teresopolis|Brazil|4|0
+Balneario Camboriu|Brazil|3|1
+Bauru|Brazil|3|2
+Belem|Brazil|3|1
+Campina Grande|Brazil|3|2
+Canoas|Brazil|3|3
+Cartagena|Colombia|3|1
+Caucaia|Brazil|3|1
+Caxias do Sul|Brazil|3|1
+Cotia|Brazil|3|0
+Governador Valadares|Brazil|3|3
+Maceio|Brazil|3|0
+Marilia|Brazil|3|1
+Maringa|Brazil|3|1
+Pinhais|Brazil|3|2
+Rio Claro|Brazil|3|2
+Santa Maria|Brazil|3|0
+Santa Rita do Sapucai|Brazil|3|0
+Sao Carlos|Brazil|3|2
+Sao Jose dos Pinhais|Brazil|3|1
+Sumare|Brazil|3|0
+Suzano|Brazil|3|1
+Varzea Grande|Brazil|3|0
+Vitoria|Brazil|3|2
+(not set)|Portugal|2|1
+Americana|Brazil|2|0
+Assis|Brazil|2|0
+Barueri|Brazil|2|1
+Betim|Brazil|2|0
+Boardman|United States|2|1
+Caraguatatuba|Brazil|2|2
+Cascavel|Brazil|2|0
+Criciuma|Brazil|2|0
+Embu|Brazil|2|0
+Esteio|Brazil|2|1
+Fazenda Rio Grande|Brazil|2|1
+Feira de Santana|Brazil|2|0
+Franca|Brazil|2|0
+Jaboatao dos Guararapes|Brazil|2|1
+Ji-Parana|Brazil|2|1
+Juiz de Fora|Brazil|2|1
+Lauro de Freitas|Brazil|2|1
+Limeira|Brazil|2|1
+Miami|United States|2|0
+Muriae|Brazil|2|1
+Niteroi|Brazil|2|1
+Novo Gama|Brazil|2|0
+Petrolina|Brazil|2|1
+Petropolis|Brazil|2|2
+Ponta Pora|Brazil|2|0
+Santo Antonio da Patrulha|Brazil|2|1
+Santos|Brazil|2|2
+Sao Bernardo do Campo|Brazil|2|0
+Sao Caetano do Sul|Brazil|2|0
+Sao Luis|Brazil|2|0
+Sao Vicente|Brazil|2|0
+Sete Lagoas|Brazil|2|2
+Taboao da Serra|Brazil|2|1
+Teresina|Brazil|2|1
+Torres|Brazil|2|1
+Tubarao|Brazil|2|0
+Vitoria da Conquista|Brazil|2|1
+(not set)|India|1|1
+(not set)|Italy|1|0
+(not set)|Mexico|1|1
+(not set)|Peru|1|0
+(not set)|Spain|1|0
+(not set)|United States|1|0
+Abreu e Lima|Brazil|1|0
+Agudos|Brazil|1|0
+Agueda|Portugal|1|0
+Albufeira|Portugal|1|1
+Almere|Netherlands|1|0
+Altamira|Brazil|1|2
+Alvorada|Brazil|1|0
+Anapolis|Brazil|1|0
+Angatuba|Brazil|1|1
+Angra dos Reis|Brazil|1|0
+Aquiraz|Brazil|1|0
+Aracariguama|Brazil|1|1
+Arapiraca|Brazil|1|0
+Arapongas|Brazil|1|0
+Ararangua|Brazil|1|0
+Araraquara|Brazil|1|0
+Araras|Brazil|1|1
+Armacao dos Buzios|Brazil|1|0
+Ashburn|United States|1|1
+Bage|Brazil|1|1
+Bandeirantes|Brazil|1|1
+Barcelos|Portugal|1|0
+Barreiro|Portugal|1|0
+Barrinha|Brazil|1|0
+Bayeux|Brazil|1|2
+Bela Vista de Goias|Brazil|1|0
+Berkel en Rodenrijs|Netherlands|1|0
+Bezerros|Brazil|1|0
+Biguacu|Brazil|1|0
+Bogota|Colombia|1|0
+Bom Jesus do Itabapoana|Brazil|1|0
+Braganca|Portugal|1|0
+Brusque|Brazil|1|0
+Burnaby|Canada|1|0
+Cabo Frio|Brazil|1|0
+Cabo de Santo Agostinho|Brazil|1|0
+Cachoeiras de Macacu|Brazil|1|0
+Caieiras|Brazil|1|0
+Cajamar|Brazil|1|1
+Campos dos Goytacazes|Brazil|1|1
+Caninde|Brazil|1|0
+Cannes|France|1|0
+Capao Bonito|Brazil|1|0
+Cape Town|South Africa|1|1
+Capinzal|Brazil|1|1
+Carandai|Brazil|1|0
+Caratinga|Brazil|1|1
+Carmo do Paranaiba|Brazil|1|0
+Casca|Brazil|1|0
+Cerquilho|Brazil|1|1
+Charneca da Caparica|Portugal|1|0
+Cianorte|Brazil|1|0
+Ciudad del Este|Paraguay|1|0
+Colatina|Brazil|1|0
+Colina|Brazil|1|0
+Colombo|Brazil|1|0
+Concepcion|Chile|1|0
+Cork|Ireland|1|0
+Coronel Fabriciano|Brazil|1|1
+Cunha|Brazil|1|1
+Didcot|United Kingdom|1|0
+Dracena|Brazil|1|0
+Dubai|United Arab Emirates|1|1
+Dublin|Ireland|1|0
+Encantado|Brazil|1|1
+Erechim|Brazil|1|1
+Estrela|Brazil|1|0
+Farroupilha|Brazil|1|1
+Franco da Rocha|Brazil|1|1
+Frankfurt am Main|Germany|1|1
+Garanhuns|Brazil|1|1
+Gaspar|Brazil|1|1
+Gravatai|Brazil|1|0
+Guaiba|Brazil|1|0
+Guaira|Brazil|1|1
+Guapimirim|Brazil|1|1
+Gurupi|Brazil|1|0
+Ijui|Brazil|1|0
+Imbituba|Brazil|1|1
+Indaiatuba|Brazil|1|0
+Inhumas|Brazil|1|0
+Ipatinga|Brazil|1|0
+Irece|Brazil|1|1
+Itaborai|Brazil|1|0
+Itabuna|Brazil|1|0
+Itacoatiara|Brazil|1|0
+Itajuba|Brazil|1|0
+Itapecerica da Serra|Brazil|1|0
+Itapetininga|Brazil|1|0
+Ivinhema|Brazil|1|0
+Ivry-sur-Seine|France|1|0
+Jaciara|Brazil|1|0
+Jales|Brazil|1|1
+Jandira|Brazil|1|1
+Jatai|Brazil|1|0
+Jose Bonifacio|Brazil|1|0
+Juatuba|Brazil|1|1
+Kitchener|Canada|1|0
+Lages|Brazil|1|0
+Lagoa Santa|Brazil|1|0
+Lajeado|Brazil|1|1
+Lavras|Brazil|1|0
+Leca da Palmeira|Portugal|1|0
+Leme|Brazil|1|0
+Limoeiro do Norte|Brazil|1|0
+Lins|Brazil|1|0
+Loanda|Brazil|1|0
+London|United Kingdom|1|0
+Lorena|Brazil|1|1
+Luanda|Angola|1|1
+Lucas do Rio Verde|Brazil|1|1
+Machado|Brazil|1|0
+Mage|Brazil|1|0
+Malaga|Spain|1|1
+Mamanguape|Brazil|1|0
+Manaus|Brazil|1|0
+Maputo|Mozambique|1|1
+Marau|Brazil|1|0
+Marlborough|United States|1|1
+Matao|Brazil|1|0
+Mateus Leme|Brazil|1|0
+Matozinhos|Brazil|1|0
+Medianeira|Brazil|1|0
+Merida|Mexico|1|0
+Mogi Guacu|Brazil|1|0
+Mogi Mirim|Brazil|1|0
+Monte Carmelo|Brazil|1|1
+Monte Siao|Brazil|1|0
+Montenegro|Brazil|1|0
+Montreal|Canada|1|0
+Mountain View|United States|1|0
+Muzambinho|Brazil|1|1
+Nairobi|Kenya|1|1
+Navegantes|Brazil|1|1
+Nimes|France|1|0
+Nova Hartz|Brazil|1|0
+Novo Hamburgo|Brazil|1|0
+Ocala|United States|1|0
+Ourinhos|Brazil|1|0
+Ouro Branco|Brazil|1|1
+Pacajus|Brazil|1|0
+Padua|Italy|1|0
+Parnaiba|Brazil|1|1
+Parnamirim|Brazil|1|1
+Parobe|Brazil|1|0
+Passo Fundo|Brazil|1|0
+Patos de Minas|Brazil|1|1
+Paulista|Brazil|1|1
+Paulo Afonso|Brazil|1|0
+Pelotas|Brazil|1|1
+Pembroke Pines|United States|1|0
+Penapolis|Brazil|1|1
+Piracicaba|Brazil|1|0
+Poa|Brazil|1|0
+Pocos de Caldas|Brazil|1|0
+Ponta Grossa|Brazil|1|0
+Pontal do Parana|Brazil|1|1
+Ponte Nova|Brazil|1|0
+Porecatu|Brazil|1|0
+Povoa de Lanhoso|Portugal|1|0
+Praia Grande|Brazil|1|0
+Presidente Prudente|Brazil|1|0
+Registro|Brazil|1|0
+Resende|Brazil|1|2
+Ribeirao Pires|Brazil|1|0
+Rio Branco|Brazil|1|0
+Rio Grande|Brazil|1|0
+Rio Negrinho|Brazil|1|0
+Rio Pardo|Brazil|1|1
+Salem|United States|1|1
+Salgueiro|Brazil|1|0
+Sammamish|United States|1|0
+San Francisco|United States|1|0
+San Jose|United States|1|0
+Santa Barbara d'Oeste|Brazil|1|0
+Santa Clara|United States|1|0
+Santa Cruz do Sul|Brazil|1|0
+Santa Isabel|Brazil|1|1
+Santa Rita do Passa Quatro|Brazil|1|0
+Santiago|Chile|1|0
+Santo Angelo|Brazil|1|1
+Sao Gabriel|Brazil|1|0
+Sao Joao da Boa Vista|Brazil|1|0
+Sao Jose|Brazil|1|0
+Sao Jose do Rio Preto|Brazil|1|0
+Sao Jose dos Campos|Brazil|1|0
+Sao Mamede de Infesta|Portugal|1|0
+Sao Miguel|Brazil|1|0
+Sao Sebastiao|Brazil|1|1
+Sao Sebastiao do Paraiso|Brazil|1|1
+Sarandi|Brazil|1|1
+Seattle|United States|1|1
+Senador Canedo|Brazil|1|0
+Sertaozinho|Brazil|1|0
+Simao Dias|Brazil|1|0
+Sunny Isles Beach|United States|1|1
+Sydney|Australia|1|0
+Taubate|Brazil|1|0
+Teixeira de Freitas|Brazil|1|0
+Teramo|Italy|1|1
+Timbo|Brazil|1|0
+Toledo|Brazil|1|0
+Uberaba|Brazil|1|0
+Valinhos|Brazil|1|0
+Vancouver|Canada|1|0
+Venancio Aires|Brazil|1|1
+Viamao|Brazil|1|1
+Vicente de Carvalho|Brazil|1|0
+Villefranche-sur-Mer|France|1|0
+Votuporanga|Brazil|1|0
+Worcester|United States|1|0
+Juazeiro do Norte|Brazil|0|0

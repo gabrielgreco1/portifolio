@@ -27,3 +27,26 @@ export function VisitorCityDetail({point,signal,data,lang,countryName,onClear}){
     <small>{signal?(pt?'Identificador temporário de uma sessão, sem nome ou IP.':'Temporary session identifier, without name or IP.'):(pt?'O ponto representa uma cidade. Visitas não equivalem a pessoas únicas.':'The point represents a city. Visits are not unique people.')}</small>
   </section>;
 }
+
+export function GoogleHistoryNote({data,lang}){
+  const pt=lang==='pt',locale=pt?'pt-BR':'en-US';
+  const date=value=>new Date(`${value}T12:00:00Z`).toLocaleDateString(locale,{timeZone:'UTC',day:'2-digit',month:'short',year:'numeric'});
+  const mapped=data.points.filter(p=>Number.isFinite(p.latitude)&&Number.isFinite(p.longitude)).length;
+  return <section className="visitor-google-note" aria-label={pt?'Sobre o histórico do Google':'About Google history'}>
+    <div><span>GOOGLE ANALYTICS / {pt?'HISTÓRICO':'HISTORY'}</span><strong>{date(data.period.start)} — {date(data.period.end)}</strong></div>
+    <p>{pt?`Explore ${mapped} pontos no globo e todas as ${data.rowCount} linhas na lista. Cada número representa usuários ativos no período, não pessoas online.`:`Explore ${mapped} globe pins and all ${data.rowCount} rows in the list. Each number represents active users during the period, not people online.`}</p>
+    <details><summary>{pt?'Como ler estes dados':'How to read this data'}</summary><p>{pt?'O total de 869 vem do relatório do Google. Uma pessoa pode aparecer em mais de uma cidade; as linhas não devem ser somadas como pessoas únicas. Os números não são combinados com o registro ao vivo. O intervalo consultado não significa que houve coleta desde 2020. Cidades ambíguas ou não identificadas continuam na lista, sem um ponto inventado.':'The total of 869 comes from the Google report. A person may appear in more than one city; rows must not be summed as unique people. These numbers are not combined with live records. The requested range does not mean collection started in 2020. Ambiguous or unidentified cities remain in the list without an invented pin.'}</p></details>
+  </section>;
+}
+
+export function GoogleCityDetail({point,lang,countryName,onClear}){
+  if(!point)return null;
+  const pt=lang==='pt',locale=pt?'pt-BR':'en-US',located=Number.isFinite(point.latitude)&&Number.isFinite(point.longitude);
+  return <section className="visitor-city-detail" aria-label={pt?'Detalhes do histórico':'Historical details'}>
+    <header><span>GOOGLE / {pt?'CIDADE':'CITY'}</span><button onClick={onClear} aria-label={pt?'Limpar seleção':'Clear selection'}>×</button></header>
+    <h3>{point.city==='(not set)'?(pt?'Cidade não informada':'City not reported'):point.city}</h3><p>{countryName(point.country)}</p>
+    <dl className="visitor-detail-metrics"><div><dt>{pt?'usuários ativos':'active users'}</dt><dd>{point.activeUsers.toLocaleString(locale)}</dd></div><div><dt>{pt?'sessões engajadas':'engaged sessions'}</dt><dd>{point.engagedSessions.toLocaleString(locale)}</dd></div></dl>
+    <small>{located?(pt?'Centro aproximado da cidade, não a localização de uma pessoa.':'Approximate city center, not a person’s location.'):(pt?'A cidade não pôde ser localizada com segurança. Este registro permanece no histórico, sem marcador.':'This city could not be located reliably. This record remains in the history without a map pin.')}</small>
+    <small>{pt?'Dados agregados do período selecionado no Google.':'Aggregated data for the selected Google reporting period.'}</small>
+  </section>;
+}

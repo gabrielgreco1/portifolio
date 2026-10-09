@@ -5,7 +5,8 @@ import {geoDistance,geoGraticule10,geoOrthographic,geoPath} from 'd3-geo';
 import {feature,mesh} from 'topojson-client';
 import atlas from 'world-atlas/countries-110m.json';
 import {useGlassDialog} from '../crawler/useGlassDialog';
-import {VisitorActivity,VisitorCityDetail} from './VisitorInsights';
+import {VisitorActivity,VisitorCityDetail,GoogleCityDetail,GoogleHistoryNote} from './VisitorInsights';
+import googleHistory from '../../data/visitor-history.json';
 import CrawlerArtwork from '../CrawlerArtwork';
 import './visitor-map.css';
 
@@ -14,8 +15,14 @@ const copy={pt:{title:'Pequeno mundo. Conexões reais.',eyebrow:'TAMAGOTCHI / SI
 
 export default function VisitorMap({open,onClose,lang}){
   const ref=useRef(null),reduced=useReducedMotion(),w=copy[lang],pt=lang==='pt';
-  const [data,setData]=useState(null),[failed,setFailed]=useState(false),[retry,setRetry]=useState(0),[mode,setMode]=useState('live');
+  const [liveData,setData]=useState(null),[failed,setFailed]=useState(false),[retry,setRetry]=useState(0),[mode,setMode]=useState('live');
   const [listMode,setListMode]=useState('cities'),[query,setQuery]=useState(''),[selectedSignal,setSelectedSignal]=useState(null);
+  const google=mode==='google',data=google?googleHistory:liveData;
+  const historyLabel='Google Analytics';
+  const countLabel=google?(pt?'usuários ativos':'active users'):w.visits;
+  const cityLabel=point=>point.city==='(not set)'?(pt?'Cidade não informada':'City not reported'):point.city;
+  const hasLocation=point=>Number.isFinite(point.latitude)&&Number.isFinite(point.longitude);
+  const count=point=>google?point.activeUsers:mode==='live'?point.active:point.visits;
   const pointers=useRef(new Map());
   const [rotation,setRotation]=useState([48,15,0]),[zoom,setZoom]=useState(1),[selected,setSelected]=useState(null);
   const drag=useRef(null),turn=useRef(null);
@@ -34,20 +41,20 @@ export default function VisitorMap({open,onClose,lang}){
   useEffect(()=>()=>turn.current?.stop(),[]);
   const projection=useMemo(()=>geoOrthographic().translate([360,296]).scale(234*zoom).rotate(rotation).clipAngle(90),[rotation,zoom]);
   const center=projection.invert([360,296]);
-  const path=geoPath(projection),points=(data?.points||[]).filter(p=>mode==='history'||p.active>0);
+  const path=geoPath(projection),points=(data?.points||[]).filter(p=>mode!=='live'||p.active>0);
   const locale=pt?'pt-BR':'en-US',format=n=>new Intl.NumberFormat(locale).format(n);
   const countries=useMemo(()=>new Intl.DisplayNames([lang],{type:'region'}),[lang]);
   const selectedPoint=(data?.points||[]).find(p=>p.id===selected),signal=(data?.signals||[]).find(s=>s.id===selectedSignal);
   const normalize=value=>value.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
-  const filteredPoints=points.filter(p=>normalize(`${p.city} ${p.country} ${countries.of(p.country)}`).includes(normalize(query)));
-  const countryCount=new Set(points.map(p=>p.country)).size;
-  const countryName=code=>{try{return countries.of(code);}catch{return code;}};
+  const countryName=code=>{if(!code)return pt?'País não informado':'Country not reported';try{return countries.of(code);}catch{return code;}};
+  const filteredPoints=points.filter(p=>normalize(`${cityLabel(p)} ${p.country||''} ${countryName(p.country)}`).includes(normalize(query)));
+  const countryCount=new Set(points.map(p=>p.country).filter(Boolean)).size;
   const rotateTo=useCallback(next=>{
     turn.current?.stop();const from=rotation;
     const target=[next[0]+Math.round((from[0]-next[0])/360)*360,next[1],0];
     turn.current=animate(0,1,{duration:reduced?.01:.8,ease:[.22,1,.36,1],onUpdate:t=>setRotation(from.map((value,i)=>value+(target[i]-value)*t))});
   },[rotation,reduced]);
-  function focusPoint(point){setSelectedSignal(null);setSelected(point.id);rotateTo([-point.longitude,-point.latitude,0]);}
+  function focusPoint(point){setSelectedSignal(null);setSelected(point.id);if(hasLocation(point))rotateTo([-point.longitude,-point.latitude,0]);}
   function focusSignal(signal){const point=data.points.find(p=>p.id===signal.cityId);setSelected(point?.id||null);setSelectedSignal(signal.id);if(point)rotateTo([-point.longitude,-point.latitude,0]);}
   function startDrag(event){
     if(event.button!==0)return;turn.current?.stop();pointers.current.set(event.pointerId,[event.clientX,event.clientY]);
@@ -62,14 +69,16 @@ export default function VisitorMap({open,onClose,lang}){
   }
   function endDrag(event){pointers.current.delete(event.pointerId);if(drag.current)drag.current.active=false;}
 
-  const status=data?(data.mode==='local'?w.localTag:w.liveTag):w.waiting;
+  function changeMode(next){setMode(next);setSelected(null);setSelectedSignal(null);setQuery('');setListMode('cities');}
+  const status=google?'GA4':data?(data.mode==='local'?w.localTag:w.liveTag):w.waiting;
   return <AnimatePresence>{open&&<>
     <motion.div className="pet-panel-backdrop" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} onClick={onClose}/>
     <motion.section ref={ref} role="dialog" aria-modal="true" aria-labelledby="visitor-map-title" className="visitor-map" initial={{opacity:0,scale:reduced?1:.86,y:24,filter:'blur(8px)'}} animate={{opacity:1,scale:1,y:0,filter:'blur(0px)'}} exit={{opacity:0,scale:.94,y:12}} transition={{duration:.38,ease:[.2,.8,.2,1]}}>
       <header className="visitor-header"><div><span className="visitor-eyebrow">{w.eyebrow}</span><h2 id="visitor-map-title">{w.title}</h2></div><button className="visitor-close" data-modal-close onClick={onClose} aria-label={w.close}>×</button></header>
       <div className="visitor-scroll">
-        <div className="visitor-numbers"><div><strong>{data?format(data.active):'—'}</strong><span><i className={data&&!failed?'signal-live':''}/>{w.active}</span></div><div><strong>{data?format(data.total):'—'}</strong><span>{w.visits}</span></div><div><strong>{data?format(data.points.length):'—'}</strong><span>{w.places}</span></div><span className={`visitor-status ${failed?'visitor-status--offline':''}`}>{failed?'OFFLINE':status}</span></div>
-        <div className="visitor-toolbar"><div className="visitor-segment" role="group" aria-label={pt?'Período do mapa':'Map period'}><button aria-pressed={mode==='live'} onClick={()=>setMode('live')}>{w.live}</button><button aria-pressed={mode==='history'} onClick={()=>{setMode('history');setSelectedSignal(null);}}>{w.history}</button></div><span>{w.drag}</span></div>
+        <div className="visitor-numbers">{google?<><div><strong>{format(data.reportedTotals.activeUsers)}</strong><span>{countLabel}</span></div><div><strong>{format(countryCount)}</strong><span>{pt?'países':'countries'}</span></div><div><strong>{format(points.filter(p=>p.city!=='(not set)').length)}</strong><span>{w.places}</span></div></>:<><div><strong>{data?format(data.active):'—'}</strong><span><i className={data&&!failed?'signal-live':''}/>{w.active}</span></div><div><strong>{data?format(data.total):'—'}</strong><span>{w.visits}</span></div><div><strong>{data?format(data.points.length):'—'}</strong><span>{w.places}</span></div></>}<span className={`visitor-status ${failed&&!google?'visitor-status--offline':''}`}>{failed&&!google?'OFFLINE':status}</span></div>
+        <div className="visitor-toolbar"><div className="visitor-segment" role="group" aria-label={pt?'Período do mapa':'Map period'}><button aria-pressed={mode==='live'} onClick={()=>changeMode('live')}>{w.live}</button><button aria-pressed={mode==='history'} onClick={()=>changeMode('history')}>{w.history}</button><button aria-pressed={google} onClick={()=>changeMode('google')}>{historyLabel}</button></div><span>{w.drag}</span></div>
+        {google&&<GoogleHistoryNote data={data} lang={lang}/>}
         <div className="visitor-observatory">
           <div className="visitor-globe">
             <div className="visitor-globe-coordinate" aria-hidden="true">{Math.abs(center[1]).toFixed(1)}° {center[1]>=0?'N':'S'} &nbsp; / &nbsp; {Math.abs(center[0]).toFixed(1)}° {center[0]>=0?'E':'W'}</div>
@@ -78,33 +87,33 @@ export default function VisitorMap({open,onClose,lang}){
               <circle className="planet-halo" cx="360" cy="296" r={246*zoom} fill="none" stroke="#c4efb7" strokeOpacity=".05" strokeWidth="12"/>
               <path d={path({type:'Sphere'})} fill="url(#planet-ocean)" stroke="#9ac597" strokeOpacity=".28"/>
               <g clipPath="url(#planet-clip)" pointerEvents="none"><path d={path(graticule)} fill="none" stroke="#8ebcaa" strokeWidth=".6" opacity=".16"/><path d={path(land)} fill="#4c7051" fillOpacity=".43" stroke="#91b78a" strokeWidth=".5" strokeOpacity=".4"/><rect width="720" height="600" fill="url(#planet-dots)" clipPath="url(#land-clip)"/><path d={path(borders)} fill="none" stroke="#b5d3a2" strokeOpacity=".17" strokeWidth=".5"/><path d={path({type:'Sphere'})} fill="url(#planet-light)"/></g>
-              {points.filter(p=>geoDistance([p.longitude,p.latitude],projection.invert([360,296]))<Math.PI/2).map(p=>{const [x,y]=projection([p.longitude,p.latitude]),count=mode==='live'?p.active:p.visits,r=3+Math.min(5,Math.log2(count+1));return <g key={p.id} transform={`translate(${x},${y})`} className={`visitor-point ${selected===p.id?'visitor-point--selected':''}`} role="button" tabIndex="0" aria-label={`${p.city}, ${countryName(p.country)}: ${format(count)} ${mode==='live'?w.active:w.visits}`} onClick={e=>{e.stopPropagation();if(!drag.current?.moved)focusPoint(p);}} onKeyDown={e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();focusPoint(p);}}}><circle r="20" fill="transparent"/><circle r={r*2} fill="#cafaad" opacity=".36" filter="url(#signal-glow)"/><circle className={p.active?'signal-ring':''} r={r+5} fill="none" stroke="#c9f8ae" strokeOpacity=".45"/><circle r={r} fill={selected===p.id?'#fff':'#c9f8ae'} stroke="#132d22" strokeWidth="1.5"/></g>;})}
+              {points.filter(p=>hasLocation(p)&&geoDistance([p.longitude,p.latitude],projection.invert([360,296]))<Math.PI/2).map(p=>{const [x,y]=projection([p.longitude,p.latitude]),value=count(p),r=google?1.8+Math.min(4,Math.log2(value+1)*.8):3+Math.min(5,Math.log2(value+1));return <g key={p.id} transform={`translate(${x},${y})`} className={`visitor-point ${selected===p.id?'visitor-point--selected':''}`} role="button" tabIndex="0" aria-label={`${cityLabel(p)}, ${countryName(p.country)}: ${format(value)} ${mode==='live'?w.active:countLabel}`} onClick={e=>{e.stopPropagation();if(!drag.current?.moved)focusPoint(p);}} onKeyDown={e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();focusPoint(p);}}}><circle r="20" fill="transparent"/><circle r={r*2} fill="#cafaad" opacity={google?.2:.36} filter="url(#signal-glow)"/><circle className={p.active?'signal-ring':''} r={r+5} fill="none" stroke="#c9f8ae" strokeOpacity={google?(selected===p.id?.8:0):.45}/><circle r={r} fill={selected===p.id?'#fff':'#c9f8ae'} stroke="#132d22" strokeWidth="1.5"/></g>;})}
             </svg>
             <div className="visitor-map-controls"><button onClick={()=>setZoom(z=>Math.min(1.8,z+.2))} disabled={zoom>=1.8} aria-label={w.zoomIn}>+</button><button onClick={()=>setZoom(z=>Math.max(.8,z-.2))} disabled={zoom<=.8} aria-label={w.zoomOut}>−</button><button onClick={()=>{rotateTo([48,15,0]);setZoom(1);}} aria-label={w.center}>⌖</button></div>
-            <div className="visitor-guide"><CrawlerArtwork/><span>{selectedPoint?<><strong>{selectedPoint.city}</strong><small>{countryName(selectedPoint.country)} · {format(selectedPoint.visits)} {w.visits}</small></>:<><strong>{pt?'Rastreando conexões.':'Tracing connections.'}</strong><small>{w.privacy}</small></>}</span></div>
+            <div className="visitor-guide"><CrawlerArtwork/><span>{selectedPoint?<><strong>{cityLabel(selectedPoint)}</strong><small>{countryName(selectedPoint.country)} · {format(google?selectedPoint.activeUsers:selectedPoint.visits)} {countLabel}</small></>:<><strong>{pt?'Rastreando conexões.':'Tracing connections.'}</strong><small>{google?(pt?'Histórico do Google · centros aproximados das cidades':'Google history · approximate city centers'):w.privacy}</small></>}</span></div>
           </div>
           <aside className="visitor-locations" aria-label={w.locationList}>
-            <div className="visitor-list-tabs" role="group" aria-label={pt?'Explorar conexões':'Explore connections'}><button aria-pressed={listMode==='cities'||mode==='history'} onClick={()=>setListMode('cities')}>{pt?'Cidades':'Cities'}</button><button disabled={mode==='history'} aria-pressed={listMode==='signals'&&mode==='live'} onClick={()=>setListMode('signals')}>{pt?'Sinais agora':'Signals now'} <b>{data?format(data.active):'—'}</b></button></div>
-            <VisitorCityDetail point={selectedPoint} signal={signal} data={data} lang={lang} countryName={countryName} onClear={()=>{setSelected(null);setSelectedSignal(null);}}/>
-            {(listMode==='cities'||mode==='history')&&<label className="visitor-city-search"><span className="sr-only">{pt?'Buscar cidade ou país':'Search city or country'}</span><input type="search" value={query} onChange={event=>setQuery(event.target.value)} placeholder={pt?'Buscar cidade ou país…':'Find a city or country…'}/></label>}
-            <header><span>{mode==='live'?w.live:w.history}</span><span>{format(countryCount)} {pt?'países':'countries'}</span></header>
-            {data&&points.length===0&&(listMode==='cities'||mode==='history')&&<div className="visitor-empty"><span className="visitor-empty-orbit" aria-hidden="true">◎</span><p>{mode==='live'?w.none:w.noHistory}</p>{(mode==='live'?data.unlocatedActive:data.unlocated)>0&&<small>{format(mode==='live'?data.unlocatedActive:data.unlocated)} {w.unknown}</small>}</div>}
+            <div className="visitor-list-tabs" role="group" aria-label={pt?'Explorar conexões':'Explore connections'}><button aria-pressed={listMode==='cities'||mode!=='live'} onClick={()=>setListMode('cities')}>{pt?'Cidades':'Cities'}</button>{!google&&<button disabled={mode!=='live'} aria-pressed={listMode==='signals'&&mode==='live'} onClick={()=>setListMode('signals')}>{pt?'Sinais agora':'Signals now'} <b>{data?format(data.active):'—'}</b></button>}</div>
+            {google?<GoogleCityDetail point={selectedPoint} lang={lang} countryName={countryName} onClear={()=>setSelected(null)}/>:<VisitorCityDetail point={selectedPoint} signal={signal} data={data} lang={lang} countryName={countryName} onClear={()=>{setSelected(null);setSelectedSignal(null);}}/>}
+            {(listMode==='cities'||mode!=='live')&&<label className="visitor-city-search"><span className="sr-only">{pt?'Buscar cidade ou país':'Search city or country'}</span><input type="search" value={query} onChange={event=>setQuery(event.target.value)} placeholder={pt?'Buscar cidade ou país…':'Find a city or country…'}/></label>}
+            <header><span>{google?countLabel:mode==='live'?w.live:w.history}</span><span>{format(countryCount)} {pt?'países':'countries'}</span></header>
+            {data&&points.length===0&&(listMode==='cities'||mode!=='live')&&<div className="visitor-empty"><span className="visitor-empty-orbit" aria-hidden="true">◎</span><p>{mode==='live'?w.none:w.noHistory}</p>{(mode==='live'?data.unlocatedActive:data.unlocated)>0&&<small>{format(mode==='live'?data.unlocatedActive:data.unlocated)} {w.unknown}</small>}</div>}
             {!data&&<div className="visitor-empty" role="status"><span className="visitor-empty-orbit" aria-hidden="true">◎</span><p>{failed?w.offline:w.loading}</p>{failed&&<button onClick={()=>{setFailed(false);setRetry(n=>n+1);}}>{w.retry} ↗</button>}</div>}
             {listMode==='signals'&&mode==='live'?<div className="visitor-signal-list">
               {(data?.signals||[]).map(item=>{const place=data.points.find(p=>p.id===item.cityId);return <button key={item.id} aria-pressed={selectedSignal===item.id} onClick={()=>focusSignal(item)}><i/><span><strong>{pt?'Sinal':'Signal'} {item.id.slice(0,6).toUpperCase()}</strong><small>{place?`${place.city} · ${place.country}`:w.unknown}</small></span><b>↗</b></button>;})}
               {data&&!data.signals?.length&&<p>{pt?'Nenhuma sessão ativa agora.':'No active sessions right now.'}</p>}
               {data?.active>100&&<p>{pt?'Mostrando os 100 sinais mais recentes.':'Showing the latest 100 signals.'}</p>}
             </div>:<>
-            <div className="visitor-city-list">{filteredPoints.map(p=><button key={p.id} aria-pressed={selected===p.id} onClick={()=>focusPoint(p)}><span className="visitor-country">{p.country}</span><span><strong>{p.city}</strong><small>{countryName(p.country)}</small></span><b>{format(mode==='live'?p.active:p.visits)}</b></button>)}</div>
+            <div className="visitor-city-list">{filteredPoints.map(p=><button key={p.id} aria-pressed={selected===p.id} onClick={()=>focusPoint(p)}><span className="visitor-country">{p.country||'—'}</span><span><strong>{cityLabel(p)}</strong><small>{countryName(p.country)}{google&&!hasLocation(p)?(pt?' · sem ponto':' · no pin'):''}</small></span><b>{format(count(p))}</b></button>)}</div>
               {data&&query&&filteredPoints.length===0&&<p className="visitor-search-empty">{pt?'Nenhuma cidade corresponde à busca.':'No city matches your search.'}</p>}
             </>}
 
             {data&&points.length>0&&(mode==='live'?data.unlocatedActive:data.unlocated)>0&&<p className="visitor-unlocated">+ {format(mode==='live'?data.unlocatedActive:data.unlocated)} {w.unknown}</p>}
           </aside>
         </div>
-        <VisitorActivity data={data} lang={lang}/>
-        <footer className="visitor-footer"><div><span>{data?.startedAt?`${w.since} ${new Date(data.startedAt).toLocaleDateString(locale)}`:w.loading}</span><small>{data?.mode==='local'?w.local:w.window}</small><small>{data?.updatedAt?`${w.updated} ${new Date(data.updatedAt).toLocaleTimeString(locale,{hour:'2-digit',minute:'2-digit',second:'2-digit'})}`:''}</small></div><details><summary>{w.details}</summary><p>{w.detailText}</p><a href="https://www.naturalearthdata.com/about/terms-of-use/" target="_blank" rel="noreferrer">Natural Earth · {pt?'cartografia':'cartography'} ↗</a></details></footer>
-        {failed&&data&&<p className="visitor-connection-notice" role="status">{w.unavailable} <button onClick={()=>setRetry(n=>n+1)}>{w.retry}</button></p>}
+        {!google&&<VisitorActivity data={data} lang={lang}/>}
+        {google?<footer className="visitor-footer"><div><span>{pt?'Fonte: Google Analytics 4 · gabrielgreco.com':'Source: Google Analytics 4 · gabrielgreco.com'}</span><small>{pt?'Retrato histórico consultado em 09/10/2026. Sem atualização automática.':'Historical snapshot retrieved on Oct 9, 2026. No automatic refresh.'}</small></div><a href="https://www.geonames.org/" target="_blank" rel="noreferrer">GeoNames · CC BY 4.0 ↗</a></footer>:<footer className="visitor-footer"><div><span>{data?.startedAt?`${w.since} ${new Date(data.startedAt).toLocaleDateString(locale)}`:w.loading}</span><small>{data?.mode==='local'?w.local:w.window}</small><small>{data?.updatedAt?`${w.updated} ${new Date(data.updatedAt).toLocaleTimeString(locale,{hour:'2-digit',minute:'2-digit',second:'2-digit'})}`:''}</small></div><details><summary>{w.details}</summary><p>{w.detailText}</p><a href="https://www.naturalearthdata.com/about/terms-of-use/" target="_blank" rel="noreferrer">Natural Earth · {pt?'cartografia':'cartography'} ↗</a></details></footer>}
+        {failed&&data&&!google&&<p className="visitor-connection-notice" role="status">{w.unavailable} <button onClick={()=>setRetry(n=>n+1)}>{w.retry}</button></p>}
       </div>
     </motion.section>
   </>}</AnimatePresence>;
