@@ -23,7 +23,7 @@ Required server environment variables:
 
 Production and preview use separate Redis prefixes. If verifying a Vercel preview, add its exact hostname to both the widget's allowed hostnames and the preview environment's allowlist. Do not allow all `vercel.app` domains. A missing configuration returns an honest unavailable state; production never substitutes local storage or test CAPTCHA keys.
 
-On 2026-10-09 the real managed widget **gabrielgreco.com — Tamagotchi Arcade** was created in the user's Cloudflare account for `gabrielgreco.com`, with pre-clearance disabled. Secret transfer to Vercel is awaiting confirmation. The shared production database is not connected yet, so neither public ranking nor the live verification flow is claimed active. Existing Upstash marketplace terms approval remains pending.
+On 2026-10-09 the real managed widget **gabrielgreco.com — Tamagotchi Arcade** was created in the user's Cloudflare account for `gabrielgreco.com`, with pre-clearance disabled. Secret transfer to Vercel is awaiting confirmation. The shared production database is not connected yet, so neither public ranking nor the live verification flow is claimed active. Existing Upstash marketplace terms approval remains pending. A subsequent read-only check of the Vercel project on 2026-10-09 still showed “No Environment Variables Added” and no database connection. Neither missing prerequisite can be inferred complete from the open setup form.
 
 ## Local verification
 

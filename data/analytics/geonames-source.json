@@ -8,6 +8,10 @@
     "countryInfo.txt": {
       "url": "https://download.geonames.org/export/dump/countryInfo.txt",
       "sha256": "f835fda64430210e0a6a4e1fba9f9e99ed3aa0694e61aeff43fb761ac2613a0f"
+    },
+    "admin1CodesASCII.txt": {
+      "url": "https://download.geonames.org/export/dump/admin1CodesASCII.txt",
+      "sha256": "1da92a6323a5fec3176f3f743bf4cf4040fd56a876da55e46fbca23c863aa60a"
     }
   }
 }

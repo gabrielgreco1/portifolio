@@ -20,11 +20,26 @@ test('historical cities never manufacture individual sessions or place ambiguous
  assert.equal(history.signals,undefined);assert.equal(history.active,undefined);assert.equal(history.activity,undefined);
  for(const point of history.points){
   assert.equal(point.firstSeen,undefined);assert.equal(point.lastSeen,undefined);assert.equal(point.active,undefined);assert.equal(point.visits,undefined);
-  if(point.locationStatus==='matched'){assert.ok(point.geonameId);assert.ok(Number.isFinite(point.latitude)&&Math.abs(point.latitude)<=90);assert.ok(Number.isFinite(point.longitude)&&Math.abs(point.longitude)<=180);}
+  if(point.locationStatus==='matched'){assert.ok(point.geonameId||point.geonameIds?.length>1);assert.ok(Number.isFinite(point.latitude)&&Math.abs(point.latitude)<=90);assert.ok(Number.isFinite(point.longitude)&&Math.abs(point.longitude)<=180);}
   else{assert.equal(point.latitude,null);assert.equal(point.longitude,null);}
  }
  const sp=history.points.find(p=>p.city==='Sao Paulo');assert.equal(sp.geonameId,'3448439');assert.deepEqual([sp.latitude,sp.longitude],[-23.5,-46.6]);
- const ambiguous=history.points.find(p=>p.city==='Glenview');assert.equal(ambiguous.locationStatus,'ambiguous');assert.equal(ambiguous.activeUsers,5);
+ const ambiguous=history.points.find(p=>p.city==='Mountain View');assert.equal(ambiguous.locationStatus,'ambiguous');assert.equal(ambiguous.activeUsers,1);
  assert.equal(history.points.filter(p=>p.city==='(not set)').length,9);
  assert.equal(history.coordinateSource.license,'CC BY 4.0');
+});
+
+test('region enrichment resolves real same-name cities without replacing source counts',()=>{
+ const regions=readFileSync(new URL('../data/analytics/ga4-city-regions-2026-10-08.psv',import.meta.url),'utf8');
+ let hash=2166136261;for(const ch of regions)hash=Math.imul(hash^ch.charCodeAt(0),16777619)>>>0;assert.equal(hash.toString(16),'d0ac427');
+ assert.equal(createHash('sha256').update(regions).digest('hex'),history.regionSourceSha256);
+ for(const [city,id,region]of [['Glenview','4893886','Illinois'],['Campo Grande','3467747','Mato Grosso do Sul'],['Campinas','3467865','São Paulo'],['Ji-Parana','3925033','Rondônia']]){
+  const point=history.points.find(p=>p.city===city);assert.equal(point.geonameId,id);assert.equal(point.regionDisplay,region);assert.equal(point.regionMatched,true);
+ }
+ const pinhais=history.points.find(p=>p.city==='Pinhais');assert.deepEqual(pinhais.geonameIds,['6317953','13454613']);assert.equal(pinhais.locationMethod,'same-rounded-city-center');
+ assert.deepEqual([pinhais.latitude,pinhais.longitude],[-25.4,-49.2]);
+ assert.equal(history.points.filter(p=>p.region).length,311);
+ assert.equal(history.points.filter(p=>p.locationStatus==='matched').length,305);
+ const maputo=history.points.find(p=>p.city==='Maputo');assert.equal(maputo.geonameId,'1040652');assert.equal(maputo.regionMatched,false,'A city cannot be assigned to the similarly named province');
+ for(const city of ['Embu','Charneca da Caparica'])assert.ok(history.points.find(p=>p.city===city).aliasSource.startsWith('https://'));
 });
