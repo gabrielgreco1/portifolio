@@ -99,3 +99,10 @@ test('rotation during a fingerprint lock preserves server replay and the target 
  assert.equal((await call('x'.repeat(1000001))).status,413);
  assert.equal(writes,0);
  });
+
+test('plain-text firewall denials remain readable and never masquerade as CAPTCHA failures',async()=>{
+ const {arcadeResponse}=await import('../src/lib/arcade/response.mjs');
+ assert.deepEqual(await arcadeResponse(new Response('Too many requests',{status:429})),{available:false,error:'rate_limited'});
+ assert.deepEqual(await arcadeResponse(new Response('<html>Unavailable</html>',{status:503})),{available:false,error:'temporarily_unavailable'});
+ assert.deepEqual(await arcadeResponse(Response.json({available:true})),{available:true});
+});
