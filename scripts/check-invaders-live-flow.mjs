@@ -25,7 +25,7 @@ try{
   }else await route.continue();
  });
  await page.goto(`${origin}/pt`);await page.locator('.crawler-pet').press('Enter');await page.getByRole('button',{name:/Arcade do Tamagotchi/}).click();await page.getByRole('tab',{name:/Data Invaders/}).click();
- const run=await authorizeTestArcade(page,'invaders',{start:/Assumir o controle/});assert.equal(run.version,'invaders-3');
+ const run=await authorizeTestArcade(page,'invaders',{start:/^▶?\s*Jogar$/});assert.equal(run.version,'invaders-3');
  const mirror=createInvaders(run.width,run.height,run.seed);startInvaders(mirror);
  const canvas=page.locator('canvas[aria-label="Data Invaders"]');await page.locator('.runner-stage--running').waitFor();
  assert.equal(await page.locator('.invaders-bottom').isVisible(),false);

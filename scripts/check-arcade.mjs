@@ -8,9 +8,9 @@ try{for(const[game,width,height]of[['runner',1280,900],['invaders',390,844]]){
  try{
   await page.goto(`${origin}/pt`);await page.locator('.crawler-pet').waitFor();await page.waitForTimeout(500);await page.locator('.crawler-pet').press('Enter');await page.getByRole('button',{name:/Arcade do Tamagotchi/}).click();if(game==='invaders')await page.getByRole('tab',{name:/Data Invaders/}).click();
   const config=await(await context.request.get(`${origin}/api/arcade?game=${game}`)).json();assert.equal(config.mode,'test');
-  await page.getByRole('button',{name:game==='runner'?/Bora fugir/:/Assumir o controle/}).click();await page.getByRole('region',{name:'Quem está jogando?'}).waitFor();
+  await page.getByRole('button',{name:game==='runner'?/^▶?\s*Jogar$/:/^▶?\s*Jogar$/}).click();await page.getByRole('region',{name:'Quem está jogando?'}).waitFor();
   await page.getByLabel('Seu nome no ranking').fill(`TEST LOCAL ${game}`);
-  if(screenCheck)await page.getByRole('button',{name:'Tela cheia',exact:true}).click();
+  if(screenCheck)await page.getByRole('button',{name:'Maximizar',exact:true}).click();
   await page.waitForFunction(()=>[...document.querySelectorAll('button')].some(b=>b.textContent.includes('Entrar na partida')&&!b.disabled),{},{timeout:30000});
   await page.screenshot({path:`${out}/${game}-verified.png`});const grant=page.waitForResponse(r=>r.url().endsWith('/api/arcade')&&r.request().method()==='POST');await page.getByRole('button',{name:/Entrar na partida/}).click();const authorized=await grant;if(!authorized.ok())throw new Error(`Start failed: ${authorized.status()} ${JSON.stringify(await authorized.json())}`);await page.locator('.runner-stage--running').waitFor();
   if(screenCheck){
@@ -21,6 +21,7 @@ try{for(const[game,width,height]of[['runner',1280,900],['invaders',390,844]]){
    if(game==='invaders')await page.setViewportSize({width:844,height:390});
    await page.waitForTimeout(250);await page.getByRole('button',{name:game==='runner'?/Continuar corrida/:'Continuar jogo',exact:game==='invaders'}).click();
   }
+  if(screenCheck){await page.waitForTimeout(400);await page.locator('.runner-stage--running').waitFor({timeout:3000});}
   if(game==='invaders'){const canvas=page.getByRole('application',{name:'Data Invaders'});await canvas.focus();await page.keyboard.down('Space');await page.keyboard.down('ArrowLeft');await page.waitForTimeout(700);await page.keyboard.up('ArrowLeft');await page.keyboard.down('ArrowRight');await page.waitForTimeout(1400);await page.keyboard.up('ArrowRight');await page.waitForTimeout(3000);await page.keyboard.up('Space');}
   await page.locator('.arcade-result-panel').waitFor({timeout:90000});await page.screenshot({path:`${out}/${game}-over.png`});
   const score=Number((await page.locator(game==='runner'?'.arcade-hud>div strong':'.invaders-result-score strong').first().innerText()).replace(/[^0-9]/g,''));assert.ok(score>0);

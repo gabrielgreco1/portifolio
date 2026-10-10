@@ -14,7 +14,7 @@ const bestKey='tamagotchi-data-invaders-v3-best';
 function readBest(){try{return Math.max(0,Number(localStorage.getItem(bestKey))||0);}catch{return 0;}}
 function mergedInput(s){return{left:s.leftKey||s.leftTouch,right:s.rightKey||s.rightTouch,fire:s.fireKey||s.fireTouch||s.canvasFire,targetX:s.targetX};}
 
-export default function InvadersGame({lang,reduced,sound}){
+export default function InvadersGame({lang,reduced,sound,onSettings,suspended,viewportMode}){
   const session=useArcadeSession('invaders'),recording=session.recording,finish=session.finish,checkpoint=session.checkpoint;
   const pt=lang==='pt',canvas=useRef(null),display=useRef(null),state=useRef(null),picture=useRef(null),inputs=useRef({}),timers=useRef([]),bestRef=useRef(0);
   const restartLayout=useRef(false);
@@ -27,7 +27,7 @@ export default function InvadersGame({lang,reduced,sound}){
       if(!cssWidth||!cssHeight)return;const view=arcadeViewport(cssWidth,cssHeight),{width,height,scale}=view;display.current=view;
       if(!width||!height)return;surface.width=cssWidth*dpr;surface.height=cssHeight*dpr;ctx.setTransform(dpr*scale,0,0,dpr*scale,dpr*view.x,dpr*view.y);
       if(!state.current)state.current=createInvaders(width,height);
-      else{const s=state.current;resizeArcade('invaders',s,width,height);if(s.status==='running'&&!restartLayout.current)pauseInvaders(s);restartLayout.current=false;}
+      else{const s=state.current;resizeArcade('invaders',s,width,height);if(s.status==='running'&&!restartLayout.current)pauseInvaders(s);}
       inputs.current={};lastSignature='';
     };
     resize();const observer=new ResizeObserver(resize);observer.observe(surface);
@@ -49,8 +49,10 @@ export default function InvadersGame({lang,reduced,sound}){
     return()=>{disposed=true;sound?.silence();cancelAnimationFrame(raf);observer.disconnect();activeTimers.forEach(clearTimeout);window.removeEventListener('blur',pause);document.removeEventListener('visibilitychange',pause);};
   },[reduced,recording,lang,sound,checkpoint]);
   useEffect(()=>{if(hud.phase==='over')finish();},[hud.phase,finish]);
+  useEffect(()=>{inputs.current={};if(state.current?.status==='running')pauseInvaders(state.current);},[viewportMode]);
+  useEffect(()=>{if(suspended){inputs.current={};if(state.current?.status==='running')pauseInvaders(state.current);}},[suspended]);
   async function start(){const previous=state.current;if(!previous||!ready)return;const run=await session.requestStart(previous.width,previous.height);if(!run)return;inputs.current={};if(display.current)run.resize(display.current.width,display.current.height);restartLayout.current=true;timers.current.push(setTimeout(()=>{restartLayout.current=false;},300));state.current=run.state;requestAnimationFrame(()=>requestAnimationFrame(()=>{const scroll=canvas.current?.closest('.arcade-scroll');if(scroll)scroll.scrollTop=0;canvas.current?.focus({preventScroll:true});}));}
-  function pause(){inputs.current={};if(state.current)pauseInvaders(state.current);canvas.current?.focus({preventScroll:true});}
+  function pause(){inputs.current={};if(state.current?.status==='paused'){restartLayout.current=true;timers.current.push(setTimeout(()=>{restartLayout.current=false;},300));}if(state.current)pauseInvaders(state.current);canvas.current?.focus({preventScroll:true});}
   function key(event,down){
     const control=event.target.closest('button')?.dataset.control;
     if(event.target.closest('button')&&[' ','Enter'].includes(event.key)&&!control)return;
@@ -75,7 +77,7 @@ export default function InvadersGame({lang,reduced,sound}){
     <div className="arcade-hud invaders-hud"><div><span>{pt?'HORDA':'WAVE'}</span><strong>{String(hud.wave).padStart(2,'0')}</strong></div><div className="invaders-wave-score"><span>{pt?'NESTA HORDA':'THIS WAVE'}</span><strong>{hud.waveScore.toLocaleString(pt?'pt-BR':'en-US')}</strong></div><div className="invaders-best-score"><span>{pt?'MELHOR HORDA':'BEST WAVE'}</span><strong>{hud.score.toLocaleString(pt?'pt-BR':'en-US')}</strong></div><div className="invaders-lives"><span>{pt?'VIDAS':'LIVES'}</span><strong className="invaders-health" aria-label={`${hud.lives}/3`}>{[1,2,3].map(n=><i key={n} className={hud.lives>=n?'alive':''}/>)}</strong></div><button onClick={pause} disabled={!['running','paused'].includes(phase)} aria-label={phase==='paused'?(pt?'Continuar jogo':'Resume game'):(pt?'Pausar jogo':'Pause game')}>{phase==='paused'?'▷':'Ⅱ'}</button></div>
     <div className={`runner-stage invaders-stage runner-stage--${phase}`}>
       <canvas ref={canvas} tabIndex="0" role="application" aria-label="Data Invaders" aria-describedby="invaders-instructions" data-wave={hud.wave} onPointerDown={event=>{if(phase!=='running')return;event.preventDefault();event.currentTarget.setPointerCapture(event.pointerId);inputs.current.canvasFire=true;steer(event);canvas.current.focus({preventScroll:true});}} onPointerMove={event=>{if(inputs.current.canvasFire)steer(event);}} onPointerUp={()=>{inputs.current.canvasFire=false;inputs.current.targetX=null;}} onPointerCancel={()=>{inputs.current.canvasFire=false;inputs.current.targetX=null;}} onLostPointerCapture={()=>{inputs.current.canvasFire=false;inputs.current.targetX=null;}}/>
-      {phase==='ready'&&<ArcadeIntro game="invaders" pt={pt} onStart={start} onRanking={session.showRanking} ready={ready} reduced={reduced}/>}
+      {phase==='ready'&&<ArcadeIntro game="invaders" pt={pt} onStart={start} onRanking={session.showRanking} ready={ready} reduced={reduced} onSettings={onSettings}/>}
       {phase==='paused'&&<motion.div className="runner-overlay invaders-pause" initial={{opacity:0}} animate={{opacity:1}} transition={{duration:reduced?0:.16}}>
         <h3>{pt?'Respira.':'Take a breath.'}</h3><p>{pt?`Horda ${hud.wave}. A defesa espera por você.`:`Wave ${hud.wave}. Your defense can wait.`}</p>
         <button className="arcade-primary" data-modal-autofocus onClick={pause}>{pt?'Continuar':'Continue'} <span>→</span></button>

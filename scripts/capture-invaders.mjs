@@ -10,9 +10,9 @@ for(const [width,height] of [[1280,900],[390,844],[844,390],[320,568]].filter(([
  await page.clock.install({time:new Date()});
  await page.goto(`${origin}/pt`);await page.waitForTimeout(750);
  await page.locator('.crawler-pet').press('Enter');await page.getByRole('button',{name:/Arcade do Tamagotchi/}).click();
- await page.getByRole('tab',{name:/Data Invaders/}).click();await page.getByRole('button',{name:/Assumir o controle/}).waitFor();await page.waitForTimeout(500);
+ await page.getByRole('tab',{name:/Data Invaders/}).click();await page.getByRole('button',{name:/^▶?\s*Jogar$/}).waitFor();await page.waitForTimeout(500);
  await page.screenshot({animations:'disabled',path:`${output}/${width}-intro.png`});
- await authorizeTestArcade(page,'invaders',{start:/Assumir o controle/,freezeAt:()=>new Date(Date.now()+1000)});await page.clock.runFor(120);
+ await authorizeTestArcade(page,'invaders',{start:/^▶?\s*Jogar$/,freezeAt:()=>new Date(Date.now()+1000)});await page.clock.runFor(120);
  assert.equal(await page.locator('.runner-overlay').count(),0);assert.equal(await page.locator('#invaders-instructions').isVisible(),false);if(!mobile)assert.equal(await page.locator('.invaders-bottom').isVisible(),false);
  if(mobile){
   const cdp=await context.newCDPSession(page),fire=await page.getByRole('button',{name:'Atirar ↑',exact:true}).boundingBox(),left=await page.getByRole('button',{name:'Mover para esquerda',exact:true}).boundingBox();

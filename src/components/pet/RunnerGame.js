@@ -12,10 +12,11 @@ import {advanceRunner,createRunner,drawRunner,pauseRunner,prepareRunnerSprites} 
 const bestKey='tamagotchi-data-run-v3-best';
 function readBest(){try{return Math.max(0,Number(localStorage.getItem(bestKey))||0);}catch{return 0;}}
 
-export default function RunnerGame({lang,reduced,sound}){
+export default function RunnerGame({lang,reduced,sound,onSettings,suspended,viewportMode}){
   const session=useArcadeSession('runner'),recording=session.recording,finish=session.finish;
   const pt=lang==='pt',canvas=useRef(null),display=useRef(null),state=useRef(null),picture=useRef(null),bestRef=useRef(0),duckSources=useRef(new Set()),jumpQueue=useRef(false);
-  const restartLayout=useRef(false);
+  const restartLayout=useRef(false),layoutTimer=useRef(null);
+  useEffect(()=>()=>clearTimeout(layoutTimer.current),[]);
   const [best,setBest]=useState(readBest),[ready,setReady]=useState(false),[hud,setHud]=useState({phase:'ready',score:0,packets:0,cleared:0,ducking:false,distance:0,speed:245});
   useEffect(()=>{
     const surface=canvas.current,ctx=surface.getContext('2d');let raf,last=0,lastHud=0,lastSignature='',disposed=false,saved=false;
@@ -26,7 +27,7 @@ export default function RunnerGame({lang,reduced,sound}){
       if(!cssWidth||!cssHeight)return;const view=arcadeViewport(cssWidth,cssHeight),{width,height,scale}=view;display.current=view;
       if(!width||!height)return;surface.width=cssWidth*dpr;surface.height=cssHeight*dpr;ctx.setTransform(dpr*scale,0,0,dpr*scale,dpr*view.x,dpr*view.y);
       if(!state.current)state.current=createRunner(width,height);
-      else{const s=state.current;resizeArcade('runner',s,width,height);if(s.status==='running'&&!restartLayout.current)pauseRunner(s);restartLayout.current=false;duckSources.current.clear();jumpQueue.current=false;}
+      else{const s=state.current;resizeArcade('runner',s,width,height);if(s.status==='running'&&!restartLayout.current)pauseRunner(s);duckSources.current.clear();jumpQueue.current=false;}
       lastSignature='';
     };
     resize();const observer=new ResizeObserver(resize);observer.observe(surface);
@@ -52,10 +53,12 @@ export default function RunnerGame({lang,reduced,sound}){
     return()=>{disposed=true;sound?.silence();cancelAnimationFrame(raf);observer.disconnect();window.removeEventListener('keyup',release);window.removeEventListener('blur',pause);document.removeEventListener('visibilitychange',pause);};
   },[reduced,recording,sound]);
   useEffect(()=>{if(hud.phase==='over')finish();},[hud.phase,finish]);
-  async function start(){const previous=state.current;if(!previous||!ready)return;const run=await session.requestStart(previous.width,previous.height);if(!run)return;duckSources.current.clear();jumpQueue.current=false;if(display.current)run.resize(display.current.width,display.current.height);restartLayout.current=previous.status==='over';state.current=run.state;requestAnimationFrame(()=>requestAnimationFrame(()=>{const scroll=canvas.current?.closest('.arcade-scroll');if(scroll)scroll.scrollTop=0;canvas.current?.focus({preventScroll:true});}));}
+  useEffect(()=>{duckSources.current.clear();jumpQueue.current=false;if(state.current?.status==='running')pauseRunner(state.current);},[viewportMode]);
+  useEffect(()=>{if(suspended){duckSources.current.clear();jumpQueue.current=false;if(state.current?.status==='running')pauseRunner(state.current);}},[suspended]);
+  async function start(){const previous=state.current;if(!previous||!ready)return;const run=await session.requestStart(previous.width,previous.height);if(!run)return;duckSources.current.clear();jumpQueue.current=false;if(display.current)run.resize(display.current.width,display.current.height);restartLayout.current=true;clearTimeout(layoutTimer.current);layoutTimer.current=setTimeout(()=>{restartLayout.current=false;},300);state.current=run.state;requestAnimationFrame(()=>requestAnimationFrame(()=>{const scroll=canvas.current?.closest('.arcade-scroll');if(scroll)scroll.scrollTop=0;canvas.current?.focus({preventScroll:true});}));}
   function jump(){if(state.current?.status==='running')jumpQueue.current=true;canvas.current?.focus({preventScroll:true});}
   function duck(held,source='pointer'){if(held)duckSources.current.add(source);else duckSources.current.delete(source);}
-  function pause(){duckSources.current.clear();if(state.current)pauseRunner(state.current);canvas.current?.focus({preventScroll:true});}
+  function pause(){duckSources.current.clear();if(state.current?.status==='paused'){restartLayout.current=true;clearTimeout(layoutTimer.current);layoutTimer.current=setTimeout(()=>{restartLayout.current=false;},300);}if(state.current)pauseRunner(state.current);canvas.current?.focus({preventScroll:true});}
   function key(event){
     if(event.target.closest('button')&&[' ','Enter'].includes(event.key))return;
     if([' ','ArrowUp','w','W'].includes(event.key)){event.preventDefault();if(!event.repeat){if(['ready','over'].includes(state.current?.status))start();else jump();}}
@@ -67,7 +70,7 @@ export default function RunnerGame({lang,reduced,sound}){
     <div className="arcade-hud"><div><span>{pt?'PONTOS':'SCORE'}</span><strong>{String(hud.score).padStart(5,'0')}</strong></div><div><span>{pt?'PACOTES':'PACKETS'}</span><strong key={hud.packets} className={hud.packets?'runner-packet-count':''}>{String(hud.packets).padStart(2,'0')}</strong></div><div className="runner-speed"><span>{pt?'VELOCIDADE':'SPEED'}</span><strong>{(hud.speed/245).toFixed(2)}<i>×</i></strong></div><div className="runner-best"><span>{pt?'RECORDE':'BEST'}</span><strong>{String(best).padStart(5,'0')}</strong></div><button onClick={pause} disabled={!['running','paused'].includes(phase)} aria-label={phase==='paused'?(pt?'Continuar jogo':'Resume game'):(pt?'Pausar jogo':'Pause game')}>{phase==='paused'?'▷':'Ⅱ'}</button></div>
     <div className={`runner-stage runner-stage--${phase}`}>
       <canvas ref={canvas} tabIndex="0" role="application" aria-label="Data Run" aria-describedby="runner-instructions" data-ducking={hud.ducking} onPointerDown={event=>{if(playing){event.preventDefault();jump();}}}/>
-      {phase==='ready'&&<ArcadeIntro game="runner" pt={pt} onStart={start} onRanking={session.showRanking} ready={ready} reduced={reduced}/>}
+      {phase==='ready'&&<ArcadeIntro game="runner" pt={pt} onStart={start} onRanking={session.showRanking} ready={ready} reduced={reduced} onSettings={onSettings}/>}
       {phase==='paused'&&<motion.div className="runner-overlay" key={phase} initial={{opacity:0,y:8}} animate={{opacity:1,y:0}} exit={{opacity:0,y:-5}} transition={{duration:reduced?.05:.22}}>
         <button className="arcade-ranking-access" onClick={session.showRanking}>{pt?'Ranking ↗':'Leaderboard ↗'}</button>
         <h3>{phase==='over'?(pt?'ACESSO NEGADO':'ACCESS DENIED'):phase==='paused'?(pt?'Respira.':'Take a breath.'):'Data Run'}</h3>
