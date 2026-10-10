@@ -27,7 +27,7 @@ export default function InvadersGame({lang,reduced,sound,onSettings,suspended,vi
       if(!cssWidth||!cssHeight)return;const view=arcadeViewport(cssWidth,cssHeight),{width,height,scale}=view;display.current=view;
       if(!width||!height)return;surface.width=cssWidth*dpr;surface.height=cssHeight*dpr;ctx.setTransform(dpr*scale,0,0,dpr*scale,dpr*view.x,dpr*view.y);
       if(!state.current)state.current=createInvaders(width,height);
-      else{const s=state.current;resizeArcade('invaders',s,width,height);if(s.status==='running'&&!restartLayout.current)pauseInvaders(s);restartLayout.current=false;}
+      else{const s=state.current;resizeArcade('invaders',s,width,height);if(s.status==='running'&&!restartLayout.current)pauseInvaders(s);}
       inputs.current={};lastSignature='';
     };
     resize();const observer=new ResizeObserver(resize);observer.observe(surface);
@@ -52,7 +52,7 @@ export default function InvadersGame({lang,reduced,sound,onSettings,suspended,vi
   useEffect(()=>{inputs.current={};if(state.current?.status==='running')pauseInvaders(state.current);},[viewportMode]);
   useEffect(()=>{if(suspended){inputs.current={};if(state.current?.status==='running')pauseInvaders(state.current);}},[suspended]);
   async function start(){const previous=state.current;if(!previous||!ready)return;const run=await session.requestStart(previous.width,previous.height);if(!run)return;inputs.current={};if(display.current)run.resize(display.current.width,display.current.height);restartLayout.current=true;timers.current.push(setTimeout(()=>{restartLayout.current=false;},300));state.current=run.state;requestAnimationFrame(()=>requestAnimationFrame(()=>{const scroll=canvas.current?.closest('.arcade-scroll');if(scroll)scroll.scrollTop=0;canvas.current?.focus({preventScroll:true});}));}
-  function pause(){inputs.current={};if(state.current)pauseInvaders(state.current);canvas.current?.focus({preventScroll:true});}
+  function pause(){inputs.current={};if(state.current?.status==='paused'){restartLayout.current=true;timers.current.push(setTimeout(()=>{restartLayout.current=false;},300));}if(state.current)pauseInvaders(state.current);canvas.current?.focus({preventScroll:true});}
   function key(event,down){
     const control=event.target.closest('button')?.dataset.control;
     if(event.target.closest('button')&&[' ','Enter'].includes(event.key)&&!control)return;

@@ -21,6 +21,7 @@ try{for(const[game,width,height]of[['runner',1280,900],['invaders',390,844]]){
    if(game==='invaders')await page.setViewportSize({width:844,height:390});
    await page.waitForTimeout(250);await page.getByRole('button',{name:game==='runner'?/Continuar corrida/:'Continuar jogo',exact:game==='invaders'}).click();
   }
+  if(screenCheck){await page.waitForTimeout(400);await page.locator('.runner-stage--running').waitFor({timeout:3000});}
   if(game==='invaders'){const canvas=page.getByRole('application',{name:'Data Invaders'});await canvas.focus();await page.keyboard.down('Space');await page.keyboard.down('ArrowLeft');await page.waitForTimeout(700);await page.keyboard.up('ArrowLeft');await page.keyboard.down('ArrowRight');await page.waitForTimeout(1400);await page.keyboard.up('ArrowRight');await page.waitForTimeout(3000);await page.keyboard.up('Space');}
   await page.locator('.arcade-result-panel').waitFor({timeout:90000});await page.screenshot({path:`${out}/${game}-over.png`});
   const score=Number((await page.locator(game==='runner'?'.arcade-hud>div strong':'.invaders-result-score strong').first().innerText()).replace(/[^0-9]/g,''));assert.ok(score>0);

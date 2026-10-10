@@ -27,7 +27,7 @@ export default function RunnerGame({lang,reduced,sound,onSettings,suspended,view
       if(!cssWidth||!cssHeight)return;const view=arcadeViewport(cssWidth,cssHeight),{width,height,scale}=view;display.current=view;
       if(!width||!height)return;surface.width=cssWidth*dpr;surface.height=cssHeight*dpr;ctx.setTransform(dpr*scale,0,0,dpr*scale,dpr*view.x,dpr*view.y);
       if(!state.current)state.current=createRunner(width,height);
-      else{const s=state.current;resizeArcade('runner',s,width,height);if(s.status==='running'&&!restartLayout.current)pauseRunner(s);restartLayout.current=false;duckSources.current.clear();jumpQueue.current=false;}
+      else{const s=state.current;resizeArcade('runner',s,width,height);if(s.status==='running'&&!restartLayout.current)pauseRunner(s);duckSources.current.clear();jumpQueue.current=false;}
       lastSignature='';
     };
     resize();const observer=new ResizeObserver(resize);observer.observe(surface);
@@ -58,7 +58,7 @@ export default function RunnerGame({lang,reduced,sound,onSettings,suspended,view
   async function start(){const previous=state.current;if(!previous||!ready)return;const run=await session.requestStart(previous.width,previous.height);if(!run)return;duckSources.current.clear();jumpQueue.current=false;if(display.current)run.resize(display.current.width,display.current.height);restartLayout.current=true;clearTimeout(layoutTimer.current);layoutTimer.current=setTimeout(()=>{restartLayout.current=false;},300);state.current=run.state;requestAnimationFrame(()=>requestAnimationFrame(()=>{const scroll=canvas.current?.closest('.arcade-scroll');if(scroll)scroll.scrollTop=0;canvas.current?.focus({preventScroll:true});}));}
   function jump(){if(state.current?.status==='running')jumpQueue.current=true;canvas.current?.focus({preventScroll:true});}
   function duck(held,source='pointer'){if(held)duckSources.current.add(source);else duckSources.current.delete(source);}
-  function pause(){duckSources.current.clear();if(state.current)pauseRunner(state.current);canvas.current?.focus({preventScroll:true});}
+  function pause(){duckSources.current.clear();if(state.current?.status==='paused'){restartLayout.current=true;clearTimeout(layoutTimer.current);layoutTimer.current=setTimeout(()=>{restartLayout.current=false;},300);}if(state.current)pauseRunner(state.current);canvas.current?.focus({preventScroll:true});}
   function key(event){
     if(event.target.closest('button')&&[' ','Enter'].includes(event.key))return;
     if([' ','ArrowUp','w','W'].includes(event.key)){event.preventDefault();if(!event.repeat){if(['ready','over'].includes(state.current?.status))start();else jump();}}
