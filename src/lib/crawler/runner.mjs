@@ -36,8 +36,21 @@ export function advanceRunner(s,delta){
   let remaining=Math.min(delta,.1);
   while(remaining>0&&s.status==='running'){const dt=Math.min(remaining,1/120);remaining-=dt;step(s,dt);}
 }
+// Reach 2.61x at three minutes and 5x at five; continue at the final slope.
+function progressiveSpeed(time){
+  if(time<=30)return 245+6*time;
+  const elapsed=Math.min(time-30,270);
+  return 425+.7451593915343909*elapsed+.000030422545561434456*elapsed**3
+    +Math.max(0,time-300)*7.398570105820106;
+}
 function step(s,dt){
-  s.time+=dt;s.speed=Math.min(245+Math.min(185,s.time*(s.pace===2?6:2.1)),Math.max(280,s.width-s.playerX+35));s.distance+=s.speed*dt;
+  s.time+=dt;
+  // New runs keep gaining speed after the opening ramp. Older signed runs
+  // retain their exact physics so in-flight recordings can still be replayed.
+  s.speed=s.pace===3
+    ?progressiveSpeed(s.time)
+    :Math.min(245+Math.min(185,s.time*(s.pace===2?6:2.1)),Math.max(280,s.width-s.playerX+35));
+  s.distance+=s.speed*dt;
   s.velocity+=GRAVITY*dt;s.y=Math.min(0,s.y+s.velocity*dt);if(s.y===0)s.velocity=0;
   if(s.duckGrace&&!s.obstacles.some(o=>o.kind==='scanner'&&o.x+o.width>s.playerX-22&&o.x<s.playerX+50))s.duckGrace=false;
   const crouched=(s.duckHeld||s.duckGrace)&&s.y>=-.5;s.duck+=(Number(crouched)-s.duck)*Math.min(1,dt*28);

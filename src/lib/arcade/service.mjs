@@ -71,7 +71,7 @@ export async function handleArcade(request,{config:provided,now=()=>Date.now(),v
    const ip=config.vercel?request.headers.get('x-vercel-forwarded-for'):null;if(config.vercel)await store.limit(`ip:${hmac(ip||'unknown',config.signingSecret).slice(0,24)}`,600,600);
    const name=playerName(body.name,publicId(player.id,game,config.signingSecret));
    await verify(body.captcha,{config,hostname,game});
-   const createdAt=now(),run={id:randomUUID(),owner:player.id,game,version,width,height,seed:randomInt(0x100000000),pace:body.pace===2?2:1,...(body.name?{name}:{}),createdAt,expiresAt:createdAt+RUN_TTL,...(version==='invaders-3'?{sequence:0}:{})};await store.create(run);
+   const createdAt=now(),run={id:randomUUID(),owner:player.id,game,version,width,height,seed:randomInt(0x100000000),pace:body.pace===3?3:body.pace===2?2:1,...(body.name?{name}:{}),createdAt,expiresAt:createdAt+RUN_TTL,...(version==='invaders-3'?{sequence:0}:{})};await store.create(run);
    const{owner,...publicRun}=run;return Response.json({...publicRun,token:`${run.id}.${runSignature(run.id,owner,config.signingSecret)}`,mode:config.mode},{headers});
   }
   if(body.operation==='checkpoint'){

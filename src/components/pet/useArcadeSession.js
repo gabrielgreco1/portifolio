@@ -36,7 +36,7 @@ export function useArcadeSession(game){
  async function authorize(captcha,name){
   if(busyRef.current)return;busyRef.current=true;setBusy(true);setError('');
   try{
-   const response=await fetch('/api/arcade',{method:'POST',signal:AbortSignal.timeout(12000),headers:{'Content-Type':'application/json'},body:JSON.stringify({operation:'start',game,version:GAME_VERSIONS[game],pace:2,...dimensions.current,captcha,name})}),run=await arcadeResponse(response);
+   const response=await fetch('/api/arcade',{method:'POST',signal:AbortSignal.timeout(12000),headers:{'Content-Type':'application/json'},body:JSON.stringify({operation:'start',game,version:GAME_VERSIONS[game],pace:game==='runner'?3:2,...dimensions.current,captcha,name})}),run=await arcadeResponse(response);
    if(!response.ok)throw new Error(run.error);if(!mounted.current||!pending.current)return;
    try{localStorage.setItem('arcade-player-name',name);}catch{}clearTimeout(checkpointRetry.current);checkpointProof.current=null;setConnectionError(false);recording.current=new ArcadeRecording(run);setPanel(null);pending.current(recording.current);pending.current=null;
   }catch(e){if(mounted.current)setError(e.message||'temporarily_unavailable');}

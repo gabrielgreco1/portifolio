@@ -113,7 +113,7 @@ test('plain-text firewall denials remain readable and never masquerade as CAPTCH
 });
 
 test('new pace accelerates earlier while legacy recordings still replay exactly',()=>{
- for(const pace of [1,2]){const run={...spec('runner'),pace},recording=play(run,r=>r.tick<1200?runnerControl(r):{});assert.equal(replayArcade(run,recording.proof()).score,recording.state.score);}
+ for(const pace of [1,2,3]){const run={...spec('runner'),pace},recording=play(run,r=>r.tick<1200?runnerControl(r):{});assert.equal(replayArcade(run,recording.proof()).score,recording.state.score);}
  const legacy=new ArcadeRecording(spec('runner')),modern=new ArcadeRecording({...spec('runner'),pace:2});
  for(let i=0;i<1200;i++){legacy.advance(1/60,runnerControl(legacy));modern.advance(1/60,runnerControl(modern));}
  assert.ok(modern.state.speed>legacy.state.speed+70);assert.equal(modern.state.status,'running');
@@ -135,6 +135,13 @@ test('name chosen before playing is bound to the run and finish returns the pers
  const proof=play(run).proof();clock+=proof.ticks/60*1000;const response=await call({operation:'finish',token:run.token,name:'Different name',proof},cookie);assert.equal(response.status,200);const result=await response.json();assert.equal(result.personal.name,'Gabriel');assert.equal(result.personal.rank,1);assert.equal(result.entries[0].name,'Gabriel');
  const retry=await(await call({operation:'finish',token:run.token,name:'Different name',proof},cookie)).json();assert.equal(retry.personal.id,result.personal.id);assert.equal(retry.entries.length,1);
  const zeroRun=await(await call({operation:'start',game:'invaders',width:760,height:390,name:'Gabriel',captcha:'test'},cookie)).json(),zeroProof=play(zeroRun).proof();assert.equal(zeroProof.score,0);clock+=zeroProof.ticks/60*1000;const zero=await call({operation:'finish',token:zeroRun.token,proof:zeroProof},cookie);assert.equal(zero.status,200);assert.equal((await zero.json()).personal.score,0);
+ const currentClient=await(await call({operation:'start',game:'runner',pace:3,width:760,height:390,captcha:'test'},cookie)).json();assert.equal(currentClient.pace,3,'new pace is stored and returned by the server');
  const oldClient=await(await call({operation:'start',game:'runner',width:760,height:390,captcha:'test'},cookie)).json();assert.equal(oldClient.pace,1,'already open old clients retain their matching rules');
  }finally{await rm(dir,{recursive:true,force:true});}
+});
+
+test('new runner pace survives server replay after the old ceiling',()=>{
+ const run={...spec('runner'),pace:3},recording=play(run,r=>r.tick<60*120?runnerControl(r):{});
+ assert.ok(recording.state.time>120);assert.ok(recording.state.speed>510);
+ assert.equal(replayArcade(run,recording.proof()).score,recording.state.score);
 });
