@@ -86,7 +86,8 @@ export default function InvadersGame({lang,reduced,sound}){
       {phase==='crashed'&&<span className="runner-hit-label" role="status">{pt?'SINAL PERDIDO':'SIGNAL LOST'}</span>}
     </div>
     {phase==='over'&&<InvadersResult session={session} hud={hud} pt={pt} onRestart={start} reduced={reduced}/>}
-    <div className="invaders-bottom"><p id="invaders-instructions" className="sr-only"><span><kbd>←</kbd><kbd>→</kbd> {pt?'mover':'move'}</span><span><kbd>{pt?'ESPAÇO':'SPACE'}</kbd> {pt?'atirar':'fire'}</span><span><kbd>P</kbd> {pt?'pausar':'pause'}</span></p><div className="invaders-touch"><button data-control="left" {...touch('left')} onClick={accessibleTap} disabled={!playing} aria-label={pt?'Mover para esquerda':'Move left'}>←</button><button data-control="fire" {...touch('fire')} onClick={accessibleTap} disabled={!playing}>{pt?'Atirar':'Fire'} <span>↑</span></button><button data-control="right" {...touch('right')} onClick={accessibleTap} disabled={!playing} aria-label={pt?'Mover para direita':'Move right'}>→</button></div></div>
+    <p id="invaders-instructions" hidden>{pt?'Setas para mover. Espaço para atirar. P para pausar.':'Arrow keys to move. Space to fire. P to pause.'}</p>
+    <div className="invaders-bottom"><div className="invaders-touch"><button data-control="left" {...touch('left')} onClick={accessibleTap} disabled={!playing} aria-label={pt?'Mover para esquerda':'Move left'}>←</button><button data-control="fire" {...touch('fire')} onClick={accessibleTap} disabled={!playing}>{pt?'Atirar':'Fire'} <span>↑</span></button><button data-control="right" {...touch('right')} onClick={accessibleTap} disabled={!playing} aria-label={pt?'Mover para direita':'Move right'}>→</button></div></div>
     <p className="sr-only" role="status">{phase==='over'?`${pt?'Fim de jogo':'Game over'}. ${hud.score} ${pt?'pontos':'points'}.`:phase==='paused'?(pt?'Jogo pausado':'Game paused'):''}</p>
   </div></div>;
 }
