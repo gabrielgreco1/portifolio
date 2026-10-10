@@ -13,7 +13,7 @@ for(const [width,height] of [[1280,900],[390,844],[844,390],[320,568]].filter(([
  await page.getByRole('tab',{name:/Data Invaders/}).click();await page.getByRole('button',{name:/Assumir o controle/}).waitFor();await page.waitForTimeout(500);
  await page.screenshot({animations:'disabled',path:`${output}/${width}-intro.png`});
  await authorizeTestArcade(page,'invaders',{start:/Assumir o controle/,freezeAt:()=>new Date(Date.now()+1000)});await page.clock.runFor(120);
- assert.equal(await page.locator('.runner-overlay').count(),0);assert.equal(await page.locator('#invaders-instructions').evaluate(e=>getComputedStyle(e).position),'absolute');if(!mobile)assert.equal(await page.locator('.invaders-bottom').isVisible(),false);
+ assert.equal(await page.locator('.runner-overlay').count(),0);assert.equal(await page.locator('#invaders-instructions').isVisible(),false);if(!mobile)assert.equal(await page.locator('.invaders-bottom').isVisible(),false);
  if(mobile){
   const cdp=await context.newCDPSession(page),fire=await page.getByRole('button',{name:'Atirar ↑',exact:true}).boundingBox(),left=await page.getByRole('button',{name:'Mover para esquerda',exact:true}).boundingBox();
   assert.ok(fire.y+fire.height<=height,'Touch controls must fit without scrolling');
@@ -32,7 +32,7 @@ for(const [width,height] of [[1280,900],[390,844],[844,390],[320,568]].filter(([
  const paused=await page.locator('.arcade-hud').innerText();await page.clock.runFor(1000);assert.equal(await page.locator('.arcade-hud').innerText(),paused);assert.match(await page.locator('.runner-stage').getAttribute('class'),/paused/);
  await page.screenshot({animations:'disabled',path:`${output}/${width}-paused.png`});
  await page.getByRole('button',{name:'Continuar jogo',exact:true}).click({force:true});await page.clock.runFor(200);assert.match(await page.locator('.runner-stage').getAttribute('class'),/running/);
- if(width===390){await page.setViewportSize({width:844,height:390});await page.clock.runFor(150);assert.match(await page.locator('.runner-stage').getAttribute('class'),/paused/);await page.getByRole('button',{name:'Continuar jogo',exact:true}).click();await page.clock.runFor(150);assert.match(await page.locator('.runner-stage').getAttribute('class'),/running/);await page.screenshot({path:`${output}/rotation.png`});}
+ if(width===390){await page.setViewportSize({width:844,height:390});await new Promise(resolve=>setTimeout(resolve,100));await page.clock.runFor(150);assert.match(await page.locator('.runner-stage').getAttribute('class'),/paused/);await page.getByRole('button',{name:'Continuar jogo',exact:true}).click();await page.clock.runFor(150);assert.match(await page.locator('.runner-stage').getAttribute('class'),/running/);await page.screenshot({path:`${output}/rotation.png`});}
  await page.keyboard.press('Escape');await page.clock.runFor(500);assert.equal(await page.getByRole('dialog').count(),0);
  assert.deepEqual(errors,[]);await context.close();
 }
