@@ -93,7 +93,6 @@ function step(s,dt,input){
 export function drawInvaders(ctx,s,image,{reduced=false,input={},lang='pt'}={}){
   const {width:w,height:h,time}=s;
   const sky=ctx.createLinearGradient(0,0,w,h);sky.addColorStop(0,'#101d25');sky.addColorStop(.5,'#0a1e21');sky.addColorStop(1,'#122820');ctx.fillStyle=sky;ctx.fillRect(0,0,w,h);
-  const halo=ctx.createRadialGradient(w*.5,h*.5,0,w*.5,h*.5,h*.65);halo.addColorStop(0,'#7ea99313');halo.addColorStop(1,'#10252000');ctx.fillStyle=halo;ctx.fillRect(0,0,w,h);
   for(let i=0;i<85;i++){const x=(i*137.17)%(w-12)+6,y=((i*61.71+(reduced?0:time*(2+i%3)))%(h+10));ctx.globalAlpha=.16+(i%4)*.1;ctx.fillStyle=i%6?'#c4d9c1':'#c6b992';ctx.fillRect(x,y,i%11?1:2,1);}ctx.globalAlpha=1;
   ctx.strokeStyle='#b3cf9220';ctx.lineWidth=1;for(let i=0;i<3;i++){ctx.beginPath();ctx.ellipse(w*.5,h+80,Math.max(250,w*.75)+i*22,128+i*17,0,Math.PI,Math.PI*2);ctx.stroke();}
   for(let i=0;i<5;i++){ctx.strokeStyle='#8fac9510';ctx.beginPath();ctx.moveTo(i*w/4,0);ctx.lineTo(w*.5+(i-2)*w*.08,h);ctx.stroke();}

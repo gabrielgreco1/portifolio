@@ -1,0 +1,6 @@
+import {chromium} from 'playwright';
+import {readFile} from 'node:fs/promises';
+const root=process.cwd();
+const b=await chromium.launch({channel:'chrome',headless:true});const p=await b.newPage();
+await p.route('http://renderer.test/**',async r=>{const path=new URL(r.request().url()).pathname;if(path==='/')return r.fulfill({contentType:'text/html',body:'<canvas width="1520" height="780"></canvas>'});return r.fulfill({contentType:path.endsWith('.png')?'image/png':'text/javascript',body:await readFile(root+path)});});
+await p.goto('http://renderer.test/');console.log(await p.evaluate(async()=>{const {createRunner,drawRunner}=await import('/src/lib/crawler/runner.mjs');const image=new Image();image.src='/public/crawler-character-v2.png';await image.decode();const ctx=document.querySelector('canvas').getContext('2d');ctx.scale(2,2);const s=createRunner(760,390,2);s.status='running';const result={};for(const mode of ['ground','jump']){s.y=mode==='jump'?-80:0;const times=[];for(let i=0;i<500;i++){s.time=i/60;s.distance=i*5;const t=performance.now();drawRunner(ctx,s,image);ctx.getImageData(0,0,1,1);times.push(performance.now()-t);}times.sort((a,b)=>a-b);result[mode]={median:times[250],p95:times[475]};}return result;}));await b.close();

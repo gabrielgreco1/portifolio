@@ -52,6 +52,11 @@ test('API verifies runs, rejects forged/reused proofs, and persists a public bes
   assert.equal((await call('POST',{...finish,proof:{...proof,score:999999}},cookie)).status,422);
   assert.equal((await call('POST',finish,'')).status,403,'a different visitor cannot submit this run');
   assert.equal((await call('POST',finish,cookie,'https://attacker.example')).status,403);
+  const assessment={operation:'assess',token:run.token,proof};
+  assert.equal((await call('POST',{...assessment,proof:{...proof,score:999999}},cookie)).status,422);
+  assert.equal((await call('POST',assessment,'')).status,403);
+  const compared=await(await call('POST',assessment,cookie)).json();assert.equal(compared.rank,1);assert.equal(compared.published,false);
+  assert.equal((await(await call('GET')).json()).entries.length,0,'comparison must never publish');
   const simultaneous=await Promise.all(Array.from({length:8},()=>call('POST',finish,cookie)));const answers=await Promise.all(simultaneous.map(async r=>{assert.equal(r.status,200);return r.json();}));assert.ok(answers.every(r=>r.score===proof.score&&r.rank===1));
   assert.equal((await call('POST',{...finish,name:'Outro nome'},cookie)).status,409);
   const board=await(await call('GET')).json();assert.equal(board.entries.length,1);assert.equal(board.entries[0].name,'Crawler teste');assert.equal(board.entries[0].score,proof.score);assert.ok(!JSON.stringify(board).includes(run.token));assert.ok(!JSON.stringify(board).includes(cookie.split('=')[1]));
@@ -105,4 +110,31 @@ test('plain-text firewall denials remain readable and never masquerade as CAPTCH
  assert.deepEqual(await arcadeResponse(new Response('Too many requests',{status:429})),{available:false,error:'rate_limited'});
  assert.deepEqual(await arcadeResponse(new Response('<html>Unavailable</html>',{status:503})),{available:false,error:'temporarily_unavailable'});
  assert.deepEqual(await arcadeResponse(Response.json({available:true})),{available:true});
+});
+
+test('new pace accelerates earlier while legacy recordings still replay exactly',()=>{
+ for(const pace of [1,2]){const run={...spec('runner'),pace},recording=play(run,r=>r.tick<1200?runnerControl(r):{});assert.equal(replayArcade(run,recording.proof()).score,recording.state.score);}
+ const legacy=new ArcadeRecording(spec('runner')),modern=new ArcadeRecording({...spec('runner'),pace:2});
+ for(let i=0;i<1200;i++){legacy.advance(1/60,runnerControl(legacy));modern.advance(1/60,runnerControl(modern));}
+ assert.ok(modern.state.speed>legacy.state.speed+70);assert.equal(modern.state.status,'running');
+});
+
+test('rank beyond 100 persists, comparison is private, and ties match Redis ordering',async()=>{
+ const dir=await mkdtemp(join(tmpdir(),'arcade-ranks-'));try{const store=new LocalArcade(join(dir,'records.json'));
+ for(let i=0;i<115;i++){const run={id:`run-${i}`,owner:`owner-${i}`,version:'runner-3',expiresAt:Date.now()+60000};await store.create(run);await store.finish(run,`hash-${i}`,{id:`player-${i}`,name:`TEST ${i}`,score:i+100});}
+ const result=await store.compare('runner-3',{id:'private',name:'private',score:1});assert.equal(result.rank,116);assert.equal(result.entries.length,10);assert.equal(result.personal.rank,116);assert.equal(await store.personal('runner-3','private'),null);assert.equal((await store.personal('runner-3','player-0')).rank,115);
+ const tie=await store.compare('runner-3',{id:'zzz',score:214});assert.equal(tie.rank,1);
+ }finally{await rm(dir,{recursive:true,force:true});}
+});
+
+test('name chosen before playing is bound to the run and finish returns the persisted personal rank',async()=>{
+ const dir=await mkdtemp(join(tmpdir(),'arcade-named-'));let clock=Date.now();try{
+ const store=new LocalArcade(join(dir,'records.json')),config={mode:'test',sitekey:'test',signingSecret:'test',hosts:['localhost'],store};
+ const call=(body,cookie='')=>handleArcade(new Request('http://localhost/api/arcade',{method:'POST',headers:{origin:'http://localhost','Content-Type':'application/json',cookie},body:JSON.stringify(body)}),{config,now:()=>clock,verify:async()=>{}});
+ const res=await call({operation:'start',game:'runner',pace:2,width:760,height:390,name:'Gabriel',captcha:'test'}),cookie=res.headers.get('set-cookie').split(';')[0],run=await res.json();assert.equal(run.name,'Gabriel');assert.equal(run.pace,2);
+ const proof=play(run).proof();clock+=proof.ticks/60*1000;const response=await call({operation:'finish',token:run.token,name:'Different name',proof},cookie);assert.equal(response.status,200);const result=await response.json();assert.equal(result.personal.name,'Gabriel');assert.equal(result.personal.rank,1);assert.equal(result.entries[0].name,'Gabriel');
+ const retry=await(await call({operation:'finish',token:run.token,name:'Different name',proof},cookie)).json();assert.equal(retry.personal.id,result.personal.id);assert.equal(retry.entries.length,1);
+ const zeroRun=await(await call({operation:'start',game:'invaders',width:760,height:390,name:'Gabriel',captcha:'test'},cookie)).json(),zeroProof=play(zeroRun).proof();assert.equal(zeroProof.score,0);clock+=zeroProof.ticks/60*1000;const zero=await call({operation:'finish',token:zeroRun.token,proof:zeroProof},cookie);assert.equal(zero.status,200);assert.equal((await zero.json()).personal.score,0);
+ const oldClient=await(await call({operation:'start',game:'runner',width:760,height:390,captcha:'test'},cookie)).json();assert.equal(oldClient.pace,1,'already open old clients retain their matching rules');
+ }finally{await rm(dir,{recursive:true,force:true});}
 });

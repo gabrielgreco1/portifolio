@@ -40,21 +40,21 @@ export default function ArcadePanels(props){
  return props.session.panel?<ArcadePanelContent key={props.session.panel} {...props}/>:null;
 }
 function ArcadePanelContent({session,game,lang}){
- const pt=lang==='pt',panelRef=useRef(null),[token,setToken]=useState(''),[widgetError,setWidgetError]=useState(false),[reset,setReset]=useState(0),[name,setName]=useState('');
+ const pt=lang==='pt',panelRef=useRef(null),[token,setToken]=useState(''),[widgetError,setWidgetError]=useState(false),[reset,setReset]=useState(0),[name,setName]=useState(()=>{try{return localStorage.getItem('arcade-player-name')||'';}catch{return '';}});
  const {panel,config,busy,error,result}=session;
  useEffect(()=>{if(!panel)return;const previous=document.activeElement,focus=setTimeout(()=>panelRef.current?.querySelector('[data-panel-focus]')?.focus({preventScroll:true}),40);return()=>{clearTimeout(focus);if(previous?.isConnected)previous.focus?.({preventScroll:true});};},[panel]);
  if(!panel)return null;
- const title=panel==='verify'?(pt?'Humano por enquanto.':'Human. For now.'):panel==='publish'?(pt?'Assine seu recorde.':'Put your name on it.'):(pt?'Os bots mais humanos.':'The most human bots.');
+ const title=panel==='verify'?(pt?'Quem está jogando?':'Who’s playing?'):panel==='publish'?(pt?'Assine seu recorde.':'Put your name on it.'):(pt?'Ranking':'Leaderboard');
  return <section ref={panelRef} data-glass-inner className="arcade-panel" role="region" aria-label={title} onKeyDown={event=>{if(event.key!=='Tab')event.stopPropagation();if(event.key==='Escape'){event.preventDefault();session.close();}}}>
-  <header><div><span>{game==='runner'?'DATA RUN':'DATA INVADERS'} / {panel==='verify'?'CHECKPOINT':'LEADERBOARD'}</span><h3>{title}</h3></div><button data-panel-focus onClick={session.close} disabled={busy} aria-label={pt?'Voltar ao jogo':'Back to game'}>×</button></header>
+  <header><div><h3>{title}</h3></div><button data-panel-focus onClick={session.close} disabled={busy} aria-label={pt?'Voltar ao jogo':'Back to game'}>×</button></header>
   {config?.mode==='test'&&<p className="arcade-test-label">{pt?'AMBIENTE LOCAL · CAPTCHA E RANKING DE TESTE':'LOCAL ENVIRONMENT · TEST CAPTCHA AND LEADERBOARD'}</p>}
   {panel==='verify'&&<div className="arcade-gate">
-   <p>{pt?'Prove que você não é um robô. Depois pilote um.':'Prove you are not a robot. Then pilot one.'}</p>
+   <div className="arcade-player-name"><label htmlFor="arcade-start-name">{pt?'Seu nome no ranking':'Your leaderboard name'}</label><input id="arcade-start-name" value={name} onChange={event=>setName(event.target.value)} maxLength={20} placeholder={pt?'Como você quer aparecer?':'What should we call you?'} autoComplete="nickname" disabled={busy}/><p>{pt?'Seu melhor resultado entra no ranking automaticamente.':'Your best result joins the leaderboard automatically.'}</p></div>
    {!config?<p role="status">{pt?'Preparando a verificação…':'Preparing verification…'}</p>:!config.available?<><p className="arcade-service-note">{config.error==='rate_limited'?friendlyError('rate_limited',pt):(pt?'A verificação está indisponível. Tente novamente em instantes.':'Verification is unavailable. Please try again shortly.')}</p><button className="arcade-secondary" onClick={session.refresh}>{pt?'Tentar conectar':'Try connecting'}</button></>:<>
     <Turnstile key={panel} sitekey={config.sitekey} game={game} lang={lang} onToken={setToken} onError={()=>setWidgetError(true)} reset={reset}/>
     {widgetError&&<button className="arcade-secondary" onClick={()=>{setWidgetError(false);setToken('');setReset(n=>n+1);}}>{pt?'Recarregar verificação':'Reload verification'}</button>}
-    <button className="arcade-primary" disabled={!token||busy} onClick={async()=>{await session.authorize(token);setToken('');setReset(n=>n+1);}}>{busy?(pt?'Verificando…':'Verifying…'):(pt?'Entrar na partida':'Enter the game')} <span>↗</span></button>
-    <small>{pt?'Partidas de até 10 minutos. Seu resultado só fica público se você decidir publicar.':'Runs last up to 10 minutes. Your result is only public if you choose to publish it.'}</small>
+    <button className="arcade-primary" disabled={!token||!name.trim()||busy} onClick={async()=>{await session.authorize(token,name.trim());setToken('');setReset(n=>n+1);}}>{busy?(pt?'Verificando…':'Verifying…'):(pt?'Entrar na partida':'Enter the game')} <span>↗</span></button>
+    <small>{pt?'Só seu apelido e recorde ficam públicos.':'Only your nickname and best score are public.'}</small>
    </>}
   </div>}
   {panel==='publish'&&<form className="arcade-publish" onSubmit={event=>{event.preventDefault();session.publish(name);}}>
@@ -66,9 +66,16 @@ function ArcadePanelContent({session,game,lang}){
   {panel==='ranking'&&<>
    <p className="arcade-board-note">{pt?'Uma posição por visitante. Seu melhor resultado fica.':'One position per visitor. Your best run stays.'}</p>
    {result&&<p role="status" className="arcade-saved">{result.rank?`${pt?'Sua posição':'Your position'}: #${result.rank}`:(pt?'Partida validada.':'Run verified.')} · {result.score} pts</p>}
-   {!config?.available?<p className="arcade-service-note">{config?.error==='rate_limited'?friendlyError('rate_limited',pt):(pt?'O ranking está indisponível agora.':'The leaderboard is currently unavailable.')}</p>:config.entries?.length?<ol className="arcade-ranking">{config.entries.map(entry=><li key={entry.id} className={entry.id===config.self?'is-you':''}><span>{String(entry.rank).padStart(2,'0')}</span><div><strong>{entry.name}</strong>{entry.id===config.self&&<small>{pt?'você':'you'}</small>}</div><b>{entry.score.toLocaleString(pt?'pt-BR':'en-US')}</b></li>)}</ol>:<div className="arcade-empty"><span>01</span><h4>{pt?'O primeiro lugar está livre.':'First place is waiting.'}</h4><p>{pt?'Jogue e publique seu recorde para estrear o ranking.':'Play and publish your score to open the leaderboard.'}</p></div>}
+   {!config?.available?<p className="arcade-service-note">{config?.error==='rate_limited'?friendlyError('rate_limited',pt):(pt?'O ranking está indisponível agora.':'The leaderboard is currently unavailable.')}</p>:config.entries?.length?<RankingRows entries={config.entries} personal={config.personal} self={config.self} pt={pt}/>:<div className="arcade-empty"><span>01</span><h4>{pt?'O primeiro lugar está livre.':'First place is waiting.'}</h4><p>{pt?'Jogue e publique seu recorde para estrear o ranking.':'Play and publish your score to open the leaderboard.'}</p></div>}
    <button className="arcade-secondary" onClick={session.refresh}>{pt?'Atualizar ranking':'Refresh leaderboard'}</button>
   </>}
   {error&&<p className="arcade-error" role="alert">{friendlyError(error,pt)}</p>}
  </section>;
+}
+
+export function RankingRows({entries,personal,self,pt}){
+ const rows=Array.isArray(entries)?entries.slice(0,10):[];
+ const outside=personal&&personal.rank>10;
+ function row(entry){return <li key={entry.id} className={entry.id===self?'is-you':''}><span>{String(entry.rank).padStart(2,'0')}</span><div><strong>{entry.name}</strong>{entry.id===self&&<small>{pt?'você':'you'}</small>}</div><b>{entry.score.toLocaleString(pt?'pt-BR':'en-US')}</b></li>;}
+ return <div className="arcade-board"><ol className="arcade-ranking">{rows.map(row)}</ol>{outside&&<><div className="arcade-ranking-gap" aria-hidden="true">···</div><ol className="arcade-ranking arcade-ranking-personal" start={personal.rank}>{row(personal)}</ol></>}</div>;
 }

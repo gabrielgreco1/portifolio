@@ -3,6 +3,8 @@ import {useEffect,useRef,useState} from 'react';
 import {motion} from 'framer-motion';
 import {useArcadeSession} from './useArcadeSession';
 import ArcadePanels from './ArcadePanels';
+import ArcadeResult from './ArcadeResult';
+import ArcadeIntro from './ArcadeIntro';
 import {resizeArcade} from '@/lib/arcade/protocol.mjs';
 import {arcadeViewport,arcadePointerX} from '@/lib/arcade/viewport.mjs';
 import {advanceInvaders,createInvaders,drawInvaders,pauseInvaders} from '@/lib/crawler/invaders.mjs';
@@ -11,8 +13,9 @@ function readBest(){try{return Math.max(0,Number(localStorage.getItem(bestKey))|
 function mergedInput(s){return{left:s.leftKey||s.leftTouch,right:s.rightKey||s.rightTouch,fire:s.fireKey||s.fireTouch||s.canvasFire,targetX:s.targetX};}
 
 export default function InvadersGame({lang,reduced,sound}){
-  const session=useArcadeSession('invaders'),recording=session.recording;
+  const session=useArcadeSession('invaders'),recording=session.recording,finish=session.finish;
   const pt=lang==='pt',canvas=useRef(null),display=useRef(null),state=useRef(null),picture=useRef(null),inputs=useRef({}),timers=useRef([]),bestRef=useRef(0);
+  const restartLayout=useRef(false);
   const [best,setBest]=useState(readBest),[ready,setReady]=useState(false),[hud,setHud]=useState({phase:'ready',score:0,wave:1,lives:3});
   useEffect(()=>{
     const surface=canvas.current,ctx=surface.getContext('2d');let raf,last=0,lastHud=0,lastSignature='',disposed=false,saved=false;
@@ -22,7 +25,7 @@ export default function InvadersGame({lang,reduced,sound}){
       if(!cssWidth||!cssHeight)return;const view=arcadeViewport(cssWidth,cssHeight),{width,height,scale}=view;display.current=view;
       if(!width||!height)return;surface.width=cssWidth*dpr;surface.height=cssHeight*dpr;ctx.setTransform(dpr*scale,0,0,dpr*scale,dpr*view.x,dpr*view.y);
       if(!state.current)state.current=createInvaders(width,height);
-      else{const s=state.current;resizeArcade('invaders',s,width,height);if(s.status==='running')pauseInvaders(s);}
+      else{const s=state.current;resizeArcade('invaders',s,width,height);if(s.status==='running'&&!restartLayout.current)pauseInvaders(s);restartLayout.current=false;}
       inputs.current={};lastSignature='';
     };
     resize();const observer=new ResizeObserver(resize);observer.observe(surface);
@@ -42,7 +45,8 @@ export default function InvadersGame({lang,reduced,sound}){
     window.addEventListener('blur',pause);document.addEventListener('visibilitychange',pause);
     return()=>{disposed=true;sound?.silence();cancelAnimationFrame(raf);observer.disconnect();activeTimers.forEach(clearTimeout);window.removeEventListener('blur',pause);document.removeEventListener('visibilitychange',pause);};
   },[reduced,recording,lang,sound]);
-  async function start(){const previous=state.current;if(!previous||!ready)return;const run=await session.requestStart(previous.width,previous.height);if(!run)return;inputs.current={};if(display.current)run.resize(display.current.width,display.current.height);state.current=run.state;requestAnimationFrame(()=>canvas.current?.focus({preventScroll:true}));}
+  useEffect(()=>{if(hud.phase==='over')finish();},[hud.phase,finish]);
+  async function start(){const previous=state.current;if(!previous||!ready)return;const run=await session.requestStart(previous.width,previous.height);if(!run)return;inputs.current={};if(display.current)run.resize(display.current.width,display.current.height);restartLayout.current=previous.status==='over';state.current=run.state;requestAnimationFrame(()=>requestAnimationFrame(()=>{const scroll=canvas.current?.closest('.arcade-scroll');if(scroll)scroll.scrollTop=0;canvas.current?.focus({preventScroll:true});}));}
   function pause(){inputs.current={};if(state.current)pauseInvaders(state.current);canvas.current?.focus({preventScroll:true});}
   function key(event,down){
     const control=event.target.closest('button')?.dataset.control;
@@ -64,19 +68,21 @@ export default function InvadersGame({lang,reduced,sound}){
   };}
   function steer(event){const rect=event.currentTarget.getBoundingClientRect();inputs.current.targetX=arcadePointerX(event.clientX,rect,display.current);}
   const phase=hud.phase,playing=['running','crashed'].includes(phase);
-  return <div className="invaders-game" onBlur={event=>{if(!event.currentTarget.contains(event.relatedTarget))inputs.current={};}} onKeyDown={e=>key(e,true)} onKeyUp={e=>key(e,false)}><ArcadePanels session={session} game="invaders" lang={lang}/><div inert={session.panel?true:undefined}>
+  return <div className="invaders-game" onBlur={event=>{if(!event.currentTarget.contains(event.relatedTarget))inputs.current={};}} onKeyDown={e=>key(e,true)} onKeyUp={e=>key(e,false)}><ArcadePanels session={session} game="invaders" lang={lang}/><div className={phase==='over'?'arcade-playfield arcade-playfield--finished':'arcade-playfield'} inert={session.panel?true:undefined}>
     <div className="arcade-hud"><div><span>{pt?'PONTOS':'SCORE'}</span><strong>{String(hud.score).padStart(5,'0')}</strong></div><div><span>{pt?'ONDA':'WAVE'}</span><strong>{String(hud.wave).padStart(2,'0')}</strong></div><div><span>{pt?'INTEGRIDADE':'INTEGRITY'}</span><strong className="invaders-health" aria-label={`${hud.lives}/3`}>{[1,2,3].map(n=><i key={n} className={hud.lives>=n?'alive':''}/>)}</strong></div><button onClick={pause} disabled={!['running','paused'].includes(phase)} aria-label={phase==='paused'?(pt?'Continuar jogo':'Resume game'):(pt?'Pausar jogo':'Pause game')}>{phase==='paused'?'▷':'Ⅱ'}</button></div>
     <div className={`runner-stage invaders-stage runner-stage--${phase}`}>
       <canvas ref={canvas} tabIndex="0" role="application" aria-label="Data Invaders" aria-describedby="invaders-instructions" data-wave={hud.wave} onPointerDown={event=>{if(phase!=='running')return;event.preventDefault();event.currentTarget.setPointerCapture(event.pointerId);inputs.current.canvasFire=true;steer(event);canvas.current.focus({preventScroll:true});}} onPointerMove={event=>{if(inputs.current.canvasFire)steer(event);}} onPointerUp={()=>{inputs.current.canvasFire=false;inputs.current.targetX=null;}} onPointerCancel={()=>{inputs.current.canvasFire=false;inputs.current.targetX=null;}}/>
-      {!playing&&<motion.div className="runner-overlay" key={phase} initial={{opacity:0,y:8}} animate={{opacity:1,y:0}} transition={{duration:reduced?.05:.22}}>
-        <button className="arcade-ranking-access" onClick={session.showRanking}>{pt?'Ranking ↗':'Leaderboard ↗'}</button><span className="runner-kicker">{phase==='over'?'HUMAN CHECK: FAILED':phase==='paused'?'ORBIT ON HOLD':'MOVE / VALIDATE / DEFEND'}</span>
-        <h3>{phase==='over'?(pt?'Robô confirmado.':'Robot confirmed.'):phase==='paused'?(pt?'Órbita em pausa.':'Orbit paused.'):'Data Invaders'}</h3>
+      {phase==='ready'&&<ArcadeIntro game="invaders" pt={pt} onStart={start} onRanking={session.showRanking} ready={ready} reduced={reduced}/>}
+      {phase==='paused'&&<motion.div className="runner-overlay" key={phase} initial={{opacity:0,y:8}} animate={{opacity:1,y:0}} transition={{duration:reduced?.05:.22}}>
+        <button className="arcade-ranking-access" onClick={session.showRanking}>{pt?'Ranking ↗':'Leaderboard ↗'}</button>
+        <h3>{phase==='over'?(pt?'ACESSO NEGADO':'ACCESS DENIED'):phase==='paused'?(pt?'Órbita em pausa.':'Orbit paused.'):'Data Invaders'}</h3>
         <p>{phase==='over'?`${hud.score} ${pt?'pontos':'points'} · ${pt?'onda':'wave'} ${hud.wave}`:phase==='paused'?(pt?'A próxima validação pode esperar.':'The next validation can wait.'):(pt?'Derrube firewalls. Desvie de fingerprints e rajadas 429.':'Break through firewalls. Dodge fingerprints and 429 bursts.')}</p>
         <div className="arcade-result-actions"><button className="arcade-primary" data-modal-autofocus disabled={!ready} onClick={phase==='paused'?pause:start}>{!ready?(pt?'Acordando o Tamagotchi…':'Waking the Tamagotchi…'):phase==='over'?(pt?'Defender de novo':'Defend again'):phase==='paused'?(pt?'Retomar defesa':'Resume defense'):(pt?'Defender os dados':'Defend the data')} <span>↗</span></button>{phase==='over'&&recording.current&&<button className="arcade-secondary" onClick={session.result?session.showRanking:session.showPublish}>{session.result?(pt?'Ver ranking':'View leaderboard'):(pt?'Publicar recorde':'Publish score')}</button>}</div>
         <small>{phase==='over'?`${pt?'Seu recorde':'Your best'}: ${best}`:(pt?'← → para mover. Segure espaço para atirar.':'← → to move. Hold space to fire.')}</small>
       </motion.div>}
       {phase==='crashed'&&<span className="runner-hit-label" role="status">{pt?'INTEGRIDADE PERDIDA':'INTEGRITY LOST'}</span>}
     </div>
+    {phase==='over'&&<ArcadeResult session={session} hud={hud} pt={pt} game="invaders" onRestart={start}/>}
     <div className="invaders-bottom"><p id="invaders-instructions"><span><kbd>←</kbd><kbd>→</kbd> {pt?'mover':'move'}</span><span><kbd>{pt?'ESPAÇO':'SPACE'}</kbd> {pt?'atirar':'fire'}</span><span><kbd>P</kbd> {pt?'pausar':'pause'}</span></p><div className="invaders-touch"><button data-control="left" {...touch('left')} onClick={accessibleTap} disabled={!playing} aria-label={pt?'Mover para esquerda':'Move left'}>←</button><button data-control="fire" {...touch('fire')} onClick={accessibleTap} disabled={!playing}>{pt?'Atirar':'Fire'} <span>↑</span></button><button data-control="right" {...touch('right')} onClick={accessibleTap} disabled={!playing} aria-label={pt?'Mover para direita':'Move right'}>→</button></div></div>
     <p className="sr-only" role="status">{phase==='over'?`${pt?'Fim de jogo':'Game over'}. ${hud.score} ${pt?'pontos':'points'}.`:phase==='paused'?(pt?'Jogo pausado':'Game paused'):''}</p>
   </div></div>;

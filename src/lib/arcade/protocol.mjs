@@ -5,7 +5,7 @@ export const TICK_RATE=60,MAX_TICKS=60*60*10,MAX_EVENTS=MAX_TICKS;
 export const validGame=game=>Object.hasOwn(GAME_VERSIONS,game);
 export function validSize(width,height){return Number.isInteger(width)&&Number.isInteger(height)&&width>=280&&width<=1500&&height>=320&&height<=430;}
 export function createArcadeEngine(run){
- const s=run.game==='runner'?createRunner(run.width,run.height,run.seed):createInvaders(run.width,run.height,run.seed);
+ const s=run.game==='runner'?createRunner(run.width,run.height,run.seed,run.pace??1):createInvaders(run.width,run.height,run.seed);
  (run.game==='runner'?startRunner:startInvaders)(s);return s;
 }
 export function resizeArcade(game,s,width,height){

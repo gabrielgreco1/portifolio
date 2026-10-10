@@ -1,9 +1,25 @@
 import {drawPetTension,drawPetCrouch} from './pet-render.mjs';
 import {runnerHazard,drawRunnerHazard} from './runner-obstacles.mjs';
 const GRAVITY=1750,JUMP=-650;
+const sprites=new WeakMap();
+// Rasterize the original articulated model once, at >2x its on-screen size.
+// Keep canvas work out of the jump loop; server replay never creates a canvas.
+export function prepareRunnerSprites(image){
+  if(sprites.has(image))return sprites.get(image);
+  if(typeof document==='undefined')return null;
+  const frames=[];
+  for(let frame=0;frame<33;frame++){
+    const surface=document.createElement('canvas');surface.width=256;surface.height=256;
+    const ctx=surface.getContext('2d');
+    if(frame<24)drawPetTension(ctx,image,0,Math.sin(frame/24*Math.PI*2)*5,0);
+    else drawPetCrouch(ctx,image,(frame-24)/8,0);
+    frames.push(surface);
+  }
+  sprites.set(image,frames);return frames;
+}
 const random=s=>{s.seed=(s.seed*1664525+1013904223)>>>0;return s.seed/4294967296;};
-export function createRunner(width=760,height=390,seed=Date.now()){
-  return {width,height,ground:height-65,playerX:width<500?66:108,y:0,velocity:0,status:'ready',time:0,distance:0,speed:245,score:0,packets:0,cleared:0,duckHeld:false,duckGrace:false,duck:0,lastKind:null,hazardCount:0,lastHit:null,seed:seed>>>0,spawn:.7,obstacles:[],tokens:[],particles:[],flash:0,overTime:0,serial:0};
+export function createRunner(width=760,height=390,seed=Date.now(),pace=2){
+  return {pace,width,height,ground:height-65,playerX:width<500?66:108,y:0,velocity:0,status:'ready',time:0,distance:0,speed:245,score:0,packets:0,cleared:0,duckHeld:false,duckGrace:false,duck:0,lastKind:null,hazardCount:0,lastHit:null,seed:seed>>>0,spawn:.7,obstacles:[],tokens:[],particles:[],flash:0,overTime:0,serial:0};
 }
 export function startRunner(s){s.status='running';}
 export function jumpRunner(s){
@@ -21,7 +37,7 @@ export function advanceRunner(s,delta){
   while(remaining>0&&s.status==='running'){const dt=Math.min(remaining,1/120);remaining-=dt;step(s,dt);}
 }
 function step(s,dt){
-  s.time+=dt;s.speed=Math.min(245+Math.min(185,s.time*2.1),Math.max(280,s.width-s.playerX+35));s.distance+=s.speed*dt;
+  s.time+=dt;s.speed=Math.min(245+Math.min(185,s.time*(s.pace===2?6:2.1)),Math.max(280,s.width-s.playerX+35));s.distance+=s.speed*dt;
   s.velocity+=GRAVITY*dt;s.y=Math.min(0,s.y+s.velocity*dt);if(s.y===0)s.velocity=0;
   if(s.duckGrace&&!s.obstacles.some(o=>o.kind==='scanner'&&o.x+o.width>s.playerX-22&&o.x<s.playerX+50))s.duckGrace=false;
   const crouched=(s.duckHeld||s.duckGrace)&&s.y>=-.5;s.duck+=(Number(crouched)-s.duck)*Math.min(1,dt*28);
@@ -52,8 +68,7 @@ function step(s,dt){
 
 export function drawRunner(ctx,s,image,{reduced=false}={}){
   const {width:w,height:h,ground:g,distance,time}=s;
-  const sky=ctx.createLinearGradient(0,0,0,h);sky.addColorStop(0,'#091918');sky.addColorStop(.8,'#182e25');sky.addColorStop(1,'#081815');ctx.fillStyle=sky;ctx.fillRect(0,0,w,h);
-  const haze=ctx.createRadialGradient(w*.68,g-80,5,w*.68,g-80,w*.65);haze.addColorStop(0,'#9acb6e1c');haze.addColorStop(1,'#9acb6e00');ctx.fillStyle=haze;ctx.fillRect(0,0,w,h);
+  ctx.fillStyle='#101b20';ctx.fillRect(0,0,w,h);
   // Slow server skyline and moving foreground give the runner a world, not a flat strip.
   for(let i=0;i<40;i++){
     const x=((i*73-distance*.05)%(w+90)+w+90)%(w+90),y=25+(i*47)%Math.max(30,g-140);
@@ -83,7 +98,7 @@ export function drawRunner(ctx,s,image,{reduced=false}={}){
   for(let row=0;row<4;row++){ctx.fillStyle='#92b47c10';ctx.fillRect(0,g+8+row*row*5,w,1);}
   for(let i=0;i<Math.ceil(w/45)+1;i++){ctx.fillStyle=i%3?'#61845444':'#b7d89180';ctx.fillRect(i*45-distance%45,g+4,15,2);}
   for(const token of s.tokens){
-    const bob=reduced?0:Math.sin(time*3+token.id)*4;ctx.save();ctx.translate(token.x,token.y+bob);ctx.shadowColor='#b9ea91';ctx.shadowBlur=12;ctx.fillStyle='#99be7070';ctx.fillRect(-10,-11,20,22);ctx.shadowBlur=0;ctx.strokeStyle='#c2e39f';ctx.lineWidth=1;ctx.strokeRect(-10.5,-11.5,21,23);ctx.fillStyle='#cee9af';ctx.font='bold 12px ui-monospace,monospace';ctx.textAlign='center';ctx.fillText('{}',0,4);ctx.restore();
+    const bob=reduced?0:Math.sin(time*3+token.id)*4;ctx.save();ctx.translate(token.x,token.y+bob);ctx.fillStyle='#99be7070';ctx.fillRect(-10,-11,20,22);ctx.shadowBlur=0;ctx.strokeStyle='#c2e39f';ctx.lineWidth=1;ctx.strokeRect(-10.5,-11.5,21,23);ctx.fillStyle='#cee9af';ctx.font='bold 12px ui-monospace,monospace';ctx.textAlign='center';ctx.fillText('{}',0,4);ctx.restore();
   }
   if(s.status==='ready'){drawRunnerHazard(ctx,runnerHazard('wall',w*.55,1),g,time,true);drawRunnerHazard(ctx,runnerHazard('scanner',Math.min(w*.83,w-90),2),g,time,true);}
   for(const obstacle of s.obstacles)drawRunnerHazard(ctx,obstacle,g,time,reduced);
@@ -93,7 +108,9 @@ export function drawRunner(ctx,s,image,{reduced=false}={}){
     ctx.save();ctx.translate(s.playerX,g+s.y+bob*(1-s.duck));if(s.y<0)ctx.rotate(-.045);ctx.imageSmoothingEnabled=true;
     ctx.scale(96/224,96/224);ctx.translate(-122,-197);
     const stride=s.y===0&&s.status==='running'&&!reduced?Math.sin(time*22)*5:0;
-    if(s.duck>.002)drawPetCrouch(ctx,image,s.duck,stride);else drawPetTension(ctx,image,0,stride,0);ctx.restore();
+    const atlas=prepareRunnerSprites(image);
+    if(atlas){const frame=s.duck>.002?24+Math.round(s.duck*8):s.y===0&&s.status==='running'&&!reduced?Math.floor((time*22/(Math.PI*2)%1)*24):0;ctx.drawImage(atlas[frame],0,0);}
+    else if(s.duck>.002)drawPetCrouch(ctx,image,s.duck,stride);else drawPetTension(ctx,image,0,stride,0);ctx.restore();
   }
   for(const p of s.particles){ctx.globalAlpha=Math.min(1,p.life);ctx.fillStyle=p.color;ctx.fillRect(p.x,p.y,3,3);}ctx.globalAlpha=1;
   if(s.status==='running'&&!reduced&&s.y===0)for(let i=0;i<4;i++){const life=(time*4+i*.23)%1;ctx.globalAlpha=(1-life)*.35;ctx.fillStyle='#c4dc9e';ctx.fillRect(s.playerX-30-life*36,g-3-life*4,3,2);}ctx.globalAlpha=1;
