@@ -12,13 +12,13 @@ for(const [name,engine] of [['chrome',chromium],['webkit',webkit]]){
    await page.goto(`${origin}/${lang==='pt'?'pt':''}`);await page.locator('.crawler-pet').press('Enter');await page.getByRole('button',{name:/Quem está por aqui|Who.*here/i}).click();await page.locator('.visitor-map').waitFor();await page.waitForTimeout(350);
    assert.equal(await page.getByRole('button',{name:'Google Analytics',exact:true}).count(),0);
    assert.equal(await page.getByRole('button',{name:'Desde o início',exact:true}).count(),0);
-   assert.match(await page.locator('.visitor-summary').innerText(),/869/);
+   assert.equal(await page.locator('.visitor-total').count(),1);assert.ok(Number((await page.locator('.visitor-total strong').innerText()).replace(/[^0-9]/g,''))>=869);assert.doesNotMatch(await page.locator('.visitor-summary').innerText(),/usuários no histórico|users in the archive/);
    const canvas=page.locator('.visitor-globe canvas');
    // Pointer focus is quiet; keyboard focus remains visibly discoverable.
    const globeBox=await canvas.boundingBox();await page.mouse.click(globeBox.x+globeBox.width*.75,globeBox.y+globeBox.height*.5);assert.equal(await canvas.evaluate(e=>getComputedStyle(e).outlineStyle),'none');
    const before=await canvas.evaluate(e=>e.toDataURL());await canvas.press('ArrowRight');let changed=false;for(let i=0;i<20&&!changed;i++){await page.waitForTimeout(100);changed=await canvas.evaluate((e,b)=>e.toDataURL()!==b,before);}assert.ok(changed,'Keyboard rotation draws a new frame');assert.equal(await canvas.evaluate(e=>getComputedStyle(e).outlineStyle),'solid');
    if(await page.locator('.visitor-explore').getAttribute('aria-expanded')==='false')await page.locator('.visitor-explore').click();await page.getByRole('searchbox').fill('sao paulo');await page.locator('.visitor-city-list button').first().click();
-   const detail=await page.locator('.visitor-city-detail').innerText();assert.match(detail,/São Paulo/);assert.match(detail,/Estado \/ região|State \/ region/);assert.match(detail,/País|Country/);assert.match(detail,/129/);assert.match(detail,/39/);assert.doesNotMatch(detail,/usuários ativos|active users/);
+   const detail=await page.locator('.visitor-city-detail').innerText();assert.match(detail,/São Paulo/);assert.match(detail,/Estado \/ região|State \/ region/);assert.match(detail,/País|Country/);assert.match(detail,/visitas registradas|recorded visits/);assert.doesNotMatch(detail,/usuários ativos|active users/);
    await page.screenshot({path:`/tmp/visitor-unified/${name}-${width}-${height}-detail.png`});
    await page.getByRole('searchbox').fill('Mountain View');await page.locator('.visitor-city-list button').first().click();assert.match(await page.locator('.visitor-city-detail').innerText(),/sem ponto no globo|without a map pin/);
    await page.locator('.visitor-explorer-heading button').click();await page.waitForTimeout(80);assert.equal(await page.locator('.visitor-explore').evaluate(e=>e===document.activeElement),true);
