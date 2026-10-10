@@ -5,7 +5,7 @@ const origin=process.env.TEST_ORIGIN||'http://localhost:4323';
 await mkdir('/tmp/visitor-scene',{recursive:true});
 for(const [name,engine] of [['chrome',chromium],['webkit',webkit]]){
  const browser=await engine.launch(name==='chrome'?{channel:'chrome'}:{});
- try{for(const [width,height,lang] of [[1440,1000,'pt'],[390,844,'pt'],[320,568,'pt'],[844,390,'en']]){
+ try{for(const [width,height,lang] of [[1440,1000,'pt'],[1440,700,'pt'],[390,844,'pt'],[320,568,'pt'],[844,390,'en']]){
   const page=await browser.newPage({viewport:{width,height},reducedMotion:'reduce'}),errors=[];
   page.on('pageerror',error=>errors.push(error.message));
   try{
@@ -17,7 +17,8 @@ for(const [name,engine] of [['chrome',chromium],['webkit',webkit]]){
    await page.getByRole('button',{name:'Google Analytics',exact:true}).click();
    await page.waitForTimeout(400);
    assert.equal(await page.locator('.visitor-numbers strong').first().textContent(),'869');
-   await page.screenshot({path:`/tmp/visitor-scene/${name}-${width}.png`});
+   if(width===1440&&height===700){const intro=await page.locator('.visitor-intro').boundingBox(),counter=await page.locator('.visitor-numbers').boundingBox(),cta=await page.locator('.visitor-explore').boundingBox();assert.ok(intro.y+intro.height<counter.y-25);assert.ok(counter.y+counter.height<cta.y);}
+   await page.screenshot({path:`/tmp/visitor-scene/${name}-${width}-${height}.png`});
    const globe=page.locator('.visitor-globe>svg'),before=await page.locator('.visitor-globe-coordinate').textContent();
    await globe.press('ArrowRight');assert.notEqual(await page.locator('.visitor-globe-coordinate').textContent(),before);
    await page.locator('.visitor-explore').click();
