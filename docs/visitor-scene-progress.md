@@ -25,4 +25,10 @@ All three browser suites passed in Chrome and WebKit at desktop, 390×844, 320×
 - `npm run lint` and `npm run build` passed.
 - Native Chrome inspected the empty-location state against actual local data; geography remains empty when location is unavailable.
 
-Deployment verification is pending. Local checks do not prove publication or production data retention.
+## Production verification
+
+PR11 merged as `b815417ec0241d6cefb2a5fb9e99d130abd3c767`; Vercel deployment `E9PKKYM3nvBD7mfJBDce2CnQbp25` reached Ready and gabrielgreco.com rendered the new observatory in native Chrome.
+
+The read-only after-deploy comparison confirmed 42 cumulative visits (previously 41), the same 23 cities, unchanged first-seen timestamp for every pre-existing city, no reduced city count and unchanged overall history start. All original data survived. Evidence: `/tmp/observatory-production-after.json` compared with the saved baseline.
+
+A subsequent usability refinement makes the history mode's leading counter show cumulative visits rather than current presence, so the total is visible on small mobile screens too. Live mode still leads with current presence. The intercepted-fixture browser suite explicitly asserts this mode-sensitive counter.

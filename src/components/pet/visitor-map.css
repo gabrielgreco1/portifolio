@@ -138,3 +138,11 @@
 .visitor-pin-label rect{fill:#111e2bf2;stroke:#dfd5b659;stroke-width:.6}
 .visitor-pin-label text{font:12px Arial,sans-serif;fill:#eee6d4}
 .visitor-pin-label .visitor-pin-label-count{font-size:9px;fill:#aabbc6}
+@media(min-width:601px) and (min-height:651px) and (max-height:760px){
+  .visitor-map--scene .visitor-header h2{font-size:48px;margin-top:35px;max-width:300px}
+  .visitor-map--scene .visitor-numbers{top:310px}
+  .visitor-map--scene .visitor-numbers>div:first-child strong{font-size:64px}
+  .visitor-map--scene .visitor-numbers>div:not(:first-child){display:none}
+  .visitor-explore{bottom:130px}
+  .visitor-scene-state{top:410px}
+}
