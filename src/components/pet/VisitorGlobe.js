@@ -25,7 +25,7 @@ export default memo(function VisitorGlobe({points,selected,onSelect,lang,reduced
    ctx.beginPath();path(borders);ctx.strokeStyle='#e4ebdd38';ctx.lineWidth=.55;ctx.stroke();
    const shade=ctx.createRadialGradient(285,200,40,360,296,r);shade.addColorStop(0,'#e7f0dc12');shade.addColorStop(.6,'#00000000');shade.addColorStop(1,'#00000070');ctx.beginPath();ctx.arc(360,296,r,0,Math.PI*2);ctx.fillStyle=shade;ctx.fill();
    hits.current=[];
-   for(const p of points){if(!located(p)||geoDistance([p.longitude,p.latitude],center)>=Math.PI/2)continue;
+   for(const p of [...points].reverse()){if(!located(p)||geoDistance([p.longitude,p.latitude],center)>=Math.PI/2)continue;
     const [x,y]=projection([p.longitude,p.latitude]),radius=p.active?5:2.2+Math.min(2,Math.log2((p.visits||p.activeUsers||0)+1)*.3);
     ctx.beginPath();ctx.arc(x,y,radius,0,Math.PI*2);ctx.fillStyle=p.active?'#92edbb':p.id===selected?.id?'#ffffff':'#e3c489';ctx.fill();
     if(p.active||p.id===selected?.id){ctx.beginPath();ctx.arc(x,y,radius+5,0,Math.PI*2);ctx.strokeStyle=p.active?'#92edbb80':'#ffffff99';ctx.lineWidth=1;ctx.stroke();}

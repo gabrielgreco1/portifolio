@@ -26,3 +26,9 @@ Pointer clicks do not paint a rectangular outline. Keyboard users get a `:focus-
 Screenshots: `/tmp/visitor-unified/chrome-historical-tooltip.png`, `chrome-1440-900-detail.png`, `chrome-390-844.png`, `chrome-320-568.png`, `chrome-844-390.png`. Screenshots use the local visitor store plus real checked-in archive; local live counters are not production counts.
 
 No deployment or production write was performed by this subtask.
+
+## Follow-up: stale presence after a failed refresh
+
+A failed poll now renders live presence as unavailable (—), with a neutral status dot, and projects live pin counts as zero while preserving the fetched historical visit totals and every archive metric. Recovery restores only the newly confirmed presence. The cached source response is never mutated. Active pins are drawn last so dense historical city clusters cannot cover them.
+
+`node scripts/check-visitor-recovery.mjs` passed a browser-level success → HTTP 503 → reconnect cycle, including actual canvas pixel checks (live green present → absent → present), unchanged 45/869 aggregate counts, unchanged 45 visit / 129 historical-user city details, and removal/restoration of online wording. The fixture is browser-intercepted test data only; no store is modified.

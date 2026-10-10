@@ -21,7 +21,7 @@ export default function VisitorMap({open,onClose,lang}){
   async function refresh(){if(document.hidden||busy)return;busy=true;try{const response=await fetch('/api/visitors',{signal:controller.signal});if(!response.ok)throw Error('offline');const next=await response.json();if(!next.available)throw Error('unavailable');setData(next);setFailed(false);}catch{if(!controller.signal.aborted)setFailed(true);}finally{busy=false;}}
   void refresh();const interval=setInterval(refresh,15000);document.addEventListener('visibilitychange',refresh);return()=>{controller.abort();clearInterval(interval);document.removeEventListener('visibilitychange',refresh);};
  },[open,retry]);
- const points=useMemo(()=>mapPoints(googleHistory.points,data?.points||[]).map(p=>({...p,label:`${pt?'Cidade':'City'}: ${p.city==='(not set)'?(pt?'Cidade não informada':'City not reported'):p.city} · ${pt?'Estado/região':'State/region'}: ${p.regionDisplay||p.region|| (pt?'Estado/região não informado':'State/region not reported')} · ${pt?'País':'Country'}: ${countryName(p.country)} — ${pointText(p,lang)}`})),[data,lang,pt,countryName]);
+ const points=useMemo(()=>mapPoints(googleHistory.points,(data?.points||[]).map(point=>failed?{...point,active:0}:point)).map(p=>({...p,label:`${pt?'Cidade':'City'}: ${p.city==='(not set)'?(pt?'Cidade não informada':'City not reported'):p.city} · ${pt?'Estado/região':'State/region'}: ${p.regionDisplay||p.region|| (pt?'Estado/região não informado':'State/region not reported')} · ${pt?'País':'Country'}: ${countryName(p.country)} — ${pointText(p,lang)}`})),[data,failed,lang,pt,countryName]);
  const selected=points.find(p=>p.id===selectedId);
  const select=useCallback(point=>{setSelectedId(point.id);setExploring(true);},[]);
  const normalize=value=>String(value).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
@@ -34,7 +34,7 @@ export default function VisitorMap({open,onClose,lang}){
   <div className="visitor-observatory">
    <VisitorGlobe points={points} selected={selected} onSelect={select} lang={lang} reduced={reduced}/>
    <div className="visitor-summary">
-    <div className="visitor-online"><i/><strong>{data?format(data.active):'—'}</strong><span>{pt?'online agora':'online now'}<small>{data?.mode==='local'?(pt?'Ambiente local':'Local environment'):pt?'Atualiza a cada 15 segundos':'Updates every 15 seconds'}</small></span></div>
+    <div className={`visitor-online ${failed||!data?'is-unavailable':''}`}><i/><strong>{data&&!failed?format(data.active):'—'}</strong><span>{failed?(pt?'ao vivo indisponível':'live unavailable'):(pt?'online agora':'online now')}<small>{data?.mode==='local'?(pt?'Ambiente local':'Local environment'):pt?'Atualiza a cada 15 segundos':'Updates every 15 seconds'}</small></span></div>
     <div className="visitor-total"><strong>{data?format(data.total):'—'}</strong><span>{pt?'visitas registradas':'recorded visits'}<small>{data?.startedAt?`${pt?'desde':'since'} ${new Date(data.startedAt).toLocaleDateString(locale)}`:data?(pt?'Nenhuma visita registrada ainda':'No visits recorded yet'):(pt?'Conectando ao registro…':'Connecting to the record…')}</small></span></div>
     <div className="visitor-total"><strong>{format(googleHistory.reportedTotals.activeUsers)}</strong><span>{pt?'usuários no histórico':'users in the archive'}<small>{pt?'Relatório anterior · até 09/10/2026':'Earlier report · through Oct 9, 2026'}</small></span></div>
     <p className="visitor-coverage">{format(cities)} {pt?'localidades nos dois registros':'locations across both records'}</p>
