@@ -22,6 +22,7 @@ export default function ArcadeIntro({game,pt,onStart,onRanking,ready,reduced}){
     <div className="arcade-intro-copy">
       <h3>{runner?'Data Run':'Data Invaders'}</h3>
       <p>{runner?(pt?'Você e um crawler. O resto da internet contra.':'You and a crawler. Against the rest of the internet.'):(pt?'Uma última linha de defesa. E quatro perninhas.':'One last line of defense. And four little legs.')}</p>
+      {!runner&&<div className="invaders-briefing"><div className="invaders-keyboard-guide"><span><kbd>←</kbd><kbd>→</kbd> {pt?'mover':'move'}</span><span><kbd>{pt?'Espaço':'Space'}</kbd> {pt?'segure para atirar':'hold to fire'}</span><span><kbd>P</kbd> {pt?'pausar':'pause'}</span></div><p className="invaders-touch-guide">{pt?'Arraste para mover e atirar. Ou use os três controles.':'Drag to move and fire. Or use the three controls.'}</p><p className="invaders-ranking-rule">{pt?'Sua melhor horda vale no ranking. Elimine rápido para pontuar mais.':'Your best wave makes the leaderboard. Eliminate faster to score more.'}</p></div>}
       <button type="button" className="arcade-intro-start" onClick={onStart} disabled={!ready} data-modal-autofocus>{!ready?(pt?'Preparando…':'Getting ready…'):runner?(pt?'Bora fugir':'Let’s escape'):(pt?'Assumir o controle':'Take control')}<span aria-hidden="true">→</span></button>
       <button type="button" className="arcade-intro-ranking" onClick={onRanking}>{pt?'Ver ranking':'Leaderboard'}<span aria-hidden="true">↗</span></button>
     </div>

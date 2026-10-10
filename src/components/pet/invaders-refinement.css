@@ -1,0 +1,63 @@
+.invaders-briefing{margin:-8px 0 20px}
+.arcade-archive-toggle{display:block;align-self:flex-start;border:0;border-bottom:1px solid #7e939766;background:none;padding:3px 0 7px;margin:0 0 16px;color:#b5c3cb;font:12px Arial,sans-serif;cursor:pointer}
+.arcade-archive-toggle:focus-visible{outline:2px solid #dde7b9;outline-offset:4px}
+.invaders-keyboard-guide{display:flex;flex-wrap:wrap;gap:8px 14px;color:#c1cbd0;font:12px/1.7 Arial,sans-serif}
+.invaders-keyboard-guide>span{white-space:nowrap}
+.invaders-keyboard-guide kbd{display:inline-block;min-width:20px;padding:1px 5px;border:1px solid #54616a;border-bottom-width:2px;border-radius:4px;font:11px/1.6 Arial,sans-serif;color:#edf0e6;text-align:center;margin-right:3px}
+.arcade-intro .invaders-ranking-rule{font:12px/1.5 Arial,sans-serif;color:#c6d0ae;margin:12px 0 0;max-width:275px}
+.invaders-touch-guide{display:none}
+.invaders-game .invaders-bottom{display:none}
+.pet-arcade:has(.invaders-game) .arcade-footer{display:none}
+.invaders-hud{gap:26px}
+.invaders-hud .invaders-lives{margin-left:auto}
+.invaders-hud .invaders-best-score strong{color:#d4dfb6}
+.invaders-hud strong{font-variant-numeric:tabular-nums}
+.invaders-game .invaders-pause{background:#10191ce8}
+.invaders-pause h3{font-size:36px}
+.invaders-pause .arcade-primary{margin:12px 0}
+.invaders-game[data-phase=ready] .arcade-hud{display:none}
+.invaders-game[data-phase=ready] .invaders-stage{height:440px}
+.invaders-game .invaders-stage{outline:none}
+.invaders-connection{position:absolute;inset:0;z-index:8;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;background:#111a22ed;color:#e5eadc;text-align:center}
+.invaders-connection strong{font:700 28px Arial,sans-serif;letter-spacing:-1px}
+.invaders-connection p{font:13px/1.5 Arial,sans-serif;max-width:280px;color:#b1bfc7}
+@media(pointer:coarse){
+ .invaders-keyboard-guide{display:none}
+ .arcade-intro .invaders-touch-guide{display:block;font:12px/1.45 Arial,sans-serif;color:#b5c4cf;margin:0}
+ .invaders-game[data-phase=running] .invaders-bottom,.invaders-game[data-phase=paused] .invaders-bottom{display:flex;justify-content:center;padding:10px 18px;background:#10191f;border-top:1px solid #ffffff14}
+ .invaders-game .invaders-touch{display:grid;grid-template-columns:64px minmax(110px,1fr) 64px;width:100%;gap:12px}
+ .invaders-game .invaders-touch button{min-height:48px;border-radius:9px;background:#26343d;border:1px solid #52616a;color:#e5eadb;touch-action:none}
+ .invaders-game .invaders-touch button:active{background:#485643}
+}
+@media(max-width:620px){
+ .invaders-hud{gap:12px;padding:13px 14px}
+ .invaders-hud>div>span{font-size:8px;letter-spacing:.04em}
+ .invaders-hud strong{font-size:20px}
+ .invaders-hud .invaders-lives{margin-left:auto}
+ .invaders-hud>button{width:30px;min-width:30px}
+ .invaders-hud .invaders-health{gap:3px}
+ .invaders-hud .invaders-health i{width:5px;height:13px}
+ .invaders-briefing{grid-column:1/-1;grid-row:3;margin:0 0 4px}
+ .arcade-intro--invaders .arcade-intro-start{grid-row:4}
+ .arcade-intro--invaders .arcade-intro-copy>p{display:none}
+ .arcade-intro .invaders-ranking-rule{font-size:11px;line-height:1.4;margin:6px 0 0;max-width:none}
+ .invaders-keyboard-guide{font-size:10px;gap:4px 8px}
+ .invaders-keyboard-guide kbd{font-size:10px;padding:0 3px;min-width:16px}
+ .invaders-game[data-phase=ready] .invaders-stage{height:365px}
+ .invaders-game .arcade-intro-scene{height:145px}
+}
+@media(max-height:650px) and (max-width:620px){
+ .invaders-game[data-phase=ready] .invaders-stage{height:320px}
+ .invaders-game .arcade-intro-scene{height:115px}
+ .invaders-hud{gap:9px;padding:10px}
+ .invaders-hud strong{font-size:17px}
+}
+@media(max-height:520px) and (min-width:621px){
+ .invaders-game[data-phase=ready] .invaders-stage{height:250px;min-height:230px}
+ .invaders-game .arcade-intro-copy>p{display:none}
+ .invaders-briefing{margin:5px 0 12px}
+ .arcade-intro .invaders-ranking-rule{font-size:11px;margin-top:7px}
+ .invaders-game .arcade-intro-scene{height:190px}
+ .invaders-game[data-phase=running] .invaders-bottom{padding:5px 16px}
+ .invaders-game .invaders-touch button{min-height:38px}
+}

@@ -41,7 +41,10 @@ export default function ArcadePanels(props){
 }
 function ArcadePanelContent({session,game,lang}){
  const pt=lang==='pt',panelRef=useRef(null),[token,setToken]=useState(''),[widgetError,setWidgetError]=useState(false),[reset,setReset]=useState(0),[name,setName]=useState(()=>{try{return localStorage.getItem('arcade-player-name')||'';}catch{return '';}});
- const {panel,config,busy,error,result}=session;
+ const [legacy,setLegacy]=useState(false),[archive,setArchive]=useState(null);
+ const {panel,config:currentConfig,busy,error,result}=session;
+ const config=panel==='ranking'&&legacy?archive:currentConfig;
+ useEffect(()=>{if(!legacy)return;const controller=new AbortController();fetch('/api/arcade?game=invaders&legacy=1',{signal:controller.signal,cache:'no-store'}).then(async response=>{if(!response.ok)throw Error('unavailable');return response.json();}).then(setArchive).catch(()=>{if(!controller.signal.aborted)setArchive({available:false});});return()=>controller.abort();},[legacy]);
  useEffect(()=>{if(!panel)return;const previous=document.activeElement,focus=setTimeout(()=>panelRef.current?.querySelector('[data-panel-focus]')?.focus({preventScroll:true}),40);return()=>{clearTimeout(focus);if(previous?.isConnected)previous.focus?.({preventScroll:true});};},[panel]);
  if(!panel)return null;
  const title=panel==='verify'?(pt?'Quem está jogando?':'Who’s playing?'):panel==='publish'?(pt?'Assine seu recorde.':'Put your name on it.'):(pt?'Ranking':'Leaderboard');
@@ -64,10 +67,11 @@ function ArcadePanelContent({session,game,lang}){
    <button className="arcade-primary" disabled={busy}>{busy?(pt?'Validando partida…':'Validating run…'):(pt?'Publicar meu recorde':'Publish my score')} <span>↗</span></button>
   </form>}
   {panel==='ranking'&&<>
-   <p className="arcade-board-note">{pt?'Uma posição por visitante. Seu melhor resultado fica.':'One position per visitor. Your best run stays.'}</p>
-   {result&&<p role="status" className="arcade-saved">{result.rank?`${pt?'Sua posição':'Your position'}: #${result.rank}`:(pt?'Partida validada.':'Run verified.')} · {result.score} pts</p>}
-   {!config?.available?<p className="arcade-service-note">{config?.error==='rate_limited'?friendlyError('rate_limited',pt):(pt?'O ranking está indisponível agora.':'The leaderboard is currently unavailable.')}</p>:config.entries?.length?<RankingRows entries={config.entries} personal={config.personal} self={config.self} pt={pt}/>:<div className="arcade-empty"><span>01</span><h4>{pt?'O primeiro lugar está livre.':'First place is waiting.'}</h4><p>{pt?'Jogue e publique seu recorde para estrear o ranking.':'Play and publish your score to open the leaderboard.'}</p></div>}
-   <button className="arcade-secondary" onClick={session.refresh}>{pt?'Atualizar ranking':'Refresh leaderboard'}</button>
+   <p className="arcade-board-note">{legacy?(pt?'Recordes preservados da versão anterior, por total da partida.':'Preserved records from the previous version, by total run score.'):game==='invaders'?(pt?'Melhor pontuação em uma única horda. Eliminações mais rápidas valem mais.':'Best score in a single wave. Faster eliminations earn more.'):(pt?'Uma posição por visitante. Seu melhor resultado fica.':'One position per visitor. Your best run stays.')}</p>
+   {game==='invaders'&&<button className="arcade-archive-toggle" aria-pressed={legacy} onClick={()=>setLegacy(value=>!value)}>{legacy?(pt?'Voltar ao ranking de hordas':'Back to wave leaderboard'):(pt?'Ver recordes anteriores':'View previous records')}</button>}
+   {!legacy&&result&&<p role="status" className="arcade-saved">{result.rank?`${pt?'Sua posição':'Your position'}: #${result.rank}`:(pt?'Partida validada.':'Run verified.')} · {result.score} pts</p>}
+   {legacy&&!archive?<p className="arcade-service-note" role="status">{pt?'Buscando recordes anteriores…':'Loading previous records…'}</p>:!config?.available?<p className="arcade-service-note">{config?.error==='rate_limited'?friendlyError('rate_limited',pt):(pt?'O ranking está indisponível agora.':'The leaderboard is currently unavailable.')}</p>:config.entries?.length?<RankingRows entries={config.entries} personal={config.personal} self={config.self} pt={pt}/>:<div className="arcade-empty"><span>01</span><h4>{legacy?(pt?'Nenhum recorde anterior.':'No previous records.'):(pt?'O primeiro lugar está livre.':'First place is waiting.')}</h4><p>{legacy?(pt?'As próximas partidas entram no ranking de hordas.':'New games join the wave leaderboard.'):(pt?'Jogue para estrear o ranking. Seu recorde é salvo automaticamente.':'Play to open the leaderboard. Your best score is saved automatically.')}</p></div>}
+   {!legacy&&<button className="arcade-secondary" onClick={session.refresh}>{pt?'Atualizar ranking':'Refresh leaderboard'}</button>}
   </>}
   {error&&<p className="arcade-error" role="alert">{friendlyError(error,pt)}</p>}
  </section>;

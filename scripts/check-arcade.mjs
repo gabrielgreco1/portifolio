@@ -16,15 +16,15 @@ try{for(const[game,width,height]of[['runner',1280,900],['invaders',390,844]]){
   if(screenCheck){
    const canvas=page.getByRole('application',{name:game==='runner'?'Data Run':'Data Invaders'});
    await canvas.press('f');await page.locator('.runner-stage--paused').waitFor();
-   await page.getByRole('button',{name:game==='runner'?/Continuar corrida/:/Retomar defesa/}).click();
+   await page.getByRole('button',{name:game==='runner'?/Continuar corrida/:'Continuar jogo',exact:game==='invaders'}).click();
    await page.waitForTimeout(250);await canvas.press('f');await page.locator('.runner-stage--paused').waitFor();
    if(game==='invaders')await page.setViewportSize({width:844,height:390});
-   await page.waitForTimeout(250);await page.getByRole('button',{name:game==='runner'?/Continuar corrida/:/Retomar defesa/}).click();
+   await page.waitForTimeout(250);await page.getByRole('button',{name:game==='runner'?/Continuar corrida/:'Continuar jogo',exact:game==='invaders'}).click();
   }
   if(game==='invaders'){const canvas=page.getByRole('application',{name:'Data Invaders'});await canvas.focus();await page.keyboard.down('Space');await page.keyboard.down('ArrowLeft');await page.waitForTimeout(700);await page.keyboard.up('ArrowLeft');await page.keyboard.down('ArrowRight');await page.waitForTimeout(1400);await page.keyboard.up('ArrowRight');await page.waitForTimeout(3000);await page.keyboard.up('Space');}
-  await page.getByRole('heading',{name:'BLOQUEADO.'}).waitFor({timeout:90000});await page.screenshot({path:`${out}/${game}-over.png`});
-  const score=Number(await page.locator('.arcade-hud>div strong').first().innerText());assert.ok(score>0);
-  await page.locator('.arcade-result-panel .is-you').waitFor({timeout:15000});assert.ok((await page.locator('.arcade-result-status').innerText()).includes('ranking'));await page.screenshot({path:`${out}/${game}-ranking.png`});
+  await page.locator('.arcade-result-panel').waitFor({timeout:90000});await page.screenshot({path:`${out}/${game}-over.png`});
+  const score=Number((await page.locator(game==='runner'?'.arcade-hud>div strong':'.invaders-result-score strong').first().innerText()).replace(/[^0-9]/g,''));assert.ok(score>0);
+  await page.locator('.arcade-result-panel .is-you').waitFor({timeout:15000});assert.match(await page.locator(game==='runner'?'.arcade-result-status':'.invaders-result-save').innerText(),/ranking|salvo/);await page.screenshot({path:`${out}/${game}-ranking.png`});
   const independent=await browser.newContext(),response=await independent.request.get(`${origin}/api/arcade?game=${game}`),publicBoard=await response.json();assert.ok(publicBoard.entries.length>0);const saved=await(await context.request.get(`${origin}/api/arcade?game=${game}`)).json();assert.equal(saved.personal.score,score);assert.equal(saved.personal.name,`TEST LOCAL ${game}`);await independent.close();assert.deepEqual(errors,[]);
   console.log(`${game}: official test widget → server verification → real game → server replay → persisted score visible from another visitor passed${screenCheck?' (fullscreen changes and rotation included)':''}`);
  }catch(error){await page.screenshot({path:`${out}/${game}-failure.png`});console.log((await page.locator('.pet-arcade').innerText()).slice(0,2500));throw error;}finally{await context.close();}
