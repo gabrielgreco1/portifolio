@@ -12,7 +12,7 @@ test('left and right movement are responsive, bounded and independent of firing'
 test('WAF armor needs two hits and awards points only when destroyed',()=>{
  const s=isolated('waf');s.enemyCooldown=100;s.enemies.push({...enemy('fingerprint',300),id:'other',col:1});
  const hit=()=>{const e=s.enemies[0];s.shots.push({x:e.x,y:e.y+20});run(s,.025);};
- hit();assert.equal(s.enemies[0].hp,1);assert.equal(s.score,0);hit();assert.equal(s.enemies[0].alive,false);assert.equal(s.score,40);run(s,.05);assert.equal(s.score,40);
+ hit();assert.equal(s.enemies[0].hp,1);assert.equal(s.score,0);hit();assert.equal(s.enemies[0].alive,false);assert.equal(s.score,80);run(s,.05);assert.equal(s.score,80);
 });
 test('player damage has a grace period and three distinct hits end the run',()=>{
  const s=createInvaders(390,340,4);startInvaders(s);s.enemyCooldown=100;
@@ -22,7 +22,7 @@ test('player damage has a grace period and three distinct hits end the run',()=>
  s.threats=[];run(s,1.6);hit();run(s,.05);assert.equal(s.status,'over');assert.equal(s.lives,0);
 });
 test('cleared waves advance, remove old projectiles and pause freezes the complete formation',()=>{
- const s=createInvaders(760,405,4);startInvaders(s);s.enemies.forEach(e=>{e.alive=false;});s.threats.push({x:100,y:200,vx:0,vy:180});run(s,.1);assert.equal(s.threats.length,0);run(s,1.5);assert.equal(s.wave,2);assert.equal(s.score,120);assert.equal(s.enemies.length,24);
+ const s=createInvaders(760,405,4);startInvaders(s);s.enemies.forEach(e=>{e.alive=false;});s.threats.push({x:100,y:200,vx:0,vy:180});run(s,.1);assert.equal(s.threats.length,0);run(s,1.5);assert.equal(s.wave,2);assert.equal(s.score,100);assert.equal(s.enemies.length,24);
  pauseInvaders(s);const snapshot=JSON.stringify(s);run(s,2,{fire:true,right:true});assert.equal(JSON.stringify(s),snapshot);pauseInvaders(s);run(s,.2,{right:true});assert.ok(s.playerX>380);
 });
 test('waves introduce rate limits, honeypots and an armored guardian every fourth wave',()=>{
@@ -49,5 +49,5 @@ test('a low formation still gives at least half a second before a projectile rea
  assert.ok(s.threats.length);const bullet=s.threats[0];assert.ok((s.playerY-47-bullet.y)/bullet.vy>=.47);
 });
 test('pressure rises within and across waves, while bullet speed and count remain bounded',()=>{
- for(const width of [320,390,760,1100]){const s=createInvaders(width,340,4),initial=invadersDifficulty(s);s.time=50;s.waveTime=50;const later=invadersDifficulty(s);s.wave=7;const harder=invadersDifficulty(s);assert.ok(later.speed>initial.speed&&later.interval<initial.interval);assert.ok(harder.bulletSpeed>later.bulletSpeed&&harder.interval<later.interval);s.time=3600;s.wave=100;const maximum=invadersDifficulty(s);assert.ok(maximum.speed<=116&&maximum.interval>=.57&&maximum.bulletSpeed<=261);}
+ for(const width of [320,390,760,1100]){const s=createInvaders(width,340,4),initial=invadersDifficulty(s);s.time=50;s.waveTime=50;const later=invadersDifficulty(s);s.wave=7;const harder=invadersDifficulty(s);assert.ok(later.speed>initial.speed&&later.interval<initial.interval);assert.ok(harder.bulletSpeed>later.bulletSpeed&&harder.interval<later.interval);s.time=3600;s.wave=100;const maximum=invadersDifficulty(s);assert.ok(maximum.speed<=180&&maximum.interval>=.28&&maximum.bulletSpeed<=316);}
 });

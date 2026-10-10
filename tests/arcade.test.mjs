@@ -4,7 +4,7 @@ import {ArcadeRecording,GAME_VERSIONS,replayArcade,MAX_TICKS} from '../src/lib/a
 import {arcadeConfig,arcadeIdentity,handleArcade,verifyTurnstile} from '../src/lib/arcade/service.mjs';
 import {LocalArcade} from '../src/lib/arcade/storage.mjs';
 import {invadersTestPilot} from '../scripts/invaders-test-pilot.mjs';
-const spec=game=>({id:'test',owner:'test',game,version:GAME_VERSIONS[game],width:760,height:390,seed:3854});
+const spec=game=>({id:'test',owner:'test',game,version:game==='invaders'?'invaders-2':GAME_VERSIONS[game],width:760,height:390,seed:3854});
 function play(run,control=()=>({})){const recording=new ArcadeRecording(run);for(let i=0;i<MAX_TICKS*2&&recording.state.status==='running';i++)recording.advance([1/120,1/60,1/40][i%3],control(recording));return recording;}
 const runnerControl=r=>{const s=r.state,next=s.obstacles.find(o=>o.x+o.width>s.playerX-17),ahead=next?next.x-s.playerX:Infinity;return {duck:next?.kind==='scanner'&&ahead<s.speed*.3,jump:!!next&&next.kind!=='scanner'&&ahead<s.speed*.3&&ahead>0&&s.y===0};};
 test('server reproduces both real game engines from compressed inputs across render frame rates',()=>{

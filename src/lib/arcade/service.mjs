@@ -1,6 +1,6 @@
 import {createHash,createHmac,randomInt,randomUUID,timingSafeEqual} from 'node:crypto';
 import {ArcadeError,LocalArcade,RedisArcade} from './storage.mjs';
-import {GAME_VERSIONS,validGame,validSize,replayArcade,MAX_TICKS,TICK_RATE} from './protocol.mjs';
+import {GAME_VERSIONS,validGame,validSize,replayArcade,MAX_TICKS,TICK_RATE,replaySegment,endlessRun,CHECKPOINT_TICKS,MAX_SEGMENT_TICKS} from './protocol.mjs';
 const COOKIE='pet_arcade',RUN_TTL=20*60*1000;
 const TEST_SITE='1x00000000000000000000AA',TEST_SECRET='1x0000000000000000000000000000000AA';
 const hmac=(value,key)=>createHmac('sha256',key).update(value).digest('hex');
@@ -60,17 +60,33 @@ export async function handleArcade(request,{config:provided,now=()=>Date.now(),v
   headers['Set-Cookie']=`${COOKIE}=${player.value}; Path=/; Max-Age=31536000; HttpOnly; SameSite=Strict${config.mode==='live'||url.protocol==='https:'?'; Secure':''}`;
   if(request.method==='GET'){
    const game=url.searchParams.get('game');if(!validGame(game))throw new ArcadeError('invalid_game');
-   const self=publicId(player.id,game,config.signingSecret),board=await store.board(GAME_VERSIONS[game]),personal=await store.personal(GAME_VERSIONS[game],self);return Response.json({available:true,mode:config.mode,sitekey:config.sitekey,game,version:GAME_VERSIONS[game],maxSeconds:MAX_TICKS/TICK_RATE,self,personal,entries:board.map((entry,i)=>({...entry,rank:i+1}))},{headers});
+   const version=game==='invaders'&&(url.searchParams.get('version')==='invaders-2'||url.searchParams.get('legacy')==='1')?'invaders-2':GAME_VERSIONS[game];
+   const self=publicId(player.id,game,config.signingSecret),board=await store.board(version),personal=await store.personal(version,self);return Response.json({available:true,mode:config.mode,sitekey:config.sitekey,game,version,scoring:game==='invaders'?(version==='invaders-2'?'legacy-total':'best-wave'):'distance',maxSeconds:version==='invaders-3'?null:MAX_TICKS/TICK_RATE,checkpointSeconds:CHECKPOINT_TICKS/TICK_RATE,maxSegmentSeconds:MAX_SEGMENT_TICKS/TICK_RATE,self,personal,entries:board.map((entry,i)=>({...entry,rank:i+1}))},{headers});
   }
   const body=await bodyJson(request);if(!body||typeof body!=='object'||Array.isArray(body))throw new ArcadeError('invalid_body');
   if(body.operation==='start'){
    const {game,width,height}=body;if(!validGame(game)||!validSize(width,height))throw new ArcadeError('invalid_game');
+   const version=game==='invaders'?(body.version??'invaders-2'):GAME_VERSIONS[game];if(game==='invaders'&&!['invaders-2','invaders-3'].includes(version))throw new ArcadeError('invalid_game');
    await store.limit(`start:${player.id}`,120,600);
    const ip=config.vercel?request.headers.get('x-vercel-forwarded-for'):null;if(config.vercel)await store.limit(`ip:${hmac(ip||'unknown',config.signingSecret).slice(0,24)}`,600,600);
    const name=playerName(body.name,publicId(player.id,game,config.signingSecret));
    await verify(body.captcha,{config,hostname,game});
-   const createdAt=now(),run={id:randomUUID(),owner:player.id,game,version:GAME_VERSIONS[game],width,height,seed:randomInt(0x100000000),pace:body.pace===2?2:1,...(body.name?{name}:{}),createdAt,expiresAt:createdAt+RUN_TTL};await store.create(run);
+   const createdAt=now(),run={id:randomUUID(),owner:player.id,game,version,width,height,seed:randomInt(0x100000000),pace:body.pace===2?2:1,...(body.name?{name}:{}),createdAt,expiresAt:createdAt+RUN_TTL,...(version==='invaders-3'?{sequence:0}:{})};await store.create(run);
    const{owner,...publicRun}=run;return Response.json({...publicRun,token:`${run.id}.${runSignature(run.id,owner,config.signingSecret)}`,mode:config.mode},{headers});
+  }
+  if(body.operation==='checkpoint'){
+   const id=validRunToken(body.token,player.id,config.signingSecret);if(!id)throw new ArcadeError('invalid_run',403);
+   await store.limit(`checkpoint:${player.id}`,120,600);const run=await store.get(id),timestamp=now();
+   if(!run||run.owner!==player.id||run.expiresAt<timestamp)throw new ArcadeError('run_expired',409);
+   if(!endlessRun(run))throw new ArcadeError('invalid_operation');if(run.finished)throw new ArcadeError('run_used',409);
+   if(!body.proof||typeof body.proof!=='object'||Array.isArray(body.proof))throw new ArcadeError('invalid_recording',422);
+   const hash=createHash('sha256').update(JSON.stringify(body.proof)).digest('hex');
+   if(body.proof?.sequence===(run.sequence||0)-1&&hash===run.lastCheckpointHash)return Response.json(JSON.parse(run.lastCheckpointResult),{headers});
+   if(body.proof?.sequence!==(run.sequence||0))throw new ArcadeError('checkpoint_conflict',409);
+   let verified;try{verified=replaySegment(run,body.proof,{checkpoint:true});}catch{throw new ArcadeError('invalid_recording',422);}
+   if((timestamp-run.createdAt)/1000+1<verified.result.ticks/TICK_RATE*.95)throw new ArcadeError('run_too_fast',422);
+   const response={sequence:(run.sequence||0)+1,totalTicks:verified.result.ticks,expiresAt:timestamp+RUN_TTL,score:verified.result.score,bestWave:verified.result.bestWave,bestWaveScore:verified.result.bestWaveScore};
+   return Response.json(await store.checkpoint(run,hash,verified.snapshot,response,timestamp),{headers});
   }
   if(body.operation==='finish'||body.operation==='assess'){
    const id=validRunToken(body.token,player.id,config.signingSecret);if(!id)throw new ArcadeError('invalid_run',403);
@@ -81,7 +97,7 @@ export async function handleArcade(request,{config:provided,now=()=>Date.now(),v
    if(body.operation==='finish'&&run.finished){if(run.payloadHash!==hash)throw new ArcadeError('run_used',409);return Response.json({...run.result,entries:(await store.board(run.version)).map((row,i)=>({...row,rank:i+1})),personal:await store.personal(run.version,publicId(player.id,run.game,config.signingSecret))},{headers});}
    let result;try{result=replayArcade(run,body.proof);}catch{throw new ArcadeError('invalid_recording',422);}
    if((now()-run.createdAt)/1000+1<result.ticks/TICK_RATE*.95)throw new ArcadeError('run_too_fast',422);
-   const entry={id:publicId(player.id,run.game,config.signingSecret),name,score:result.score,seconds:result.seconds,at:new Date(now()).toISOString()};
+   const entry={...(result.bestWave!==undefined?{bestWave:result.bestWave}:{}),id:publicId(player.id,run.game,config.signingSecret),name,score:result.score,seconds:result.seconds,at:new Date(now()).toISOString()};
    if(body.operation==='assess')return Response.json({...await store.compare(run.version,entry),runScore:result.score,published:false},{headers});
    const saved=await store.finish(run,hash,entry);
    return Response.json({...saved,entries:(await store.board(run.version)).map((row,i)=>({...row,rank:i+1})),personal:await store.personal(run.version,entry.id)},{headers});
