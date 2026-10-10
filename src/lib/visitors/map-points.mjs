@@ -12,5 +12,10 @@ export function mapPoints(archive,live){
 }
 export function pointText(point,lang='pt'){
  const pt=lang==='pt',format=n=>Number(n||0).toLocaleString(pt?'pt-BR':'en-US');
- return [point.active?`${format(point.active)} ${pt?'online agora':'online now'}`:null,point.visits?`${format(point.visits)} ${pt?'visitas registradas':'recorded visits'}`:null,point.archiveUsers?`${format(point.archiveUsers)} ${pt?'usuários no histórico':'users in the archive'}`:null].filter(Boolean).join(' · ');
+ return [point.active?`${format(point.active)} ${pt?'online agora':'online now'}`:null,point.visits?`${format(point.visits)} ${pt?(Number(point.visits)===1?'visita registrada':'visitas registradas'):(Number(point.visits)===1?'recorded visit':'recorded visits')}`:null,point.archiveUsers?`${format(point.archiveUsers)} ${pt?(Number(point.archiveUsers)===1?'usuário no histórico':'usuários no histórico'):(Number(point.archiveUsers)===1?'user in the archive':'users in the archive')}`:null].filter(Boolean).join(' · ');
+}
+
+export function archiveSessionsText(count,lang='pt'){
+ const pt=lang==='pt',n=Number(count||0),label=pt?(n===1?'sessão engajada no histórico':'sessões engajadas no histórico'):(n===1?'engaged session in the archive':'engaged sessions in the archive');
+ return `${n.toLocaleString(pt?'pt-BR':'en-US')} ${label}`;
 }
