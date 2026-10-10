@@ -18,9 +18,9 @@ export default function ArcadeIntro({game,pt,onStart,onRanking,ready,reduced}){
     ?(runner?(pt?'Aposto que você me salva.':'Bet you can save me.'):(pt?'Eu piloto. Você atira.':'I pilot. You shoot.'))
     :runner?(pt?['Boa. Agora valendo?','Isso! Sem deixar rastros.','Já pode fugir comigo.'][(attempt-1)%3]:['Nice. Ready for the real thing?','Yes! Leave no trace.','Come escape with me.'][(attempt-1)%3])
     :(pt?['Alvo limpo. Próximo?','Esse firewall já era.','Dupla de respeito.'][(attempt-1)%3]:['Target clear. Next?','That firewall is history.','We make a good team.'][(attempt-1)%3]);
-  return <div className={`arcade-intro arcade-intro--${game}${active?' arcade-intro--active':''}${reduced?' arcade-intro--reduced':''}`} onKeyDown={event=>event.stopPropagation()} onKeyUp={event=>event.stopPropagation()}>
+  return <div className={`arcade-intro arcade-intro--${game}${active?' arcade-intro--active':''}${reduced?' arcade-intro--reduced':''}`} onKeyDown={event=>{if(!['Tab','Escape'].includes(event.key))event.stopPropagation();}} onKeyUp={event=>{if(!['Tab','Escape'].includes(event.key))event.stopPropagation();}}>
     <div className="arcade-intro-copy">
-      <h3>{runner?'Data Run':'Data Invaders'}<span aria-hidden="true">{runner?'↗':'✳'}</span></h3>
+      <h3>{runner?'Data Run':'Data Invaders'}</h3>
       <p>{runner?(pt?'Você e um crawler. O resto da internet contra.':'You and a crawler. Against the rest of the internet.'):(pt?'Uma última linha de defesa. E quatro perninhas.':'One last line of defense. And four little legs.')}</p>
       <button type="button" className="arcade-intro-start" onClick={onStart} disabled={!ready} data-modal-autofocus>{!ready?(pt?'Preparando…':'Getting ready…'):runner?(pt?'Bora fugir':'Let’s escape'):(pt?'Assumir o controle':'Take control')}<span aria-hidden="true">→</span></button>
       <button type="button" className="arcade-intro-ranking" onClick={onRanking}>{pt?'Ver ranking':'Leaderboard'}<span aria-hidden="true">↗</span></button>

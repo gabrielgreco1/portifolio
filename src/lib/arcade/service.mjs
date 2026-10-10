@@ -60,29 +60,31 @@ export async function handleArcade(request,{config:provided,now=()=>Date.now(),v
   headers['Set-Cookie']=`${COOKIE}=${player.value}; Path=/; Max-Age=31536000; HttpOnly; SameSite=Strict${config.mode==='live'||url.protocol==='https:'?'; Secure':''}`;
   if(request.method==='GET'){
    const game=url.searchParams.get('game');if(!validGame(game))throw new ArcadeError('invalid_game');
-   const board=await store.board(GAME_VERSIONS[game]);return Response.json({available:true,mode:config.mode,sitekey:config.sitekey,game,version:GAME_VERSIONS[game],maxSeconds:MAX_TICKS/TICK_RATE,self:publicId(player.id,game,config.signingSecret),entries:board.map((entry,i)=>({...entry,rank:i+1}))},{headers});
+   const self=publicId(player.id,game,config.signingSecret),board=await store.board(GAME_VERSIONS[game]),personal=await store.personal(GAME_VERSIONS[game],self);return Response.json({available:true,mode:config.mode,sitekey:config.sitekey,game,version:GAME_VERSIONS[game],maxSeconds:MAX_TICKS/TICK_RATE,self,personal,entries:board.map((entry,i)=>({...entry,rank:i+1}))},{headers});
   }
   const body=await bodyJson(request);if(!body||typeof body!=='object'||Array.isArray(body))throw new ArcadeError('invalid_body');
   if(body.operation==='start'){
    const {game,width,height}=body;if(!validGame(game)||!validSize(width,height))throw new ArcadeError('invalid_game');
    await store.limit(`start:${player.id}`,120,600);
    const ip=config.vercel?request.headers.get('x-vercel-forwarded-for'):null;if(config.vercel)await store.limit(`ip:${hmac(ip||'unknown',config.signingSecret).slice(0,24)}`,600,600);
+   const name=playerName(body.name,publicId(player.id,game,config.signingSecret));
    await verify(body.captcha,{config,hostname,game});
-   const createdAt=now(),run={id:randomUUID(),owner:player.id,game,version:GAME_VERSIONS[game],width,height,seed:randomInt(0x100000000),createdAt,expiresAt:createdAt+RUN_TTL};await store.create(run);
+   const createdAt=now(),run={id:randomUUID(),owner:player.id,game,version:GAME_VERSIONS[game],width,height,seed:randomInt(0x100000000),pace:body.pace===2?2:1,...(body.name?{name}:{}),createdAt,expiresAt:createdAt+RUN_TTL};await store.create(run);
    const{owner,...publicRun}=run;return Response.json({...publicRun,token:`${run.id}.${runSignature(run.id,owner,config.signingSecret)}`,mode:config.mode},{headers});
   }
-  if(body.operation==='finish'){
+  if(body.operation==='finish'||body.operation==='assess'){
    const id=validRunToken(body.token,player.id,config.signingSecret);if(!id)throw new ArcadeError('invalid_run',403);
    await store.limit(`finish:${player.id}`,120,600);const run=await store.get(id);
    if(!run||run.owner!==player.id||run.expiresAt<now())throw new ArcadeError('run_expired',409);
-   const name=playerName(body.name,publicId(player.id,run.game,config.signingSecret));
+   const name=playerName(run.name??body.name,publicId(player.id,run.game,config.signingSecret));
    const hash=createHash('sha256').update(JSON.stringify({name,proof:body.proof})).digest('hex');
-   if(run.finished){if(run.payloadHash!==hash)throw new ArcadeError('run_used',409);return Response.json(run.result,{headers});}
+   if(body.operation==='finish'&&run.finished){if(run.payloadHash!==hash)throw new ArcadeError('run_used',409);return Response.json({...run.result,entries:(await store.board(run.version)).map((row,i)=>({...row,rank:i+1})),personal:await store.personal(run.version,publicId(player.id,run.game,config.signingSecret))},{headers});}
    let result;try{result=replayArcade(run,body.proof);}catch{throw new ArcadeError('invalid_recording',422);}
    if((now()-run.createdAt)/1000+1<result.ticks/TICK_RATE*.95)throw new ArcadeError('run_too_fast',422);
-   if(result.score<1)throw new ArcadeError('empty_score',422);
    const entry={id:publicId(player.id,run.game,config.signingSecret),name,score:result.score,seconds:result.seconds,at:new Date(now()).toISOString()};
-   return Response.json(await store.finish(run,hash,entry),{headers});
+   if(body.operation==='assess')return Response.json({...await store.compare(run.version,entry),runScore:result.score,published:false},{headers});
+   const saved=await store.finish(run,hash,entry);
+   return Response.json({...saved,entries:(await store.board(run.version)).map((row,i)=>({...row,rank:i+1})),personal:await store.personal(run.version,entry.id)},{headers});
   }
   throw new ArcadeError('invalid_operation');
  }catch(error){const status=error instanceof ArcadeError?error.status:503;return Response.json({available:false,error:error instanceof ArcadeError?error.code:'temporarily_unavailable'},{status,headers:{...headers,...(status===429?{'Retry-After':'600'}:{})}});}

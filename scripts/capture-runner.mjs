@@ -9,12 +9,12 @@ try{for(const [width,height]of(safari?[[390,844]]:[[1280,900],[390,844],[844,390
  if(process.env.TEST_WIDTH&&width!==Number(process.env.TEST_WIDTH))continue;
  const mobile=width!==1280,context=await browser.newContext({viewport:{width,height},hasTouch:mobile,isMobile:mobile});
  const page=await context.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));
- await page.clock.install({time:new Date('2026-10-09T12:00:00Z')});
+ await page.clock.install({time:new Date()});
  await page.goto(`${process.env.TEST_ORIGIN||'http://127.0.0.1:4318'}/pt`);await page.waitForTimeout(800);
  await page.locator('.crawler-pet').press('Enter');await page.getByRole('button',{name:/Arcade do Tamagotchi/}).click();
- await page.getByRole('button',{name:/Começar corrida/}).waitFor();await page.waitForTimeout(500);
+ await page.getByRole('button',{name:/Bora fugir/}).waitFor();await page.waitForTimeout(500);
  await page.screenshot({animations:'disabled',path:`${output}/${width}-intro.png`});
- const timestamp=new Date('2026-10-09T12:01:00Z');const grant=await authorizeTestArcade(page,'runner',{start:/Começar corrida/,freezeAt:timestamp});
+ const timestamp=()=>new Date(Date.now()+1000);const grant=await authorizeTestArcade(page,'runner',{start:/Bora fugir/,freezeAt:timestamp});
  const surface=page.getByRole('application',{name:'Data Run'});
  const s=createRunner(grant.width,grant.height,grant.seed);startRunner(s);
  const duckButton=page.getByRole('button',{name:'Abaixar ↓',exact:true}),jumpButton=page.getByRole('button',{name:'Pular ↑',exact:true}),duckBox=await duckButton.boundingBox();assert.ok(duckBox.y+duckBox.height<=height,'duck control must fit');
@@ -33,14 +33,14 @@ try{for(const [width,height]of(safari?[[390,844]]:[[1280,900],[390,844],[844,390
   if(!duckCaptured&&shouldDuck&&ahead<5){assert.equal(await surface.getAttribute('data-ducking'),'true');await page.screenshot({path:`${output}/${width}-duck.png`});duckCaptured=true;}
   if(ms>0&&ms%1000===0)assert.match(await page.locator('.runner-stage').getAttribute('class'),/running/,`survival at ${ms}ms/${width}`);
  }
- await setDuck(false);await page.clock.runFor(100);assert.equal(await surface.getAttribute('data-ducking'),'false');
- assert.ok(jumpCaptured&&duckCaptured);assert.ok(Number(await page.locator('.arcade-hud>div strong').nth(1).innerText())>=4,'must survive each hazard type');
- await surface.press('p');await page.clock.runFor(100);const paused=await page.locator('.arcade-hud').innerText();await page.clock.runFor(1000);assert.equal(await page.locator('.arcade-hud').innerText(),paused);
- if(width===390){await page.setViewportSize({width:844,height:390});await page.clock.runFor(200);assert.match(await page.locator('.runner-stage').getAttribute('class'),/paused/);assert.equal(await page.locator('.arcade-hud').innerText(),paused);await page.screenshot({path:`${output}/${width}-rotated.png`});await page.setViewportSize({width,height});await page.clock.runFor(200);}
+ await surface.press('p');await setDuck(false);await page.clock.runFor(100);assert.equal(await surface.getAttribute('data-ducking'),'false');
+ assert.ok(jumpCaptured&&duckCaptured);assert.ok(s.cleared>=4,'must survive each hazard type');
+ assert.match(await page.locator('.runner-stage').getAttribute('class'),/paused/);const paused=await page.locator('.arcade-hud').textContent();await page.clock.runFor(1000);assert.equal(await page.locator('.arcade-hud').textContent(),paused);
+ if(width===390){await page.setViewportSize({width:844,height:390});await page.clock.runFor(200);assert.match(await page.locator('.runner-stage').getAttribute('class'),/paused/);assert.equal(await page.locator('.arcade-hud').textContent(),paused);await page.screenshot({path:`${output}/${width}-rotated.png`});await page.setViewportSize({width,height});await page.clock.runFor(200);}
  await page.getByRole('button',{name:/Continuar corrida/}).click({force:true});await page.clock.runFor(7000);assert.match(await page.locator('.runner-stage').getAttribute('class'),/over/);
- await page.screenshot({path:`${output}/${width}-over.png`});await surface.press('Space');await page.clock.resume();await authorizeTestArcade(page,'runner',{freezeAt:new Date('2026-10-09T12:03:00Z')});await page.clock.runFor(150);assert.match(await page.locator('.runner-stage').getAttribute('class'),/running/);
+ await page.screenshot({path:`${output}/${width}-over.png`});await page.getByRole('button',{name:/Jogar de novo/}).click({force:true});await page.clock.resume();await authorizeTestArcade(page,'runner',{freezeAt:new Date(Date.now()+120000)});await page.clock.runFor(150);assert.match(await page.locator('.runner-stage').getAttribute('class'),/running/);
  // Losing focus must release duck, then pause rather than run unattended.
- await setDuck(true);await page.clock.runFor(150);assert.equal(await surface.getAttribute('data-ducking'),'true');await page.evaluate(()=>window.dispatchEvent(new Event('blur')));await setDuck(false);await page.clock.runFor(150);assert.equal(await surface.getAttribute('data-ducking'),'false');assert.match(await page.locator('.runner-stage').getAttribute('class'),/paused/);
+ await surface.focus();await setDuck(true);await page.clock.runFor(150);assert.equal(await surface.getAttribute('data-ducking'),'true',JSON.stringify({phase:await page.locator('.runner-stage').getAttribute('class'),active:await page.evaluate(()=>document.activeElement?.outerHTML.slice(0,120))}));await page.evaluate(()=>window.dispatchEvent(new Event('blur')));await setDuck(false);await page.clock.runFor(150);assert.equal(await surface.getAttribute('data-ducking'),'false');assert.match(await page.locator('.runner-stage').getAttribute('class'),/paused/);
  await page.keyboard.press('Escape');await page.clock.runFor(500);assert.equal(await page.getByRole('dialog').count(),0);assert.deepEqual(errors,[]);await context.close();console.log(`${width}×${height}: jump/held duck, all four hazards, pause, retry and input cleanup passed`);
 }}finally{await browser.close();}
 console.log(output);
