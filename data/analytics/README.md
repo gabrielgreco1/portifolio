@@ -27,3 +27,9 @@ python3 scripts/import-visitor-google.py /path/to/geonames-directory
 node --test tests/visitor-history.test.mjs
 node scripts/check-visitor-google.mjs
 ```
+
+## Unified public visit ledger (2026-10-10)
+
+The public counter now uses the original report total (869 active users) as an imported opening balance and adds the live store's subsequent visits. This is a carried-forward count of known accesses, **not a reconstructed GA session total or a continuous GA integration**. The immutable snapshot ends on 2026-10-08; production collection began 2026-10-09T19:42:43.217Z. Do not add later overlapping GA snapshots to this ledger. Any future reimport requires a reviewed cutoff and compatible counting rules.
+
+City opening balances use the original city counts and merge with new visits. They are not summed to produce the global opening balance: original city aggregates overlap (876 versus the authoritative 869). Original metrics and provenance stay unchanged; no database migration, reset, or write-back is performed. The UI derives the balance afresh from immutable history and the current snapshot, so polling never imports it twice. Only current presence contributes to “online agora”. The source metric and these limitations remain available under “Sobre os registros”.
