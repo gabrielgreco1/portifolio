@@ -55,3 +55,32 @@ test('five-minute mixed courses remain playable at phone and desktop sizes',()=>
 test('pausing underneath a scanner does not force the character to stand into it on resume',()=>{
  const s=createRunner(390,320,3);startRunner(s);s.spawn=10;duckRunner(s,true);run(s,.15);s.obstacles=[runnerHazard('scanner',s.playerX-10,1)];pauseRunner(s);assert.equal(s.duckHeld,false);pauseRunner(s);run(s,.6);assert.equal(s.status,'running');assert.equal(s.cleared,1);assert.ok(s.duck<.1);
 });
+
+test('new pace keeps accelerating through ten minutes on narrow and wide viewports',()=>{
+ for(const width of [280,390,760,1200]){
+  const s=createRunner(width,390,72,3);startRunner(s);let previous=0;
+  for(const seconds of [0,30,60,120,180,300,599]){
+   s.time=seconds;s.spawn=1000;s.obstacles=[];advanceRunner(s,1/120);
+   assert.ok(s.speed>previous);previous=s.speed;
+   if(seconds>=60)assert.ok(s.speed>430,'must progress beyond the old 1.76x ceiling');
+  }
+ }
+});
+test('new pace remains playable during five-minute mixed courses at every supported width',()=>{
+ for(const width of [280,350,390,760,1200])for(const seed of [1,72,481]){
+  const s=createRunner(width,390,seed,3);startRunner(s);
+  for(let tick=0;tick<120*300;tick++){
+   const next=s.obstacles.find(o=>o.x+o.width>s.playerX-17);
+   if(next){const ahead=next.x-s.playerX;duckRunner(s,next.kind==='scanner'&&ahead<s.speed*.3);if(next.kind!=='scanner'&&ahead<s.speed*.3&&ahead>0)jumpRunner(s);}else duckRunner(s,false);
+   advanceRunner(s,1/120);assert.equal(s.status,'running',`width ${width}, seed ${seed}, time ${s.time}, hazard ${s.lastHit}`);
+  }
+  assert.ok(Math.abs(s.speed/245-5)<.001);assert.ok(s.cleared>150);
+ }
+});
+
+test('new pace reaches the requested three- and five-minute difficulty milestones',()=>{
+ for(const [seconds,multiplier] of [[180,2.61],[300,5]]){
+  const s=createRunner(390,390,72,3);startRunner(s);s.time=seconds-1/120;s.spawn=1000;advanceRunner(s,1/120);
+  assert.ok(Math.abs(s.speed/245-multiplier)<.00001);
+ }
+});
