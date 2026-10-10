@@ -192,3 +192,21 @@
 @media(max-height:480px) and (min-width:601px){.visitor-map--unified .visitor-summary{top:82px;width:240px}.visitor-online{padding-bottom:8px}.visitor-online>strong{font-size:32px}.visitor-online>span{font-size:13px}.visitor-online small{font-size:9px}.visitor-total{padding:9px 0;gap:10px}.visitor-map--unified .visitor-total>strong{font-size:24px;min-width:48px}.visitor-map--unified .visitor-total>span{font-size:12px}.visitor-total small{font-size:9px;margin-top:3px}.visitor-coverage{display:none}.visitor-legend{font-size:9px;margin-top:10px;gap:12px}.visitor-map--unified .visitor-explore{padding:8px 12px;margin-top:12px;font-size:12px}.visitor-map--unified .visitor-explore span{font-size:18px}.visitor-map--unified .visitor-header{padding:20px 28px}.visitor-map--unified .visitor-header h2{font-size:25px}}
 .visitor-more{display:block;width:calc(100% - 32px);margin:12px 16px;padding:12px;border:1px solid #c9d6dd38;border-radius:10px;background:#ffffff06;color:#dddbce;font:13px Arial;cursor:pointer}
 .visitor-online.is-unavailable>i{background:#7d8c98}.visitor-online.is-unavailable>strong{color:#a7b4bd}
+
+/* Location cards stay near their marker and can be pinned for reading. */
+.visitor-point-card{position:absolute;z-index:4;width:270px;max-height:calc(100% - 110px);overflow:auto;box-sizing:border-box;padding:18px;background:#182733;border:1px solid #97b4c258;border-radius:16px;box-shadow:0 16px 48px #0007;color:#e9ede6;font-family:Arial,sans-serif;scrollbar-width:thin}
+.visitor-point-card>header{display:flex;align-items:center;justify-content:space-between;gap:10px;color:#aec3ce;font:10px/1.4 Arial;letter-spacing:.08em}
+.visitor-point-card>header button{border:0;background:#ffffff0b;border-radius:50%;width:30px;height:30px;color:#e2ebe7;font:23px Arial;cursor:pointer}
+.visitor-point-card h3{font:600 25px/1.15 Arial;letter-spacing:-.6px;margin:10px 0 5px;overflow-wrap:anywhere;color:#f5f1e5}
+.visitor-point-country{font:14px/1.5 Arial;color:#d0dce1;margin:0 0 16px}
+.visitor-point-card dl{margin:0;padding:12px 0;border-top:1px solid #ffffff18;border-bottom:1px solid #ffffff18}
+.visitor-point-card dl>div{display:flex;justify-content:space-between;gap:12px}.visitor-point-card dt{font:11px/1.5 Arial;color:#a7bbc8}.visitor-point-card dd{font:13px/1.5 Arial;color:#e4e9e5;margin:0;text-align:right;max-width:145px}
+.visitor-point-metrics{font:13px/1.7 Arial;color:#e3cf9f;margin:13px 0}.visitor-point-privacy{display:block;font:10px/1.5 Arial;color:#a4b8c4;margin-top:12px}
+.visitor-point-pin{display:flex;justify-content:space-between;align-items:center;width:100%;border:1px solid #b8c9b943;border-radius:8px;background:#d1dfbe12;color:#e3ecd6;padding:10px;font:12px Arial;cursor:pointer}
+.visitor-point-neighbors{border-top:1px solid #ffffff18;padding:10px 0;margin:0 0 8px;font:12px/1.5 Arial;color:#c4d3db}.visitor-point-neighbors summary{cursor:pointer}.visitor-point-neighbors button{display:flex;flex-direction:column;gap:3px;width:100%;text-align:left;background:none;border:0;border-bottom:1px solid #ffffff12;padding:10px 2px;color:#e4eade;cursor:pointer}.visitor-point-neighbors small{color:#a6bac7}
+.visitor-point-card.is-pinned{border-color:#e2d1a578}
+@media(max-width:600px){.visitor-point-card{left:12px!important;right:12px;width:auto;top:auto!important;bottom:78px;max-height:calc(100% - 180px);padding:16px}.visitor-point-card h3{font-size:24px}.visitor-point-card>header button{width:36px;height:36px}.visitor-point-card .visitor-point-country{margin-bottom:10px}.visitor-point-card dl{padding:9px 0}}
+
+.visitor-map--unified .visitor-globe{height:100%;isolation:auto}
+.visitor-map--unified:has(.visitor-point-card) .visitor-guide{visibility:hidden}
+.visitor-point-neighbors[open]{max-height:180px;overflow:auto;overscroll-behavior:contain}
