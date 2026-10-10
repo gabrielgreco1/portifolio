@@ -12,7 +12,7 @@ const engine=process.env.TEST_BROWSER==='webkit'?webkit:chromium,browser=await e
 try{for(const [width,height] of [[1440,1000],[390,844],[320,568],[844,390]]){
  const context=await browser.newContext({viewport:{width,height},reducedMotion:width===320?'reduce':'no-preference'}),page=await context.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));
  await page.goto(`${origin}/pt`);await page.waitForTimeout(1600);await page.locator('.crawler-pet').press('Enter');await page.getByRole('button',{name:/Arcade do Tamagotchi/}).click();
- await authorizeTestArcade(page,'runner',{start:/Bora fugir/});await page.getByRole('heading',{name:'BLOQUEADO.'}).waitFor({timeout:15000});await page.locator('.arcade-result-panel .is-you').waitFor({timeout:15000});
+ await authorizeTestArcade(page,'runner',{start:/^▶?\s*Jogar$/});await page.getByRole('heading',{name:'BLOQUEADO.'}).waitFor({timeout:15000});await page.locator('.arcade-result-panel .is-you').waitFor({timeout:15000});
  const region=page.getByRole('region',{name:'Resultado da partida'});assert.ok(Number((await region.locator('.arcade-final-stats strong').nth(1).innerText()).slice(1))>10);
  assert.equal(await region.locator('.arcade-ranking:not(.arcade-ranking-personal)>li').count(),10);assert.equal(await region.locator('.arcade-ranking-personal .is-you').count(),1);
  assert.ok(await page.getByRole('button',{name:'Jogar de novo',exact:false}).isVisible());

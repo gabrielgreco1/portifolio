@@ -12,9 +12,9 @@ try{for(const [width,height]of(safari?[[390,844]]:[[1280,900],[390,844],[844,390
  await page.clock.install({time:new Date()});
  await page.goto(`${process.env.TEST_ORIGIN||'http://127.0.0.1:4318'}/pt`);await page.waitForTimeout(800);
  await page.locator('.crawler-pet').press('Enter');await page.getByRole('button',{name:/Arcade do Tamagotchi/}).click();
- await page.getByRole('button',{name:/Bora fugir/}).waitFor();await page.waitForTimeout(500);
+ await page.getByRole('button',{name:/^▶?\s*Jogar$/}).waitFor();await page.waitForTimeout(500);
  await page.screenshot({animations:'disabled',path:`${output}/${width}-intro.png`});
- const timestamp=()=>new Date(Date.now()+1000);const grant=await authorizeTestArcade(page,'runner',{start:/Bora fugir/,freezeAt:timestamp});
+ const timestamp=()=>new Date(Date.now()+1000);const grant=await authorizeTestArcade(page,'runner',{start:/^▶?\s*Jogar$/,freezeAt:timestamp});
  const surface=page.getByRole('application',{name:'Data Run'});
  const s=createRunner(grant.width,grant.height,grant.seed);startRunner(s);
  const duckButton=page.getByRole('button',{name:'Abaixar ↓',exact:true}),jumpButton=page.getByRole('button',{name:'Pular ↑',exact:true}),duckBox=await duckButton.boundingBox();assert.ok(duckBox.y+duckBox.height<=height,'duck control must fit');

@@ -5,7 +5,7 @@ try{const context=await browser.newContext({viewport:{width:390,height:844}}),pa
 let identity,best=0;
 for(let round=0;round<3;round++){
  const finish=page.waitForResponse(r=>r.url().endsWith('/api/arcade')&&r.request().method()==='POST'&&r.request().postDataJSON()?.operation==='finish');
- await authorizeTestArcade(page,'runner',{start:round===0?/Bora fugir/:/Jogar de novo/});
+ await authorizeTestArcade(page,'runner',{start:round===0?/^▶?\s*Jogar$/:/Jogar de novo/});
  await page.locator('.runner-stage--running').waitFor();await page.waitForTimeout(250);assert.equal(await page.locator('.runner-stage--paused').count(),0,'restart must not pause on layout change');
  const surface=page.getByRole('application',{name:'Data Run'});await surface.focus();await page.keyboard.down('ArrowDown');await page.waitForTimeout(150);assert.equal(await surface.getAttribute('data-ducking'),'true');await page.keyboard.up('ArrowDown');
  const response=await finish;assert.equal(response.status(),200);const data=await response.json();assert.ok(data.rank>0);assert.equal(data.personal.name,'TEST LOCAL runner');best=Math.max(best,data.score);assert.equal(data.personal.score,best);if(identity)assert.equal(data.personal.id,identity);identity=data.personal.id;

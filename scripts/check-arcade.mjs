@@ -8,9 +8,9 @@ try{for(const[game,width,height]of[['runner',1280,900],['invaders',390,844]]){
  try{
   await page.goto(`${origin}/pt`);await page.locator('.crawler-pet').waitFor();await page.waitForTimeout(500);await page.locator('.crawler-pet').press('Enter');await page.getByRole('button',{name:/Arcade do Tamagotchi/}).click();if(game==='invaders')await page.getByRole('tab',{name:/Data Invaders/}).click();
   const config=await(await context.request.get(`${origin}/api/arcade?game=${game}`)).json();assert.equal(config.mode,'test');
-  await page.getByRole('button',{name:game==='runner'?/Bora fugir/:/Assumir o controle/}).click();await page.getByRole('region',{name:'Quem está jogando?'}).waitFor();
+  await page.getByRole('button',{name:game==='runner'?/^▶?\s*Jogar$/:/^▶?\s*Jogar$/}).click();await page.getByRole('region',{name:'Quem está jogando?'}).waitFor();
   await page.getByLabel('Seu nome no ranking').fill(`TEST LOCAL ${game}`);
-  if(screenCheck)await page.getByRole('button',{name:'Tela cheia',exact:true}).click();
+  if(screenCheck)await page.getByRole('button',{name:'Maximizar',exact:true}).click();
   await page.waitForFunction(()=>[...document.querySelectorAll('button')].some(b=>b.textContent.includes('Entrar na partida')&&!b.disabled),{},{timeout:30000});
   await page.screenshot({path:`${out}/${game}-verified.png`});const grant=page.waitForResponse(r=>r.url().endsWith('/api/arcade')&&r.request().method()==='POST');await page.getByRole('button',{name:/Entrar na partida/}).click();const authorized=await grant;if(!authorized.ok())throw new Error(`Start failed: ${authorized.status()} ${JSON.stringify(await authorized.json())}`);await page.locator('.runner-stage--running').waitFor();
   if(screenCheck){
