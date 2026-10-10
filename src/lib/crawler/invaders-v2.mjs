@@ -3,16 +3,16 @@ import {drawAntiBot,ENEMY_TYPES} from './invaders-art.mjs';
 const random=s=>{s.seed=(s.seed*1664525+1013904223)>>>0;return s.seed/4294967296;};
 const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
 export function invadersDifficulty(s){
- const load=(s.wave-1)*.22+s.waveTime*.008,pressure=load/(1+load),live=s.enemies.filter(e=>e.alive).length;
- return {pressure,speed:Math.min(180,30+s.wave*7+s.waveTime*.45+(1-live/Math.max(1,s.initialCount))*55),interval:.28+1.22/(1+load),bulletSpeed:(s.width<500?158:176)+Math.min(140,(s.wave-1)*7+s.waveTime*.4),limit:Math.min(s.width<500?18:24,(s.width<500?10:16)+Math.floor(s.wave/4))};
+ const pressure=clamp((s.wave-1)/9+s.time/360,0,1),live=s.enemies.filter(e=>e.alive).length;
+ return {pressure,speed:Math.min(116,24+s.wave*6+s.waveTime*.24+(1-live/Math.max(1,s.initialCount))*48),interval:1.5-pressure*.92,bulletSpeed:(s.width<500?158:176)+pressure*85,limit:s.width<500?10:16};
 }
 export function createInvaders(width=760,height=430,seed=Date.now()){
- const s={width,height,status:'ready',playerX:width/2,playerY:height-24,lives:3,immune:0,time:0,waveTime:0,score:0,totalScore:0,waveScore:0,bestWave:0,bestWaveScore:0,waveKills:0,lastClear:null,wave:1,direction:1,seed:seed>>>0,enemies:[],shots:[],threats:[],particles:[],shootCooldown:0,enemyCooldown:1.8,waveDelay:null,overTime:0,attackSerial:0,kills:0};
+ const s={width,height,status:'ready',playerX:width/2,playerY:height-24,lives:3,immune:0,time:0,waveTime:0,score:0,wave:1,direction:1,seed:seed>>>0,enemies:[],shots:[],threats:[],particles:[],shootCooldown:0,enemyCooldown:1.8,waveDelay:null,overTime:0,attackSerial:0,kills:0};
  spawnInvadersWave(s);return s;
 }
 export function spawnInvadersWave(s){
- s.enemies=[];s.waveTime=0;s.waveScore=0;s.waveKills=0;
- const add=(kind,x,y,col)=>{const spec=ENEMY_TYPES[kind],hp=kind==='guardian'?16+s.wave*3:spec.hp+Math.floor((s.wave-1)/8);s.enemies.push({...spec,id:`${s.wave}:${s.enemies.length}`,kind,col,x,y,hp,maxHp:hp,alive:true,hitFlash:0,charge:null});};
+ s.enemies=[];s.waveTime=0;
+ const add=(kind,x,y,col)=>{const spec=ENEMY_TYPES[kind],hp=kind==='guardian'?16+s.wave*2:spec.hp;s.enemies.push({...spec,id:`${s.wave}:${s.enemies.length}`,kind,col,x,y,hp,maxHp:hp,alive:true,hitFlash:0,charge:null});};
  if(s.wave%4===0){
   add('guardian',s.width/2,80,0);
   for(const side of [-1,1])for(let row=0;row<2;row++)add(row?'fingerprint':'waf',s.width/2+side*Math.min(110,s.width*.29),60+row*57,row+side*3);
@@ -53,7 +53,6 @@ function fireAttack(s,e,difficulty){
  else shot(0,0,'waf');
  e.charge=null;
 }
-function award(s,points){s.waveScore+=points;s.totalScore+=points;if(s.waveScore>s.bestWaveScore){s.bestWaveScore=s.waveScore;s.bestWave=s.wave;}s.score=s.bestWaveScore;}
 function step(s,dt,input){
  s.time+=dt;s.waveTime+=dt;s.immune=Math.max(0,s.immune-dt);s.shootCooldown-=dt;s.enemyCooldown-=dt;
  const axis=(input.right?1:0)-(input.left?1:0),targetDelta=Number.isFinite(input.targetX)?clamp(input.targetX-s.playerX,-440*dt,440*dt):axis*300*dt;
@@ -61,7 +60,7 @@ function step(s,dt,input){
  if(input.fire&&s.shootCooldown<=0){s.shots.push({x:s.playerX,y:s.playerY-53});s.shootCooldown=.17;}
  const live=s.enemies.filter(e=>e.alive),difficulty=invadersDifficulty(s);
  if(!live.length){
-  if(s.waveDelay===null){s.waveDelay=1.5;award(s,100);s.lastClear={wave:s.wave,score:s.waveScore,seconds:s.waveTime,kills:s.waveKills};s.threats=[];}
+  if(s.waveDelay===null){s.waveDelay=1.5;s.score+=100+s.wave*20;s.threats=[];}
   s.waveDelay-=dt;if(s.waveDelay<=0){s.wave++;spawnInvadersWave(s);}
  }else{
   const boss=live.some(e=>e.kind==='guardian');
@@ -79,7 +78,7 @@ function step(s,dt,input){
  for(const shot of s.shots){
   shot.y-=520*dt;
   const hit=live.filter(e=>e.alive&&Math.abs(shot.x-e.x)<e.width/2+2&&Math.abs(shot.y-e.y)<e.height/2+6).sort((a,b)=>b.y-a.y)[0];
-  if(hit){shot.y=-100;hit.hp--;hit.hitFlash=.15;burst(s,hit.x,hit.y,hit.color,hit.hp?4:12);if(hit.hp<=0){hit.alive=false;hit.charge=null;s.kills++;s.waveKills++;award(s,hit.points+Math.round(hit.points/(1+s.waveTime/12)));}}
+  if(hit){shot.y=-100;hit.hp--;hit.hitFlash=.15;burst(s,hit.x,hit.y,hit.color,hit.hp?4:12);if(hit.hp<=0){hit.alive=false;hit.charge=null;s.kills++;s.score+=hit.points;}}
  }
  for(const e of live){if(e.alive&&e.charge){e.charge.remaining-=dt;if(e.charge.remaining<=0)fireAttack(s,e,difficulty);}}
  const splits=[];
@@ -91,20 +90,13 @@ function step(s,dt,input){
  if(s.lives<=0||live.some(e=>e.alive&&e.y+e.height/2>=s.playerY-48)){s.status='over';s.lives=0;burst(s,s.playerX,s.playerY-28,'#edaa84',26);}
  s.shots=s.shots.filter(b=>b.y>-20);s.threats=s.threats.filter(b=>b.y<s.height+15&&b.x>-20&&b.x<s.width+20);s.threats.push(...splits.slice(0,Math.max(0,difficulty.limit-s.threats.length)));particles(s,dt);
 }
-const petFrames=new WeakMap();
-function drawCachedPet(ctx,image,step){
- const index=Math.round((step+2)*2);let frames=petFrames.get(image);if(!frames){frames=new Map();petFrames.set(image,frames);}let frame=frames.get(index);
- if(!frame){const surface=typeof OffscreenCanvas!=='undefined'?new OffscreenCanvas(496,500):typeof document!=='undefined'?document.createElement('canvas'):null;
-  if(!surface){drawPetTension(ctx,image,0,step,0);return;}surface.width=496;surface.height=500;const ink=surface.getContext('2d');ink.scale(2,2);drawPetTension(ink,image,0,index/2-2,0);frames.set(index,surface);frame=surface;
- }
- ctx.drawImage(frame,0,0,248,250);
-}
-export function drawInvaders(ctx,s,image,{reduced=false,input={}}={}){
+export function drawInvaders(ctx,s,image,{reduced=false,input={},lang='pt'}={}){
   const {width:w,height:h,time}=s;
   const sky=ctx.createLinearGradient(0,0,w,h);sky.addColorStop(0,'#101d25');sky.addColorStop(.5,'#0a1e21');sky.addColorStop(1,'#122820');ctx.fillStyle=sky;ctx.fillRect(0,0,w,h);
   for(let i=0;i<85;i++){const x=(i*137.17)%(w-12)+6,y=((i*61.71+(reduced?0:time*(2+i%3)))%(h+10));ctx.globalAlpha=.16+(i%4)*.1;ctx.fillStyle=i%6?'#c4d9c1':'#c6b992';ctx.fillRect(x,y,i%11?1:2,1);}ctx.globalAlpha=1;
   ctx.strokeStyle='#b3cf9220';ctx.lineWidth=1;for(let i=0;i<3;i++){ctx.beginPath();ctx.ellipse(w*.5,h+80,Math.max(250,w*.75)+i*22,128+i*17,0,Math.PI,Math.PI*2);ctx.stroke();}
   for(let i=0;i<5;i++){ctx.strokeStyle='#8fac9510';ctx.beginPath();ctx.moveTo(i*w/4,0);ctx.lineTo(w*.5+(i-2)*w*.08,h);ctx.stroke();}
+  ctx.font='9px ui-monospace,monospace';ctx.textAlign='left';ctx.fillStyle='#93afa78c';ctx.fillText('ANTIBOT ORBIT / DEFENSE GRID',15,h-12);
   const live=s.enemies.filter(e=>e.alive),guardian=live.find(e=>e.kind==='guardian'),pressure=invadersDifficulty(s).pressure;
   ctx.fillStyle='#172e31';ctx.fillRect(0,0,w,3);ctx.fillStyle='#d99a7b';ctx.fillRect(0,0,w*pressure,3);
   for(const e of live){
@@ -126,8 +118,10 @@ export function drawInvaders(ctx,s,image,{reduced=false,input={}}={}){
   if(image){
     const direction=(input.right?1:0)-(input.left?1:0);ctx.save();ctx.translate(s.playerX,s.playerY);
     if(s.immune){ctx.strokeStyle='#d8e6ac99';ctx.lineWidth=1;ctx.beginPath();ctx.ellipse(0,-25,43,38,0,0,Math.PI*2);ctx.stroke();if(!reduced)ctx.globalAlpha=.65+.35*Math.abs(Math.sin(time*5));}
-    ctx.rotate(direction*.06);ctx.scale(84/224,84/224);ctx.translate(-122,-197);drawCachedPet(ctx,image,s.status==='running'&&!reduced?Math.sin(time*9)*2:0);ctx.restore();
+    ctx.rotate(direction*.06);ctx.scale(84/224,84/224);ctx.translate(-122,-197);drawPetTension(ctx,image,0,s.status==='running'&&!reduced?Math.sin(time*9)*2:0,0);ctx.restore();
     if(s.status==='running'){ctx.fillStyle='#b5d39744';ctx.beginPath();ctx.ellipse(s.playerX,s.playerY+4,20,2,0,0,Math.PI*2);ctx.fill();}
   }
   for(const p of s.particles){ctx.globalAlpha=Math.min(1,p.life*2);ctx.fillStyle=p.color;ctx.fillRect(p.x,p.y,2.5,2.5);}ctx.globalAlpha=1;
+  if(s.waveDelay!==null){ctx.textAlign='center';ctx.fillStyle='#d1e5b4';ctx.font='13px ui-monospace,monospace';ctx.fillText(`${lang==='pt'?'CAMADA ROMPIDA':'LAYER BREACHED'} · +${100+s.wave*20}`,w/2,h*.5);ctx.fillStyle='#8da89a';ctx.font='10px ui-monospace,monospace';ctx.fillText((s.wave+1)%4===0?'403 / GATEKEEPER':`${lang==='pt'?'PRÓXIMA ONDA':'NEXT WAVE'} ${String(s.wave+1).padStart(2,'0')}`,w/2,h*.5+23);}
+  else if(s.waveTime<2&&s.status==='running'){ctx.textAlign='center';ctx.globalAlpha=Math.min(1,(2-s.waveTime)*2);ctx.font='11px ui-monospace,monospace';ctx.fillStyle='#c9dec2';ctx.fillText(`${lang==='pt'?'ONDA':'WAVE'} ${String(s.wave).padStart(2,'0')} / ${s.wave%4===0?'GATEKEEPER':s.wave===1?'WAF + FINGERPRINT':s.wave===2?'RATE LIMIT':'HONEYPOTS'}`,w/2,h*.68);ctx.globalAlpha=1;}
 }

@@ -20,6 +20,11 @@ test('real Redis atomically publishes one best, makes retries idempotent, expire
   assert.equal((await store.personal('runner-3','public-2')).rank,106);
   const top=await store.compare('runner-3',{...entry,id:'public-2',score:500});assert.equal(top.rank,1);assert.equal(top.entries[0].id,'public-2');assert.equal(top.entries.filter(row=>row.id==='public-2').length,1);
   const tied=await store.compare('runner-3',{...entry,id:'zz-tie',score:200});assert.equal(tied.rank,1);
+  const cpRun={...run,id:'checkpoint-run',version:'invaders-3',sequence:0},timestamp=Date.now(),snapshot={state:{time:.30000000000000004,playerX:1.2345678901234567},mask:4,target:null,totalTicks:1200},receipt={sequence:1,totalTicks:1200,expiresAt:timestamp+1200000,score:99,bestWave:1,bestWaveScore:99};
+  await store.create(cpRun);const checkpoints=await Promise.all(Array.from({length:20},()=>store.checkpoint(cpRun,'same-segment',snapshot,receipt,timestamp)));assert.ok(checkpoints.every(result=>result.sequence===1));
+  const checkpointed=await store.get(cpRun.id);assert.equal(checkpointed.sequence,1);assert.equal(checkpointed.checkpointJson,JSON.stringify(snapshot),'Lua must preserve exact JS float JSON as an opaque string');assert.ok(await command(['PTTL',`test:arcade:production:run:${cpRun.id}`])>1190000);
+  await assert.rejects(store.checkpoint(cpRun,'forked-segment',snapshot,receipt,timestamp),/checkpoint_conflict/);await assert.rejects(store.finish(cpRun,'stale-finish',entry),/checkpoint_conflict/);
+  await store.finish(checkpointed,'final-segment',{...entry,score:99,bestWave:1});assert.equal((await store.board('invaders-3'))[0].bestWave,1);await assert.rejects(store.checkpoint(checkpointed,'after-finish',snapshot,{...receipt,sequence:2},timestamp),/run_used/);
   const preview=new RedisArcade(endpoint,'local-integration','test:arcade:preview');assert.deepEqual(await preview.board('runner-3'),[]);assert.deepEqual(await store.board('invaders-1'),[]);
   for(let i=0;i<4;i++)await store.limit('one-actor',4,60);await assert.rejects(store.limit('one-actor',4,60),/rate_limited/);assert.ok(await command(['TTL','test:arcade:production:limit:one-actor'])>0);
   await command(['PEXPIRE','test:arcade:production:run:run-1',1]);await delay(5);assert.equal(await store.get(run.id),null);await assert.rejects(store.finish(run,'identical-proof',entry),/run_expired/);
