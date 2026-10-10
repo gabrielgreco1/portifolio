@@ -2,13 +2,16 @@
 import {memo,useEffect,useRef,useState} from 'react';
 import {geoDistance,geoGraticule10,geoOrthographic,geoPath} from 'd3-geo';
 import {feature,mesh} from 'topojson-client';
+import {pointText} from '../../lib/visitors/map-points.mjs';
 import atlas from 'world-atlas/countries-110m.json';
 const land=feature(atlas,atlas.objects.land),borders=mesh(atlas,atlas.objects.countries,(a,b)=>a!==b),grid=geoGraticule10();
 const located=p=>Number.isFinite(p.longitude)&&Number.isFinite(p.latitude);
 
 // Rotation never reconciles the dialog, city list or hundreds of SVG filters.
-export default memo(function VisitorGlobe({points,selected,onSelect,lang,reduced}){
- const canvas=useRef(null),draw=useRef(()=>{}),rotation=useRef([48,15,0]),zoom=useRef(1),contacts=useRef(new Map()),drag=useRef(null),hits=useRef([]),animation=useRef(0),[hover,setHover]=useState(null);
+export default memo(function VisitorGlobe({points,selected,onSelect,countryName,lang,reduced}){
+ const canvas=useRef(null),draw=useRef(()=>{}),rotation=useRef([48,15,0]),zoom=useRef(1),contacts=useRef(new Map()),drag=useRef(null),hits=useRef([]),animation=useRef(0),[hover,setHover]=useState(null),[pinnedGroup,setPinnedGroup]=useState(null),card=useRef(null),leaveTimer=useRef(null),hoverRef=useRef(null);
+ const shown=hover?.point||(selected&&located(selected)?selected:null);hoverRef.current=shown;
+ const neighbors=hover?.nearby||(pinnedGroup&&pinnedGroup.id===shown?.id?pinnedGroup.points:[]);
  const pt=lang==='pt',selectedId=selected?.id,longitude=selected?.longitude,latitude=selected?.latitude;
  useEffect(()=>{
   const el=canvas.current,ctx=el.getContext('2d',{alpha:false});let frame=0;const tile=document.createElement('canvas');tile.width=tile.height=6;const ink=tile.getContext('2d');ink.fillStyle='#dce5d944';ink.beginPath();ink.arc(3,3,.65,0,Math.PI*2);ink.fill();const texture=ctx.createPattern(tile,'repeat');
@@ -28,9 +31,10 @@ export default memo(function VisitorGlobe({points,selected,onSelect,lang,reduced
    for(const p of [...points].reverse()){if(!located(p)||geoDistance([p.longitude,p.latitude],center)>=Math.PI/2)continue;
     const [x,y]=projection([p.longitude,p.latitude]),radius=p.active?5:2.2+Math.min(2,Math.log2((p.visits||p.activeUsers||0)+1)*.3);
     ctx.beginPath();ctx.arc(x,y,radius,0,Math.PI*2);ctx.fillStyle=p.active?'#92edbb':p.id===selected?.id?'#ffffff':'#e3c489';ctx.fill();
-    if(p.active||p.id===selected?.id){ctx.beginPath();ctx.arc(x,y,radius+5,0,Math.PI*2);ctx.strokeStyle=p.active?'#92edbb80':'#ffffff99';ctx.lineWidth=1;ctx.stroke();}
+    if(p.active||p.id===selected?.id||p.id===hoverRef.current?.id){ctx.beginPath();ctx.arc(x,y,radius+5,0,Math.PI*2);ctx.strokeStyle=p.active?'#92edbb80':'#ffffff99';ctx.lineWidth=1;ctx.stroke();}
     hits.current.push({point:p,x,y});
    }
+   positionCard();
   }
   draw.current=()=>{if(!frame)frame=requestAnimationFrame(render);};
   const observer=new ResizeObserver(draw.current);observer.observe(el);draw.current();
@@ -42,17 +46,29 @@ export default memo(function VisitorGlobe({points,selected,onSelect,lang,reduced
   function tick(now){const t=reduced?1:Math.min(1,(now-start)/550),ease=1-(1-t)**3;rotation.current=from.map((v,i)=>v+(target[i]-v)*ease);draw.current();if(t<1)animation.current=requestAnimationFrame(tick);}
   animation.current=requestAnimationFrame(tick);return()=>cancelAnimationFrame(animation.current);
  },[selectedId,longitude,latitude,reduced]);
- useEffect(()=>()=>cancelAnimationFrame(animation.current),[]);
+ useEffect(()=>()=>{cancelAnimationFrame(animation.current);clearTimeout(leaveTimer.current);},[]);
+ useEffect(()=>{positionCard();draw.current();},[hover,selected]);
+ function positionCard(){const popup=card.current,el=canvas.current;if(!popup||!el)return;const hit=hits.current.find(h=>h.point.id===hoverRef.current?.id);popup.style.visibility=hit?'visible':'hidden';if(!hit)return;const b=el.getBoundingClientRect(),parent=el.parentElement.getBoundingClientRect(),scale=Math.min(b.width/720,b.height/600);const x=b.left-parent.left+(b.width-720*scale)/2+hit.x*scale,y=b.top-parent.top+(b.height-600*scale)/2+hit.y*scale;const w=popup.offsetWidth,h=popup.offsetHeight;popup.style.left=`${Math.max(12,Math.min(parent.width-w-12,x+18))}px`;popup.style.top=`${Math.max(90,Math.min(parent.height-h-16,y-h/2))}px`;}
+ function clearHover(){clearTimeout(leaveTimer.current);leaveTimer.current=setTimeout(()=>setHover(null),240);}
+ function nearby(e){const [x,y]=local(e),b=canvas.current.getBoundingClientRect(),scale=Math.min(b.width/720,b.height/600);const candidates=hits.current.map(p=>({...p,distance:Math.hypot(x-p.x,y-p.y)*scale})).filter(p=>p.distance<(e.pointerType==='touch'?22:14)).sort((a,b)=>a.distance-b.distance);const first=candidates[0];return first?[first,...hits.current.filter(p=>p.point.id!==first.point.id&&Math.hypot(p.x-first.x,p.y-first.y)*scale<7).sort((a,b)=>Math.hypot(a.x-first.x,a.y-first.y)-Math.hypot(b.x-first.x,b.y-first.y))]:[];}
  function local(e){const b=canvas.current.getBoundingClientRect();const scale=Math.min(b.width/720,b.height/600);return[(e.clientX-b.left-(b.width-720*scale)/2)/scale,(e.clientY-b.top-(b.height-600*scale)/2)/scale];}
- function nearest(e){const [x,y]=local(e);return hits.current.reduce((best,p)=>{const d=Math.hypot(x-p.x,y-p.y);return d<14&&(!best||d<best.distance)?{...p,distance:d}:best;},null);}
- function down(e){if(e.button!==0)return;cancelAnimationFrame(animation.current);setHover(null);contacts.current.set(e.pointerId,[e.clientX,e.clientY]);e.currentTarget.setPointerCapture(e.pointerId);const values=[...contacts.current.values()];drag.current={x:e.clientX,y:e.clientY,rotation:[...rotation.current],moved:false,zoom:zoom.current,distance:values.length===2?Math.hypot(values[0][0]-values[1][0],values[0][1]-values[1][1]):0};}
- function move(e){if(!contacts.current.has(e.pointerId)){if(e.pointerType==='mouse'){const hit=nearest(e);setHover(prev=>prev?.id===hit?.point.id?prev:hit?{id:hit.point.id,title:hit.point.label}:null);}return;}
+ function down(e){if(e.button!==0)return;cancelAnimationFrame(animation.current);clearTimeout(leaveTimer.current);setHover(null);contacts.current.set(e.pointerId,[e.clientX,e.clientY]);e.currentTarget.setPointerCapture(e.pointerId);const values=[...contacts.current.values()];drag.current={x:e.clientX,y:e.clientY,rotation:[...rotation.current],moved:false,zoom:zoom.current,distance:values.length===2?Math.hypot(values[0][0]-values[1][0],values[0][1]-values[1][1]):0};}
+ function move(e){if(!contacts.current.has(e.pointerId)){if(e.pointerType==='mouse'){const candidates=nearby(e),hit=candidates[0];e.currentTarget.style.cursor=hit?'pointer':'grab';if(hit){clearTimeout(leaveTimer.current);setHover(prev=>prev?.point.id===hit.point.id?prev:{point:hit.point,nearby:candidates.map(h=>h.point)});}else clearHover();}return;}
   contacts.current.set(e.pointerId,[e.clientX,e.clientY]);const values=[...contacts.current.values()],d=drag.current;const dx=e.clientX-d.x,dy=e.clientY-d.y;if(Math.hypot(dx,dy)>4)d.moved=true;
   if(values.length===2&&d.distance){zoom.current=Math.max(.8,Math.min(1.8,d.zoom*Math.hypot(values[0][0]-values[1][0],values[0][1]-values[1][1])/d.distance));d.moved=true;}
   else rotation.current=[d.rotation[0]+dx*.3/zoom.current,Math.max(-80,Math.min(80,d.rotation[1]-dy*.3/zoom.current)),0];draw.current();
  }
- function up(e){const click=contacts.current.size===1&&!drag.current?.moved;contacts.current.delete(e.pointerId);if(e.currentTarget.hasPointerCapture(e.pointerId))e.currentTarget.releasePointerCapture(e.pointerId);if(click){const hit=nearest(e);if(hit)onSelect(hit.point);}if(contacts.current.size){const [[x,y]]=[...contacts.current.values()];drag.current={x,y,rotation:[...rotation.current],zoom:zoom.current,distance:0,moved:true};}}
- return <div className="visitor-globe"><canvas ref={canvas} tabIndex={0} role="img" aria-label={pt?'Globo de visitas. Use as setas para girar; consulte as cidades no botão Explorar cidades.':'Visitor globe. Use arrow keys to rotate; open Explore cities for accessible city details.'} onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={e=>{contacts.current.delete(e.pointerId);if(drag.current)drag.current.moved=true;}} onPointerLeave={()=>setHover(null)} onKeyDown={e=>{const directions={ArrowLeft:[-12,0],ArrowRight:[12,0],ArrowUp:[0,12],ArrowDown:[0,-12]};if(directions[e.key]){e.preventDefault();cancelAnimationFrame(animation.current);const [x,y]=directions[e.key];rotation.current=[rotation.current[0]+x,Math.max(-80,Math.min(80,rotation.current[1]+y)),0];draw.current();}}}/>
- {hover&&<div className="visitor-canvas-tooltip" role="status">{hover.title}</div>}
+ function up(e){const click=contacts.current.size===1&&!drag.current?.moved;contacts.current.delete(e.pointerId);if(e.currentTarget.hasPointerCapture(e.pointerId))e.currentTarget.releasePointerCapture(e.pointerId);if(click){const candidates=nearby(e),hit=candidates[0];if(hit){setPinnedGroup({id:hit.point.id,points:candidates.map(h=>h.point)});setHover(null);onSelect(hit.point);}}if(contacts.current.size){const [[x,y]]=[...contacts.current.values()];drag.current={x,y,rotation:[...rotation.current],zoom:zoom.current,distance:0,moved:true};}}
+ return <div className="visitor-globe"><canvas ref={canvas} tabIndex={0} role="img" aria-label={pt?'Globo de visitas. Use as setas para girar; consulte as cidades no botão Explorar cidades.':'Visitor globe. Use arrow keys to rotate; open Explore cities for accessible city details.'} onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={e=>{contacts.current.delete(e.pointerId);if(drag.current)drag.current.moved=true;}} onPointerLeave={clearHover} onKeyDown={e=>{const directions={ArrowLeft:[-12,0],ArrowRight:[12,0],ArrowUp:[0,12],ArrowDown:[0,-12]};if(directions[e.key]){e.preventDefault();cancelAnimationFrame(animation.current);const [x,y]=directions[e.key];rotation.current=[rotation.current[0]+x,Math.max(-80,Math.min(80,rotation.current[1]+y)),0];draw.current();}}}/>
+ {shown&&<section ref={card} className={`visitor-point-card ${selected?.id===shown.id?'is-pinned':''}`} aria-label={pt?'Ficha da cidade':'City card'} onPointerEnter={()=>clearTimeout(leaveTimer.current)} onPointerLeave={clearHover}>
+  <header><span>{selected?.id===shown.id?(pt?'CIDADE SELECIONADA':'SELECTED CITY'):(pt?'CIDADE':'CITY')}</span><button aria-label={pt?'Fechar ficha':'Close city card'} onClick={()=>{setHover(null);onSelect(null);}}>×</button></header>
+  <h3>{shown.city==='(not set)'?(pt?'Cidade não informada':'City not reported'):shown.city}</h3>
+  <p className="visitor-point-country">{countryName(shown.country)}</p>
+  <dl><div><dt>{pt?'Estado / região':'State / region'}</dt><dd>{shown.regionDisplay||shown.region||(pt?'Não informado':'Not reported')}</dd></div></dl>
+  <p className="visitor-point-metrics">{pointText(shown,lang)}</p>
+  {neighbors.length>1&&<details className="visitor-point-neighbors" onToggle={positionCard}><summary>{pt?'Escolher outra cidade':'Choose another city'} ({neighbors.length})</summary>{neighbors.map(p=><button key={p.id} onClick={()=>{setHover(null);onSelect(p);}}><strong>{p.city}</strong><small>{p.regionDisplay||p.region||countryName(p.country)}</small></button>)}</details>}
+  {selected?.id!==shown.id&&<button className="visitor-point-pin" onClick={()=>{setPinnedGroup({id:shown.id,points:neighbors});setHover(null);onSelect(shown);}}>{pt?'Manter aberta':'Keep open'} <span>↗</span></button>}
+  <small className="visitor-point-privacy">{pt?'Localização aproximada por cidade':'Approximate city-level location'}</small>
+ </section>}
  <div className="visitor-map-controls"><button aria-label={pt?'Aproximar':'Zoom in'} onClick={()=>{zoom.current=Math.min(1.8,zoom.current+.2);draw.current();}}>+</button><button aria-label={pt?'Afastar':'Zoom out'} onClick={()=>{zoom.current=Math.max(.8,zoom.current-.2);draw.current();}}>−</button><button aria-label={pt?'Voltar ao Brasil':'Return to Brazil'} onClick={()=>{cancelAnimationFrame(animation.current);rotation.current=[48,15,0];zoom.current=1;draw.current();}}>⌖</button></div></div>;
 });
