@@ -4,21 +4,35 @@ import {drawPetTension} from '@/lib/crawler/pet-render.mjs';
 import {PET_DURATION,petPose,dragPose} from '@/lib/crawler/pet-motion.mjs';
 
 const VIEWS=[[17,69,426,333],[480,69,367,341],[914,69,391,337],[1353,69,393,325],[22,511,394,330],[491,510,355,341],[903,507,412,336],[1349,507,405,333]];
-let assets;
-function images(){
-  if(!assets)assets=Promise.all(['/crawler-character-v2.png','/crawler-turnaround.png'].map(src=>new Promise((resolve,reject)=>{const img=new Image();img.onload=()=>resolve(img);img.onerror=reject;img.src=src;}))).catch(error=>{assets=null;throw error;});
-  return assets;
+const assets=new Map();
+function image(src){
+  if(!assets.has(src)){
+    const pending=new Promise((resolve,reject)=>{
+      const img=new Image();
+      img.onload=async()=>{try{await img.decode();resolve(img);}catch(error){reject(error);}};
+      img.onerror=reject;img.src=src;
+    }).catch(error=>{assets.delete(src);throw error;});
+    assets.set(src,pending);
+  }
+  return assets.get(src);
+}
+const character=()=>image('/crawler-character-v2.png');
+function images(kind){
+  // Drag and overload use only the approved character, never the spin sheet.
+  return Promise.all([character(),kind==='spin'?image('/crawler-turnaround.png'):null]);
 }
 
 export default function PetPerformance({action,onFinish,reduced,lang}) {
   const canvas=useRef(null),finish=useRef(onFinish);
   useEffect(()=>{finish.current=onFinish;});
+  // Decode the already-visible character before the first pointer gesture.
+  useEffect(()=>{void character().catch(()=>{});},[]);
   useEffect(()=>{
     if(!action)return;
     let raf,disposed=false;
     const {element,anchor,kind,labels,movement}=action;
     const paint=async()=>{
-      let artwork;try{artwork=await images();}catch{finish.current();return;}
+      let artwork;try{artwork=await images(kind);}catch{finish.current();return;}
       if(disposed)return;
       const surface=canvas.current,ctx=surface.getContext('2d'),dpr=Math.min(2,window.devicePixelRatio||1);
       surface.width=window.innerWidth*dpr;surface.height=window.innerHeight*dpr;
