@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { useLanguage } from "@/i18n/LanguageContext";
+import Turnstile from "@/components/Turnstile";
 
 function CopyButton({ text, labels }) {
   const [done, setDone] = useState(false);
@@ -41,9 +42,11 @@ function readUnlock() {
   }
 }
 
-function EmailGate({ copy, lang, onUnlock }) {
+function EmailGate({ copy, lang, onUnlock, sitekey }) {
   const [email, setEmail] = useState("");
   const [state, setState] = useState("idle");
+  const [captcha, setCaptcha] = useState("");
+  const [reset, setReset] = useState(0);
   async function submit(event) {
     event.preventDefault();
     setState("sending");
@@ -52,16 +55,18 @@ function EmailGate({ copy, lang, onUnlock }) {
       const res = await fetch("/api/skills-access", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, lang, website: form.get("website") || "" }),
+        body: JSON.stringify({ email, lang, captcha, website: form.get("website") || "" }),
       });
       if (res.ok) return onUnlock(email);
       const data = await res.json().catch(() => ({}));
-      setState(data.error === "invalid_email" ? "invalid" : data.error === "rate_limited" ? "limited" : "error");
+      setState(data.error === "invalid_email" ? "invalid" : data.error === "rate_limited" ? "limited" : data.error === "captcha_failed" ? "captcha" : "error");
+      setCaptcha("");
+      setReset((n) => n + 1); // a Turnstile token is single-use
     } catch {
       setState("error");
     }
   }
-  const message = { invalid: copy.gateInvalid, limited: copy.gateLimited, error: copy.gateError }[state];
+  const message = { invalid: copy.gateInvalid, limited: copy.gateLimited, error: copy.gateError, captcha: copy.gateCaptcha }[state];
   return (
     <div className="agent-gate-card" role="dialog" aria-labelledby="agent-gate-title">
       <p className="mono">{copy.gateTag}</p>
@@ -71,14 +76,17 @@ function EmailGate({ copy, lang, onUnlock }) {
         <label className="visually-hidden" htmlFor="agent-gate-email">{copy.gateLabel}</label>
         <input id="agent-gate-email" type="email" inputMode="email" autoComplete="email" required placeholder={copy.gatePlaceholder} value={email} onChange={(e) => { setEmail(e.target.value); if (state !== "sending") setState("idle"); }} />
         <input className="agent-gate-trap" type="text" name="website" tabIndex={-1} autoComplete="off" aria-hidden="true" />
-        <button type="submit" disabled={state === "sending" || !email.trim()}>{state === "sending" ? copy.gateSending : copy.gateButton}</button>
+        <button type="submit" disabled={state === "sending" || !email.trim() || !captcha}>{state === "sending" ? copy.gateSending : copy.gateButton}</button>
       </form>
+      {sitekey
+        ? <Turnstile className="agent-gate-captcha" sitekey={sitekey} action="skills_unlock" theme="light" lang={lang} reset={reset} onToken={setCaptcha} onError={() => setState("captcha")} />
+        : <p className="agent-gate-note is-error">{copy.gateError}</p>}
       <p className={`agent-gate-note ${message ? "is-error" : ""}`} aria-live="polite">{message || copy.gateNote}</p>
     </div>
   );
 }
 
-export default function AgentSkills({ data }) {
+export default function AgentSkills({ data, captchaSitekey }) {
   const { t, lang } = useLanguage();
   const copy = t.agentSkills;
   const [query, setQuery] = useState("");
@@ -116,7 +124,7 @@ export default function AgentSkills({ data }) {
     : null;
 
   return (
-    <section id="agent-skills" className="document-section" aria-labelledby="agent-skills-heading">
+    <section id="skills" className="document-section" aria-labelledby="agent-skills-heading">
       <div className="wrap">
         <header className="section-header" id="crawl-agent-skills-context" data-crawl-id="agent-skills-context" data-crawl-kind="text" data-crawl-record="context:agent-skills" data-crawl-name={copy.title} data-crawl-field="introduction">
           <p className="mono">{copy.tag}</p>
@@ -125,7 +133,7 @@ export default function AgentSkills({ data }) {
         </header>
 
         <div className={`agent-gate ${unlocked ? "is-open" : "is-locked"}`}>
-        {!unlocked && <EmailGate copy={copy} lang={lang} onUnlock={unlock} />}
+        {!unlocked && <EmailGate copy={copy} lang={lang} onUnlock={unlock} sitekey={captchaSitekey} />}
         <div className="agent-gated" inert={!unlocked} aria-hidden={!unlocked}>
         <div className="agent-install">
           <code><span aria-hidden="true">$</span> {repoCommand}</code>

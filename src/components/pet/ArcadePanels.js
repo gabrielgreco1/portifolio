@@ -1,34 +1,8 @@
 "use client";
 import {useEffect,useRef,useState} from 'react';
 import CrawlerArtwork from '../CrawlerArtwork';
-let loading;
-function loadTurnstile(){
- if(window.turnstile)return Promise.resolve(window.turnstile);
- if(!loading)loading=new Promise((resolve,reject)=>{
-  const script=document.createElement('script');script.src='https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';script.async=true;
-  script.onload=()=>window.turnstile?resolve(window.turnstile):reject(new Error('captcha_unavailable'));script.onerror=()=>{script.remove();loading=null;reject(new Error('captcha_unavailable'));};document.head.append(script);
- });return loading;
-}
-function Turnstile({sitekey,game,lang,onToken,onError,reset}){
- const container=useRef(null),tokenCallback=useRef(onToken),errorCallback=useRef(onError);useEffect(()=>{tokenCallback.current=onToken;errorCallback.current=onError;},[onToken,onError]);
- useEffect(()=>{
-  let cancelled=false,id,api,observer,size;
-  loadTurnstile().then(turnstile=>{
-   if(cancelled)return;api=turnstile;
-   const render=()=>{
-    if(cancelled||!container.current)return;
-    const nextSize=container.current.clientWidth<300?'compact':'flexible';
-    if(size===nextSize)return;
-    if(id!==undefined){api.remove(id);tokenCallback.current('');}
-    size=nextSize;
-    id=api.render(container.current,{sitekey,action:'arcade_start',cData:game,theme:'dark',language:lang==='pt'?'pt-br':'en',size,callback:token=>tokenCallback.current(token),'error-callback':()=>{tokenCallback.current('');errorCallback.current();},'expired-callback':()=>tokenCallback.current(''),'timeout-callback':()=>tokenCallback.current('')});
-   };
-   render();observer=new ResizeObserver(render);observer.observe(container.current);
-  }).catch(()=>{if(!cancelled)errorCallback.current();});
-  return()=>{cancelled=true;observer?.disconnect();if(id!==undefined)api?.remove(id);};
- },[sitekey,game,lang,reset]);
- return <div className="arcade-captcha" ref={container}/>;
-}
+import Turnstile from '../Turnstile';
+function ArcadeTurnstile(props){return <Turnstile {...props} action="arcade_start" cData={props.game} theme="dark" className="arcade-captcha"/>;}
 function friendlyError(code,pt){
  if(['captcha_required','captcha_failed','captcha_unavailable'].includes(code))return pt?'A verificação não foi concluída. Tente novamente.':'Verification did not finish. Please try again.';
  if(code==='invalid_name')return pt?'Use até 20 letras, números, espaços, pontos ou traços.':'Use up to 20 letters, numbers, spaces, dots or dashes.';
@@ -55,7 +29,7 @@ function ArcadePanelContent({session,game,lang}){
   {panel==='verify'&&<div className="arcade-gate">
    <div className="arcade-player-name"><label htmlFor="arcade-start-name">{pt?'Seu nome no ranking':'Your leaderboard name'}</label><input id="arcade-start-name" value={name} onChange={event=>setName(event.target.value)} maxLength={20} placeholder={pt?'Como você quer aparecer?':'What should we call you?'} autoComplete="nickname" disabled={busy}/><p>{pt?'Seu melhor resultado entra no ranking automaticamente.':'Your best result joins the leaderboard automatically.'}</p></div>
    {!config?<p role="status">{pt?'Preparando a verificação…':'Preparing verification…'}</p>:!config.available?<><p className="arcade-service-note">{config.error==='rate_limited'?friendlyError('rate_limited',pt):(pt?'A verificação está indisponível. Tente novamente em instantes.':'Verification is unavailable. Please try again shortly.')}</p><button className="arcade-secondary" onClick={session.refresh}>{pt?'Tentar conectar':'Try connecting'}</button></>:<>
-    <Turnstile key={panel} sitekey={config.sitekey} game={game} lang={lang} onToken={setToken} onError={()=>setWidgetError(true)} reset={reset}/>
+    <ArcadeTurnstile key={panel} sitekey={config.sitekey} game={game} lang={lang} onToken={setToken} onError={()=>setWidgetError(true)} reset={reset}/>
     {widgetError&&<button className="arcade-secondary" onClick={()=>{setWidgetError(false);setToken('');setReset(n=>n+1);}}>{pt?'Recarregar verificação':'Reload verification'}</button>}
     <button className="arcade-primary" disabled={!token||!name.trim()||busy} onClick={async()=>{await session.authorize(token,name.trim());setToken('');setReset(n=>n+1);}}>{busy?(pt?'Verificando…':'Verifying…'):(pt?'Entrar na partida':'Enter the game')} <span>↗</span></button>
     <small>{pt?'Só seu apelido e recorde ficam públicos.':'Only your nickname and best score are public.'}</small>

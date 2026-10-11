@@ -1923,3 +1923,8 @@ main {
 @media (prefers-reduced-motion: reduce) {
   .agent-gated { transition: none; }
 }
+
+.agent-gate-captcha {
+  margin-top: 0.8rem;
+  min-height: 65px;
+}

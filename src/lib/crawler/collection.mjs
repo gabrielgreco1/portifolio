@@ -12,7 +12,7 @@ export function scopeTargets(root, scope = 'resume') {
   return nodes.filter(node => {
     if (scope === 'resume') return true;
     if (scope.startsWith('company:')) return node.closest('[data-crawl-record]')?.dataset.crawlRecord === `experience:${scope.slice(8)}`;
-    return !!node.closest({experiences:'#experience',projects:'#projects',skills:'#skills'}[scope] || '[data-no-such-scope]');
+    return !!node.closest({experiences:'#experience',projects:'#projects',skills:'#toolbox'}[scope] || '[data-no-such-scope]');
   }).map(node => node.dataset.crawlId);
 }
 

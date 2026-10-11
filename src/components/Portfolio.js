@@ -6,20 +6,22 @@ import Projects from "@/components/Projects";
 import Skills from "@/components/Skills";
 import AgentSkills from "@/components/AgentSkills";
 import { getSkills } from "@/lib/skills.mjs";
+import { captchaConfig } from "@/lib/skill-leads.mjs";
 import Contact from "@/components/Contact";
 import Footer from "@/components/Footer";
 
 export default async function Home() {
   const agentSkills = await getSkills();
+  const captchaSitekey = captchaConfig()?.sitekey || null;
   return (
     <main>
       <Navbar />
       <Hero />
       <Experience />
       <Projects />
-      <AgentSkills data={agentSkills} />
       <Skills />
       <Services />
+      <AgentSkills data={agentSkills} captchaSitekey={captchaSitekey} />
       <Contact />
       <Footer />
     </main>

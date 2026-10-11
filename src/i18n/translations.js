@@ -5,9 +5,9 @@ export const translations = {
       items: [
         { label: "Experience", note: "what survived production", href: "experience" },
         { label: "Projects", note: "things built after hours", href: "projects" },
-        { label: "Agent skills", note: "drop-in folders for agents", href: "agent-skills" },
-        { label: "Toolbox", note: "the useful nouns", href: "skills" },
+        { label: "Toolbox", note: "the useful nouns", href: "toolbox" },
         { label: "Services", note: "from source to product", href: "services" },
+        { label: "Skills", note: "drop-in folders for agents", href: "skills" },
         { label: "Contact", note: "send the weird problem", href: "contact" },
       ],
     },
@@ -178,7 +178,7 @@ export const translations = {
       ],
     },
     agentSkills: {
-      tag: "03 / agent skills",
+      tag: "05 / skills",
       title: "Skills I give my agents.",
       intro: "Drop-in folders that teach a coding agent to do one job well. Synced from the public repo, so a new skill shows up here as soon as it lands on GitHub.",
       copy: "copy", copied: "copied",
@@ -196,9 +196,10 @@ export const translations = {
       gateInvalid: "That email doesn't look right.",
       gateLimited: "Too many tries. Give it a minute.",
       gateError: "Something went wrong. Try again.",
+      gateCaptcha: "The verification didn't finish. Try again.",
     },
     skills: {
-      tag: "04 / index",
+      tag: "03 / index",
       title: "Technologies that show up in the work.",
       intro: "Not logo bingo. Just a fast way to find the useful nouns.",
       groups: [
@@ -234,9 +235,9 @@ export const translations = {
       items: [
         { label: "Experiência", note: "o que sobreviveu à produção", href: "experience" },
         { label: "Projetos", note: "coisas feitas fora do expediente", href: "projects" },
-        { label: "Skills de agente", note: "pastas prontas para agentes", href: "agent-skills" },
-        { label: "Ferramentas", note: "os substantivos úteis", href: "skills" },
+        { label: "Ferramentas", note: "os substantivos úteis", href: "toolbox" },
         { label: "Serviços", note: "da fonte ao produto", href: "services" },
+        { label: "Skills", note: "pastas prontas para agentes", href: "skills" },
         { label: "Contato", note: "mande o problema estranho", href: "contact" },
       ],
     },
@@ -301,8 +302,8 @@ export const translations = {
       { title: "ScoreTips", type: "dados", desc: "Probabilidades de partidas de futebol a partir de dados históricos e modelos estatísticos.", tags: ["Python", "Análise de dados", "ML", "Estatística"], link: "https://github.com/orgs/ScoreTips/repositories" },
       { title: "The Perfect Date", type: "experimento", desc: "Uma aplicação que usa experiências passadas para tentar prever um bom encontro. O modelo não garante química.", tags: ["Next.js", "MongoDB", "IA", "Predições"], link: "https://www.theperfectdate.vercel.app" },
     ] },
-    agentSkills: { tag: "03 / skills de agente", title: "Skills que dou aos meus agentes.", intro: "Pastas prontas que ensinam um agente de código a fazer um trabalho bem feito. Sincronizado com o repositório público: uma skill nova aparece aqui assim que chega ao GitHub.", copy: "copiar", copied: "copiado", search: "Buscar skills…", searchLabel: "Buscar skills de agente", colSkill: "skill", colInstall: "instalar", skillOne: "skill", skillMany: "skills", files: "arquivos", updated: "atualizado em", view: "código", noMatch: "Nenhuma skill bate com essa busca.", offline: "Não deu para falar com o GitHub agora. As skills continuam em", gateTag: "grátis · um passo", gateTitle: "Deixe seu melhor email para abrir as skills.", gateText: "A lista, os comandos de instalação e o código liberam na hora.", gateLabel: "Seu email", gatePlaceholder: "voce@empresa.com", gateButton: "Liberar skills", gateSending: "Liberando…", gateNote: "Sem spam. Só um aviso quando sair skill nova.", gateInvalid: "Esse email não parece certo.", gateLimited: "Muitas tentativas. Espera um minutinho.", gateError: "Algo deu errado. Tenta de novo." },
-    skills: { tag: "04 / índice", title: "Tecnologias que aparecem no trabalho.", intro: "Não é bingo de logo. É uma forma rápida de encontrar os substantivos úteis.", groups: [
+    agentSkills: { tag: "05 / skills", title: "Skills que dou aos meus agentes.", intro: "Pastas prontas que ensinam um agente de código a fazer um trabalho bem feito. Sincronizado com o repositório público: uma skill nova aparece aqui assim que chega ao GitHub.", copy: "copiar", copied: "copiado", search: "Buscar skills…", searchLabel: "Buscar skills de agente", colSkill: "skill", colInstall: "instalar", skillOne: "skill", skillMany: "skills", files: "arquivos", updated: "atualizado em", view: "código", noMatch: "Nenhuma skill bate com essa busca.", offline: "Não deu para falar com o GitHub agora. As skills continuam em", gateTag: "grátis · um passo", gateTitle: "Deixe seu melhor email para abrir as skills.", gateText: "A lista, os comandos de instalação e o código liberam na hora.", gateLabel: "Seu email", gatePlaceholder: "voce@empresa.com", gateButton: "Liberar skills", gateSending: "Liberando…", gateNote: "Sem spam. Só um aviso quando sair skill nova.", gateInvalid: "Esse email não parece certo.", gateLimited: "Muitas tentativas. Espera um minutinho.", gateError: "Algo deu errado. Tenta de novo.", gateCaptcha: "A verificação não foi concluída. Tenta de novo." },
+    skills: { tag: "03 / índice", title: "Tecnologias que aparecem no trabalho.", intro: "Não é bingo de logo. É uma forma rápida de encontrar os substantivos úteis.", groups: [
       { title: "Extrair", items: ["Python", "Scrapy", "Scrapy Cloud", "Zyte API", "httpx", "curl-cffi", "Playwright", "sistemas anti-bot"] },
       { title: "Mover", items: ["Prefect", "AWS ECS/Fargate", "Kubernetes", "Docker", "S3", "Terraform", "Celery", "Redis"] },
       { title: "Modelar", items: ["PostgreSQL", "Supabase", "Neo4j", "Polars", "Pandas", "bronze/silver/gold", "GraphRAG", "normalização estatística"] },

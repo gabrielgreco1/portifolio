@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { useCrawler } from "@/components/crawler/CrawlerExperience";
 
-const SECTIONS = ["hero", "experience", "projects", "skills", "contact"];
+const SECTIONS = ["hero", "experience", "projects", "toolbox", "contact"];
 
 export default function CrawlerPet() {
   const { t } = useLanguage();

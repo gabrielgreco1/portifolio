@@ -1,4 +1,4 @@
-import {leadStore,normalizeEmail} from '@/lib/skill-leads.mjs';
+import {captchaConfig,leadStore,normalizeEmail,verifyCaptcha} from '@/lib/skill-leads.mjs';
 export const runtime='nodejs';
 export const dynamic='force-dynamic';
 
@@ -12,6 +12,7 @@ export async function POST(request){
   if(!email)return Response.json({error:'invalid_email'},{status:400,headers:{'Cache-Control':'no-store'}});
   if(body.website)return Response.json({ok:true});  // honeypot: bots fill every field
   try{
+    await verifyCaptcha(body.captcha,captchaConfig());
     const store=leadStore();
     const ip=process.env.VERCEL==='1'?(request.headers.get('x-vercel-forwarded-for')||'unknown').split(',')[0].trim():'local';
     await store.limit(`ip:${ip}`,8,3600);
@@ -19,6 +20,7 @@ export async function POST(request){
     return Response.json({ok:true},{headers:{'Cache-Control':'no-store'}});
   }catch(error){
     const limited=error.status===429;
+    if(error.status===403)return Response.json({error:'captcha_failed'},{status:403,headers:{'Cache-Control':'no-store'}});
     return Response.json({error:limited?'rate_limited':'unavailable'},{status:limited?429:503,headers:{'Cache-Control':'no-store',...(limited?{'Retry-After':'3600'}:{})}});
   }
 }

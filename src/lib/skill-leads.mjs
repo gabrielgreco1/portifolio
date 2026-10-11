@@ -50,3 +50,26 @@ export function leadStore(){
   if(process.env.NODE_ENV==='development'&&!process.env.VERCEL)return new LocalLeads(`${process.cwd()}/.local/skill-leads.json`);
   throw Object.assign(new Error('Lead storage is not configured'),{status:503});
 }
+
+// Same Cloudflare Turnstile keys as the arcade. Locally, without real keys, Cloudflare's
+// always-pass test keys are used so the gate can be exercised on localhost.
+const TEST_SITE='1x00000000000000000000AA',TEST_SECRET='1x0000000000000000000000000000000AA';
+export const SKILLS_CAPTCHA_ACTION='skills_unlock';
+
+export function captchaConfig(env=process.env){
+  const local=env.NODE_ENV==='development'&&!env.VERCEL;
+  if(local&&(!env.TURNSTILE_SITEKEY||!env.TURNSTILE_SECRET_KEY))return{mode:'test',sitekey:TEST_SITE,secret:TEST_SECRET,hosts:['localhost','127.0.0.1']};
+  if(!env.TURNSTILE_SITEKEY||!env.TURNSTILE_SECRET_KEY)return null;
+  const hosts=(env.ARCADE_ALLOWED_HOSTNAMES||'gabrielgreco.com,www.gabrielgreco.com').split(',').map(s=>s.trim().toLowerCase()).filter(Boolean);
+  return{mode:'live',sitekey:env.TURNSTILE_SITEKEY,secret:env.TURNSTILE_SECRET_KEY,hosts:local?[...hosts,'localhost','127.0.0.1']:hosts};
+}
+
+export async function verifyCaptcha(token,config,fetcher=fetch){
+  if(!config)throw Object.assign(new Error('captcha_unavailable'),{status:503});
+  if(typeof token!=='string'||token.length<1||token.length>2048)throw Object.assign(new Error('captcha_required'),{status:403});
+  const r=await fetcher('https://challenges.cloudflare.com/turnstile/v0/siteverify',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({secret:config.secret,response:token}),signal:AbortSignal.timeout(8000)});
+  if(!r.ok)throw Object.assign(new Error('captcha_unavailable'),{status:503});
+  const data=await r.json();
+  if(data.success!==true)throw Object.assign(new Error('captcha_failed'),{status:403});
+  if(config.mode==='live'&&(!config.hosts.includes(String(data.hostname||'').toLowerCase())||data.action!==SKILLS_CAPTCHA_ACTION))throw Object.assign(new Error('captcha_failed'),{status:403});
+}
