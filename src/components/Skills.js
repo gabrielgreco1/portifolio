@@ -6,7 +6,7 @@ export default function Skills() {
   const skills = t.skills;
 
   return (
-    <section id="skills" className="document-section">
+    <section id="toolbox" className="document-section">
       <div className="wrap">
         <header className="section-header" id="crawl-skills-context" data-crawl-id="skills-context" data-crawl-kind="text" data-crawl-record="context:skills" data-crawl-name={skills.title} data-crawl-field="introduction">
           <p className="mono">{skills.tag}</p>

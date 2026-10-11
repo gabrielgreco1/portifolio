@@ -4,10 +4,15 @@ import Hero from "@/components/Hero";
 import Experience from "@/components/Experience";
 import Projects from "@/components/Projects";
 import Skills from "@/components/Skills";
+import AgentSkills from "@/components/AgentSkills";
+import { getSkills } from "@/lib/skills.mjs";
+import { captchaConfig } from "@/lib/skill-leads.mjs";
 import Contact from "@/components/Contact";
 import Footer from "@/components/Footer";
 
-export default function Home() {
+export default async function Home() {
+  const agentSkills = await getSkills();
+  const captchaSitekey = captchaConfig()?.sitekey || null;
   return (
     <main>
       <Navbar />
@@ -16,6 +21,7 @@ export default function Home() {
       <Projects />
       <Skills />
       <Services />
+      <AgentSkills data={agentSkills} captchaSitekey={captchaSitekey} />
       <Contact />
       <Footer />
     </main>
