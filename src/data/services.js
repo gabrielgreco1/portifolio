@@ -1,7 +1,7 @@
 // Shared by the visible content and JSON-LD so descriptions stay consistent.
 export const serviceContent = {
   en: {
-    tag: "04 / services",
+    tag: "05 / services",
     title: "Data engineering, from source to product.",
     intro: "Based in São Paulo, with experience working remotely with teams in Brazil, the United States and Ireland. These are the problems I work on.",
     evidence: "See the production experience", cta: "Discuss a data project",
@@ -13,7 +13,7 @@ export const serviceContent = {
     ],
   },
   pt: {
-    tag: "04 / serviços",
+    tag: "05 / serviços",
     title: "Engenharia de dados, da fonte ao produto.",
     intro: "Baseado em São Paulo, com experiência trabalhando remotamente com equipes no Brasil, nos Estados Unidos e na Irlanda. Estes são os problemas com que trabalho.",
     evidence: "Veja a experiência em produção", cta: "Conversar sobre um projeto de dados",

@@ -1567,3 +1567,359 @@ main {
 /* Direct links connect claims to the relevant first-person work history. */
 .stat-context { display: inline-block; margin-top: 0.7rem; font-size: 0.72rem; text-decoration: underline; text-underline-offset: 0.2em; }
 .service-evidence { display: inline-block; margin-top: 1rem; line-height: 1.6; }
+
+/* Agent skills: a small directory synced from the public skills repo. */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.agent-install {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1rem 1rem 1.25rem;
+  background: var(--ink);
+  color: var(--paper);
+  box-shadow: 4px 4px 0 var(--line-dark);
+}
+
+.agent-install code {
+  min-width: 0;
+  overflow-x: auto;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 0.92rem;
+  white-space: nowrap;
+}
+
+.agent-install code span {
+  color: var(--yellow);
+  margin-right: 0.35rem;
+}
+
+.agent-install .agent-copy {
+  border-color: rgba(247, 246, 242, 0.35);
+  color: var(--paper);
+}
+
+.agent-install .agent-copy:hover,
+.agent-install .agent-copy.is-done {
+  border-color: var(--yellow);
+  color: var(--yellow);
+}
+
+.agent-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 1.4rem;
+  margin-top: 1rem;
+}
+
+.agent-meta a:hover {
+  color: var(--green);
+}
+
+.agent-board {
+  margin-top: 3rem;
+  border-top: 1px solid var(--line-dark);
+}
+
+.agent-board-top {
+  padding: 1rem 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.agent-search {
+  position: relative;
+  display: block;
+  max-width: 420px;
+}
+
+.agent-search input {
+  width: 100%;
+  padding: 0.7rem 2.6rem 0.7rem 0.85rem;
+  border: 1px solid var(--line-dark);
+  background: rgba(255, 255, 255, 0.68);
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.88rem;
+}
+
+.agent-search input:focus-visible {
+  outline: 2px solid var(--green);
+  outline-offset: 2px;
+}
+
+.agent-search kbd {
+  position: absolute;
+  top: 50%;
+  right: 0.7rem;
+  transform: translateY(-50%);
+  padding: 0.05rem 0.4rem;
+  border: 1px solid var(--line-dark);
+  color: var(--faint);
+  font-family: "SFMono-Regular", Consolas, monospace;
+  font-size: 0.68rem;
+}
+
+.agent-head,
+.agent-row {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr) 170px;
+  gap: 1.2rem;
+}
+
+.agent-head {
+  padding: 0.8rem 0;
+  border-bottom: 1px solid var(--line);
+  color: var(--faint);
+}
+
+.agent-head span:last-child {
+  text-align: right;
+}
+
+.agent-list {
+  list-style: none;
+}
+
+.agent-row {
+  align-items: start;
+  padding: 2rem 0;
+  border-bottom: 1px solid var(--line);
+  transition: padding 180ms ease, background 180ms ease;
+}
+
+.agent-row:hover {
+  background: var(--paper-deep);
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+
+.agent-rank {
+  padding-top: 0.5rem;
+  color: var(--faint);
+}
+
+.agent-title-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.3rem 0.9rem;
+}
+
+.agent-title-line h3 {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.75rem;
+  font-weight: 400;
+  letter-spacing: -0.035em;
+}
+
+.agent-title-line h3 a:hover {
+  color: var(--green);
+}
+
+.agent-path {
+  color: var(--green);
+  text-transform: none;
+}
+
+.agent-copy-block p {
+  max-width: 600px;
+  margin-top: 0.55rem;
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
+.agent-files {
+  display: inline-block;
+  margin-top: 0.8rem;
+  color: var(--faint);
+}
+
+.agent-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.6rem;
+  padding-top: 0.35rem;
+}
+
+.agent-copy {
+  padding: 0.42rem 0.75rem;
+  border: 1px solid var(--line-dark);
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+  transition: color 150ms ease, border-color 150ms ease;
+}
+
+.agent-copy:hover,
+.agent-copy.is-done {
+  border-color: var(--green);
+  color: var(--green);
+}
+
+.agent-open {
+  font-size: 0.74rem;
+}
+
+.agent-open:hover {
+  color: var(--green);
+}
+
+.agent-empty {
+  padding: 2rem 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+@media (max-width: 680px) {
+  .agent-head {
+    display: none;
+  }
+
+  .agent-row {
+    grid-template-columns: 35px minmax(0, 1fr);
+  }
+
+  .agent-actions {
+    grid-column: 2;
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 1rem;
+  }
+
+  .agent-install code {
+    font-size: 0.78rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .agent-row { transition: none; }
+}
+
+/* Email gate over the agent skills list */
+.agent-gate {
+  position: relative;
+}
+
+.agent-gated {
+  transition: filter 400ms ease, opacity 400ms ease;
+}
+
+.agent-gate.is-locked .agent-gated {
+  filter: blur(7px);
+  opacity: 0.55;
+  user-select: none;
+  pointer-events: none;
+}
+
+.agent-gate-card {
+  position: absolute;
+  z-index: 2;
+  top: 5.5rem;
+  left: 50%;
+  width: min(460px, calc(100% - 1rem));
+  transform: translateX(-50%);
+  padding: 1.8rem;
+  border: 1px solid var(--line-dark);
+  background: var(--paper);
+  box-shadow: 6px 6px 0 var(--ink);
+}
+
+.agent-gate-card h3 {
+  margin-top: 0.6rem;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.7rem;
+  font-weight: 400;
+  letter-spacing: -0.035em;
+  line-height: 1.1;
+}
+
+.agent-gate-card > p:not(.mono) {
+  margin-top: 0.6rem;
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
+.agent-gate-card form {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 1.2rem;
+}
+
+.agent-gate-card input[type="email"] {
+  flex: 1;
+  min-width: 0;
+  padding: 0.75rem 0.85rem;
+  border: 1px solid var(--line-dark);
+  background: #fff;
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.9rem;
+}
+
+.agent-gate-card input[type="email"]:focus-visible {
+  outline: 2px solid var(--green);
+  outline-offset: 2px;
+}
+
+.agent-gate-card button {
+  padding: 0.75rem 1rem;
+  border: 0;
+  background: var(--ink);
+  color: var(--paper);
+  font: inherit;
+  font-size: 0.86rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.agent-gate-card button:hover:not(:disabled) {
+  background: var(--green);
+}
+
+.agent-gate-card button:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.agent-gate-trap {
+  position: absolute;
+  left: -9999px;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+.agent-gate-note {
+  margin-top: 0.7rem;
+  color: var(--faint);
+  font-size: 0.74rem;
+}
+
+.agent-gate-note.is-error {
+  color: #a3412c;
+}
+
+@media (max-width: 680px) {
+  .agent-gate-card {
+    top: 2rem;
+    padding: 1.3rem;
+  }
+
+  .agent-gate-card form {
+    flex-direction: column;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .agent-gated { transition: none; }
+}
