@@ -1,5 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  experimental: { globalNotFound: true },
   async redirects() {
     return [{ source: "/data-engineer", destination: "/", permanent: true }];
   },
