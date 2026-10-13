@@ -5,8 +5,25 @@ const nextConfig = {
     return [
       {
         source: "/:path*",
+        has: [{ type: "host", value: "www.gabrielgreco.com" }],
+        destination: "https://gabrielgreco.com/:path*",
+        permanent: false,
+      },
+      {
+        source: "/:path*",
         has: [{ type: "host", value: "benchmarks.gabrielgreco.com" }],
         destination: "https://gabrielgreco.com/benchmarks/:path*",
+        permanent: false,
+      },
+      {
+        source: "/:path*",
+        has: [
+          {
+            type: "host",
+            value: "(?<subdomain>[^.]+)\\.gabrielgreco\\.com",
+          },
+        ],
+        destination: "https://gabrielgreco.com/404/:subdomain/:path*",
         permanent: false,
       },
       { source: "/data-engineer", destination: "/", permanent: true },
