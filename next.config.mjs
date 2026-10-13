@@ -2,7 +2,15 @@
 const nextConfig = {
   experimental: { globalNotFound: true },
   async redirects() {
-    return [{ source: "/data-engineer", destination: "/", permanent: true }];
+    return [
+      {
+        source: "/:path*",
+        has: [{ type: "host", value: "benchmarks.gabrielgreco.com" }],
+        destination: "https://gabrielgreco.com/benchmarks/:path*",
+        permanent: false,
+      },
+      { source: "/data-engineer", destination: "/", permanent: true },
+    ];
   },
   async headers() {
     return [
